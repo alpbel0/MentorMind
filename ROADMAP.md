@@ -171,14 +171,22 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/models/database.py` oluştur:
-  - [ ] SQLAlchemy Base
-  - [ ] Database engine
-  - [ ] SessionLocal
-  - [ ] get_db() dependency
-- [ ] `backend/config/database.py` oluştur (DB connection config)
-- [ ] Database connection'ı test et
+- [x] `backend/models/database.py` oluştur:
+  - [x] SQLAlchemy Base
+  - [x] Database engine
+  - [x] SessionLocal
+  - [x] get_db() dependency
+- [x] `backend/config/database.py` oluştur (DB connection config)
+- [x] Database connection'ı test et
+
+**Notlar:**
+- SQLAlchemy 2.0 text() fonksiyonu kullanıldı (raw SQL için)
+- Connection pool: pool_size=3, max_overflow=5
+- Health endpoint'leri database status ile güncellendi
+- Test script: `backend/scripts/test_db_connection.py`
 
 ---
 
