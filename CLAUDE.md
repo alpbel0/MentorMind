@@ -1328,14 +1328,14 @@ pip-audit
 #### Week 1: Database & Infrastructure (Jan 27 - Feb 2)
 - [x] Project setup and GitHub repository (Completed: Jan 26, 2025)
 - [x] Environment configuration (Completed: Jan 26, 2025)
-- [ ] Docker setup (3 services)
-- [ ] Python backend foundation
+- [x] Docker setup (3 services) (Completed: Jan 26, 2026)
+- [x] Python backend foundation (Completed: Jan 26, 2026)
 - [ ] SQLAlchemy models
 - [ ] Database schema (5 tables)
 - [ ] Pydantic schemas
 - [ ] Database initialization script
 - [ ] Logging infrastructure
-- [ ] Health check endpoints
+- [x] Health check endpoints (Completed: Jan 26, 2026)
 - [ ] Testing infrastructure
 - [ ] Seed data script skeleton
 - [ ] LLM cost analysis script

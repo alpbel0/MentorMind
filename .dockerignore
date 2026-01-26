@@ -1,0 +1,59 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+.pytest_cache
+.coverage
+htmlcov
+
+# Virtual Environment
+venv
+env
+.venv
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+data/logs/*
+*.log
+
+# Documentation
+CLAUDE.md
+ROADMAP.md
+*.md
+!README.md
+
+# Tests
+tests/
+.pytest_cache
+
+# Maestro
+.maestro
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ChromaDB Data (persisted separately)
+chroma_data/*
