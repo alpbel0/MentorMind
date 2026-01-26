@@ -266,13 +266,15 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/models/question_prompt.py` oluştur (QuestionPrompt model)
-- [ ] `backend/models/question.py` oluştur (Question model)
-- [ ] `backend/models/model_response.py` oluştur (ModelResponse model)
-- [ ] `backend/models/user_evaluation.py` oluştur (UserEvaluation model)
-- [ ] `backend/models/judge_evaluation.py` oluştur (JudgeEvaluation model)
-- [ ] `backend/models/__init__.py` oluştur (tüm modelleri export et)
+- [x] `backend/models/question_prompt.py` oluştur (QuestionPrompt model)
+- [x] `backend/models/question.py` oluştur (Question model)
+- [x] `backend/models/model_response.py` oluştur (ModelResponse model)
+- [x] `backend/models/user_evaluation.py` oluştur (UserEvaluation model)
+- [x] `backend/models/judge_evaluation.py` oluştur (JudgeEvaluation model)
+- [x] `backend/models/__init__.py` oluştur (tüm modelleri export et)
 
 ---
 
@@ -280,14 +282,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/models/schemas.py` oluştur
-- [ ] QuestionPrompt schemas (Base, Create, Response)
-- [ ] Question schemas (Base, Create, Response)
-- [ ] ModelResponse schemas (Base, Create, Response)
-- [ ] UserEvaluation schemas (Base, Create, Response)
-- [ ] JudgeEvaluation schemas (Base, Create, Response)
-- [ ] Validation logic ekle
+- [x] `backend/models/schemas.py` oluştur
+- [x] QuestionPrompt schemas (Base, Create, Response)
+- [x] Question schemas (Base, Create, Response)
+- [x] ModelResponse schemas (Base, Create, Response)
+- [x] UserEvaluation schemas (Base, Create, Response)
+- [x] JudgeEvaluation schemas (Base, Create, Response)
+- [x] Validation logic ekle
 
 ---
 
@@ -295,13 +299,15 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/scripts/init_db.py` oluştur
-- [ ] Tüm SQL schema dosyalarını okuma logic'i ekle
-- [ ] Sırayla execute et (01 → 05)
-- [ ] Error handling ekle
-- [ ] Script'i test et: `docker-compose exec backend python scripts/init_db.py`
-- [ ] Tabloları kontrol et: `docker-compose exec postgres psql -U mentormind -d mentormind -c "\dt"`
+- [x] `backend/scripts/init_db.py` oluştur
+- [x] Tüm SQL schema dosyalarını okuma logic'i ekle
+- [x] Sırayla execute et (01 → 05)
+- [x] Error handling ekle
+- [x] Script'i test et: `docker-compose exec backend python scripts/init_db.py`
+- [x] Tabloları kontrol et: `docker-compose exec postgres psql -U mentormind -d mentormind -c "\dt"`
 
 ---
 

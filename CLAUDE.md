@@ -1332,8 +1332,8 @@ pip-audit
 - [x] Python backend foundation (Completed: Jan 26, 2026)
 - [x] SQLAlchemy models (Completed: Jan 26, 2026)
 - [x] Database schema (5 tables) (Completed: Jan 26, 2026)
-- [ ] Pydantic schemas
-- [ ] Database initialization script
+- [x] Pydantic schemas (Completed: Jan 26, 2026)
+- [x] Database initialization script (Completed: Jan 26, 2026)
 - [ ] Logging infrastructure
 - [x] Health check endpoints (Completed: Jan 26, 2026)
 - [ ] Testing infrastructure
