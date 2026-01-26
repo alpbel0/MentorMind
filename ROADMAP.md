@@ -241,7 +241,7 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Yapılacaklar:**
 - [x] `backend/schemas/04_user_evaluations.sql` oluştur
-- [x] Tablo tanımını yaz (id, response_id, evaluations JSONB, judged, judge_evaluation_id)
+- [x] Tablo tanımını yaz (id, response_id, evaluations JSONB, judged)
 - [x] Foreign key ekle (response_id)
 - [x] Indexes ekle (response_id, judged, created_at_desc)
 
@@ -1121,7 +1121,7 @@ Phase 1 tamamlanmış sayılır eğer:
   - [ ] Judge ID oluştur (judge_YYYYMMDD_HHMMSS_randomhex)
   - [ ] judge_evaluations'a kaydet
   - [ ] ChromaDB: add to memory
-  - [ ] user_evaluations.judged = TRUE, judge_evaluation_id = judge_id
+  - [ ] user_evaluations.judged = TRUE
   - [ ] Return judge_id
 - [ ] Error handling (rollback on failure)
 

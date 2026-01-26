@@ -356,7 +356,6 @@ docker-compose exec postgres pg_isready -U mentormind
 │ response_id (FK)        │
 │ evaluations (JSON)      │  Her 8 metrik için {"score": 1-5, "reasoning": "..."}
 │ judged                  │  TRUE/FALSE
-│ judge_evaluation_id     │
 └────────┬────────────────┘
          │
          │ (GPT-4o değerlendirir)
@@ -478,12 +477,11 @@ CREATE TABLE user_evaluations (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
     response_id TEXT NOT NULL,
-    
+
     evaluations JSON NOT NULL,
-    
+
     judged BOOLEAN DEFAULT FALSE,
-    judge_evaluation_id TEXT,
-    
+
     FOREIGN KEY (response_id) REFERENCES model_responses(id)
 );
 

@@ -162,7 +162,6 @@ User's evaluation of model responses.
 | `response_id` | TEXT | FK to model_responses |
 | `evaluations` | JSONB | 8 metrics with scores & reasoning |
 | `judged` | BOOLEAN | Has GPT-4o evaluated? |
-| `judge_evaluation_id` | TEXT | FK to judge_evaluations |
 
 **Indexes:** `response_id`, `judged`, `created_at_desc`
 
@@ -518,7 +517,6 @@ async def run_judge_evaluation(user_eval_id: str):
         # Update user evaluation
         user_eval = db.query(UserEvaluation).get(user_eval_id)
         user_eval.judged = True
-        user_eval.judge_evaluation_id = judge_eval.id
         db.commit()
 
         # Add to ChromaDB memory
