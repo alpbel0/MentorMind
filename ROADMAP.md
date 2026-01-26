@@ -194,11 +194,13 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/schemas/01_question_prompts.sql` oluştur
-- [ ] Tablo tanımını yaz (id, primary_metric, bonus_metrics, question_type, user_prompt, golden_examples, difficulty, category_hint, timestamps)
-- [ ] UNIQUE constraint ekle (primary_metric, question_type)
-- [ ] Indexes ekle (primary_metric, difficulty)
+- [x] `backend/schemas/01_question_prompts.sql` oluştur
+- [x] Tablo tanımını yaz (id, primary_metric, bonus_metrics, question_type, user_prompt, golden_examples, difficulty, category_hints JSONB, timestamps)
+- [x] UNIQUE constraint ekle (primary_metric, question_type)
+- [x] Indexes ekle (primary_metric, difficulty)
 
 ---
 
@@ -206,11 +208,13 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/schemas/02_questions.sql` oluştur
-- [ ] Tablo tanımını yaz (id, question, category, reference_answer, expected_behavior, rubric_breakdown, denormalized fields, usage tracking)
-- [ ] Foreign key ekle (question_prompt_id)
-- [ ] Indexes ekle (primary_metric, category, times_used, difficulty)
+- [x] `backend/schemas/02_questions.sql` oluştur
+- [x] Tablo tanımını yaz (id, question, category, reference_answer (nullable), expected_behavior (nullable), rubric_breakdown, denormalized fields, usage tracking)
+- [x] Foreign key ekle (question_prompt_id nullable)
+- [x] Indexes ekle (primary_metric, category, times_used, pool_selection composite)
 
 ---
 
@@ -218,12 +222,14 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/schemas/03_model_responses.sql` oluştur
-- [ ] Tablo tanımını yaz (id, question_id, model_name, response_text, evaluated, evaluation_id)
-- [ ] Foreign key ekle (question_id)
-- [ ] UNIQUE constraint ekle (question_id, model_name)
-- [ ] Indexes ekle (question_id, model_name, evaluated)
+- [x] `backend/schemas/03_model_responses.sql` oluştur
+- [x] Tablo tanımını yaz (id, question_id, model_name, response_text, evaluated, evaluation_id)
+- [x] Foreign key ekle (question_id)
+- [x] UNIQUE constraint ekle (question_id, model_name)
+- [x] Indexes ekle (question_id, model_name, evaluated, pending_evaluations partial)
 
 ---
 
@@ -231,11 +237,13 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/schemas/04_user_evaluations.sql` oluştur
-- [ ] Tablo tanımını yaz (id, response_id, evaluations JSON, judged, judge_evaluation_id)
-- [ ] Foreign key ekle (response_id)
-- [ ] Indexes ekle (response_id, judged, created_at)
+- [x] `backend/schemas/04_user_evaluations.sql` oluştur
+- [x] Tablo tanımını yaz (id, response_id, evaluations JSONB, judged, judge_evaluation_id)
+- [x] Foreign key ekle (response_id)
+- [x] Indexes ekle (response_id, judged, created_at_desc)
 
 ---
 
@@ -243,12 +251,14 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (26 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/schemas/05_judge_evaluations.sql` oluştur
-- [ ] Tablo tanımını yaz (id, user_evaluation_id, independent_scores, alignment_analysis, judge_meta_score, overall_feedback, improvement_areas, positive_feedback, vector_context, primary_metric, gaps)
-- [ ] Foreign key ekle (user_evaluation_id)
-- [ ] CHECK constraint ekle (judge_meta_score BETWEEN 1 AND 5)
-- [ ] Indexes ekle (user_evaluation_id, meta_score, primary_metric, created_at)
+- [x] `backend/schemas/05_judge_evaluations.sql` oluştur
+- [x] Tablo tanımını yaz (id, user_evaluation_id, independent_scores, alignment_analysis, judge_meta_score, overall_feedback, improvement_areas, positive_feedback, vector_context, primary_metric, gaps)
+- [x] Foreign key ekle (user_evaluation_id)
+- [x] CHECK constraint ekle (judge_meta_score BETWEEN 1 AND 5)
+- [x] Indexes ekle (user_evaluation_id, meta_score, primary_metric, created_at_desc, metric_score composite)
 
 ---
 
@@ -380,12 +390,12 @@ Phase 1 tamamlanmış sayılır eğer:
 
 ### ✅ Week 1 Checklist
 
-- [ ] Docker container'lar çalışıyor (backend, postgres, chromadb)
-- [ ] Database tabloları oluşturuldu (5 tablo)
+- [x] Docker container'lar çalışıyor (backend, postgres, chromadb)
+- [x] Database tabloları oluşturuldu (5 tablo) (Completed: 26 Ocak 2026)
 - [ ] SQLAlchemy models hazır
 - [ ] Pydantic schemas hazır
 - [ ] Logging sistemi çalışıyor (3 log dosyası: mentormind.log, errors.log, llm_calls.jsonl)
-- [ ] Health check endpoints çalışıyor
+- [x] Health check endpoints çalışıyor (Completed: 26 Ocak 2026)
 - [ ] Test infrastructure kurulu
 - [ ] Scripts hazır (init_db.py, seed_data.py, analyze_llm_costs.py)
 

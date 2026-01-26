@@ -108,12 +108,12 @@ Template definitions for question generation.
 |--------|------|-------------|
 | `id` | SERIAL | Primary key |
 | `primary_metric` | TEXT | Main metric being tested |
-| `bonus_metrics` | JSON | Hidden secondary metrics |
+| `bonus_metrics` | JSONB | Hidden secondary metrics (array) |
 | `question_type` | TEXT | Type (hallucination_test, factual_accuracy, etc.) |
 | `user_prompt` | TEXT | Prompt template for Claude |
-| `golden_examples` | JSON | Example question-answers |
+| `golden_examples` | JSONB | Example question-answers (array) |
 | `difficulty` | TEXT | easy, medium, hard |
-| `category_hint` | TEXT | prefer_medical, prefer_coding, any |
+| `category_hints` | JSONB | Category preferences (array) |
 | `UNIQUE` | (primary_metric, question_type) | Constraint |
 
 **Indexes:** `primary_metric`, `difficulty`
@@ -126,17 +126,17 @@ Generated questions with denormalized metadata.
 | `id` | TEXT | Format: `q_YYYYMMDD_HHMMSS_randomhex` |
 | `question` | TEXT | Question text |
 | `category` | TEXT | Math, Coding, Medical, General |
-| `reference_answer` | TEXT | Ideal answer |
-| `expected_behavior` | TEXT | What model should do |
-| `rubric_breakdown` | JSON | Score descriptions (1-5) |
+| `reference_answer` | TEXT | Ideal answer (nullable) |
+| `expected_behavior` | TEXT | What model should do (nullable) |
+| `rubric_breakdown` | JSONB | Score descriptions (1-5) |
 | `primary_metric` | TEXT | Denormalized from prompt |
-| `bonus_metrics` | JSON | Denormalized from prompt |
-| `question_prompt_id` | INTEGER | FK to question_prompts |
+| `bonus_metrics` | JSONB | Denormalized from prompt (array) |
+| `question_prompt_id` | INTEGER | FK to question_prompts (nullable) |
 | `times_used` | INTEGER | Pool usage tracking |
 | `first_used_at` | TIMESTAMP | First usage |
 | `last_used_at` | TIMESTAMP | Last usage |
 
-**Indexes:** `primary_metric`, `category`, `times_used`, `difficulty`
+**Indexes:** `primary_metric`, `category`, `times_used`, `pool_selection (composite)`
 
 #### 3. model_responses
 K model answers to questions.
@@ -160,11 +160,11 @@ User's evaluation of model responses.
 |--------|------|-------------|
 | `id` | TEXT | Format: `eval_YYYYMMDD_HHMMSS_randomhex` |
 | `response_id` | TEXT | FK to model_responses |
-| `evaluations` | JSON | 8 metrics with scores & reasoning |
+| `evaluations` | JSONB | 8 metrics with scores & reasoning |
 | `judged` | BOOLEAN | Has GPT-4o evaluated? |
 | `judge_evaluation_id` | TEXT | FK to judge_evaluations |
 
-**Indexes:** `response_id`, `judged`, `created_at DESC`
+**Indexes:** `response_id`, `judged`, `created_at_desc`
 
 #### 5. judge_evaluations
 GPT-4o's two-stage evaluation.
@@ -173,18 +173,18 @@ GPT-4o's two-stage evaluation.
 |--------|------|-------------|
 | `id` | TEXT | Format: `judge_YYYYMMDD_HHMMSS_randomhex` |
 | `user_evaluation_id` | TEXT | FK to user_evaluations |
-| `independent_scores` | JSON | Stage 1: Blind evaluation |
-| `alignment_analysis` | JSON | Stage 2: Gap analysis per metric |
+| `independent_scores` | JSONB | Stage 1: Blind evaluation |
+| `alignment_analysis` | JSONB | Stage 2: Gap analysis per metric |
 | `judge_meta_score` | INTEGER | 1-5: User's evaluation quality |
 | `overall_feedback` | TEXT | Summary feedback |
-| `improvement_areas` | JSON | Areas to improve |
-| `positive_feedback` | JSON | What user did well |
-| `vector_context` | JSON | ChromaDB past mistakes |
+| `improvement_areas` | JSONB | Areas to improve (array) |
+| `positive_feedback` | JSONB | What user did well (array) |
+| `vector_context` | JSONB | ChromaDB past mistakes |
 | `primary_metric` | TEXT | Metric being tested |
 | `primary_metric_gap` | REAL | User-judge gap |
 | `weighted_gap` | REAL | 70% primary, 20% bonus, 10% other |
 
-**Indexes:** `user_evaluation_id`, `judge_meta_score`, `primary_metric`, `created_at DESC`
+**Indexes:** `user_evaluation_id`, `judge_meta_score`, `primary_metric`, `created_at_desc`, `metric_score (composite)`
 
 **Constraints:** `judge_meta_score BETWEEN 1 AND 5`
 
@@ -1331,7 +1331,7 @@ pip-audit
 - [x] Docker setup (3 services) (Completed: Jan 26, 2026)
 - [x] Python backend foundation (Completed: Jan 26, 2026)
 - [x] SQLAlchemy models (Completed: Jan 26, 2026)
-- [ ] Database schema (5 tables)
+- [x] Database schema (5 tables) (Completed: Jan 26, 2026)
 - [ ] Pydantic schemas
 - [ ] Database initialization script
 - [ ] Logging infrastructure
