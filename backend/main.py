@@ -7,11 +7,13 @@ all middleware, routers, and event handlers.
 
 from contextlib import asynccontextmanager
 import logging
+import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.config.settings import settings
+from backend.models.database import test_database_connection, engine, get_pool_status
 
 # =====================================================
 # Configure Logging
@@ -35,13 +37,21 @@ async def lifespan(app: FastAPI):
     Startup:
     - Log application start
     - Log environment configuration
+    - Test database connection
 
     Shutdown:
     - Log application shutdown
+    - Close database connections
     """
     # Startup
     logger.info("=" * 60)
     logger.info("Starting MentorMind API...")
+
+    # Test database connection
+    db_connected = test_database_connection()
+    if not db_connected:
+        logger.warning("Application starting but database is not reachable")
+
     logger.info(f"Environment: {settings.environment}")
     logger.info(f"Log Level: {settings.log_level}")
     logger.info(f"API Host: {settings.api_host}")
@@ -56,6 +66,8 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down MentorMind API...")
+    engine.dispose()
+    logger.info("Database connections closed")
     logger.info("=" * 60)
 
 
@@ -111,12 +123,14 @@ async def health_check() -> dict:
     Health check endpoint.
 
     Returns the current health status of the API and its dependencies.
-    Database and ChromaDB connections will be updated in later tasks.
+    Database connection is tested on each request.
     """
+    db_connected = test_database_connection()
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_connected else "degraded",
         "api": "connected",
-        "database": "not yet connected",
+        "database": "connected" if db_connected else "disconnected",
         "chromadb": "not yet connected",
     }
 
@@ -129,24 +143,28 @@ async def health_check_detailed() -> dict:
     """
     Detailed health check endpoint.
 
-    Returns detailed health information for all system components.
-    Will be expanded in later tasks to include database and
-    ChromaDB connection status with latency metrics.
+    Returns detailed health information for all system components
+    including database connection status and latency metrics.
     """
+    start_time = time.time()
+    db_connected = test_database_connection()
+    db_latency = (time.time() - start_time) * 1000
+
     return {
-        "status": "healthy",
+        "status": "healthy" if db_connected else "degraded",
         "api": {
             "status": "running",
             "version": "1.0.0-MVP",
             "environment": settings.environment,
         },
         "database": {
-            "status": "not connected",
-            "message": "Database connection will be established in Task 1.5",
+            "status": "connected" if db_connected else "disconnected",
+            "latency_ms": round(db_latency, 2),
+            **get_pool_status(),
         },
         "chromadb": {
             "status": "not connected",
-            "message": "ChromaDB connection will be established in Task 1.5",
+            "message": "ChromaDB connection will be established in later tasks",
         },
     }
 

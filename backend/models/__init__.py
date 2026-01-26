@@ -1,7 +1,15 @@
 """
 MentorMind - Database Models Package
 
-This package contains SQLAlchemy ORM models for all database tables.
+SQLAlchemy ORM models will be added in Task 1.11.
 """
 
-# Models will be added in Task 1.11
+from backend.models.database import Base, engine, SessionLocal, get_db, test_database_connection
+
+__all__ = [
+    "Base",
+    "engine",
+    "SessionLocal",
+    "get_db",
+    "test_database_connection",
+]
