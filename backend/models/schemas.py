@@ -118,7 +118,7 @@ class QuestionPromptBase(BaseModel):
     user_prompt: str = Field(..., description="Prompt template for Claude")
     golden_examples: list[dict] = Field(default_factory=list, description="Example Q&A pairs")
     difficulty: str = Field(..., description="Difficulty level")
-    category_hints: list[str] = Field(default_factory=list, description="Category preferences")
+    category_hints: list[str] = Field(default_factory=lambda: ["any"], description="Category preferences (default: ['any'])")
 
     _validate_category_hints = field_validator('category_hints')(validate_category_hints)
 
@@ -250,7 +250,6 @@ class UserEvaluationResponse(UserEvaluationBase):
     id: str = Field(..., description="Evaluation ID")
     response_id: str = Field(..., description="Model response ID")
     judged: bool = Field(default=False, description="Whether judged by GPT-4o")
-    judge_evaluation_id: Optional[str] = Field(None, description="Judge evaluation ID")
     created_at: datetime = Field(..., description="Creation timestamp")
 
     model_config = {"from_attributes": True}

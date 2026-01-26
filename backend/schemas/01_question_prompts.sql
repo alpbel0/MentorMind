@@ -32,7 +32,7 @@ CREATE TABLE question_prompts (
 
     difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
 
-    category_hints JSONB NOT NULL DEFAULT '[]'::jsonb,
+    category_hints JSONB NOT NULL DEFAULT '["any"]'::jsonb,
         -- Array of category preferences (e.g., ["Math", "Coding"] or ["any"])
 
     -- Timestamps

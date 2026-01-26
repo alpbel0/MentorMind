@@ -25,8 +25,6 @@ CREATE TABLE user_evaluations (
 
     -- Judge tracking
     judged BOOLEAN NOT NULL DEFAULT FALSE,
-    judge_evaluation_id TEXT,
-        -- Will reference judge_evaluations(id) after Task 1.10
 
     -- Timestamps
     created_at TIMESTAMP NOT NULL DEFAULT NOW()

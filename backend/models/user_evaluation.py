@@ -31,7 +31,6 @@ class UserEvaluation(Base):
         response_id: Foreign key to model_responses table
         evaluations: Evaluation data (8 metrics with scores and reasoning)
         judged: Whether GPT-4o has evaluated this evaluation
-        judge_evaluation_id: ID of judge evaluation (nullable)
         created_at: Timestamp when evaluation was created
         model_response: Relationship to ModelResponse (one-to-one)
         judge_evaluation: GPT-4o's two-stage evaluation (one-to-one)
@@ -84,9 +83,6 @@ class UserEvaluation(Base):
 
     judged: Mapped[bool] = mapped_column(Boolean, default=False)
     """Whether GPT-4o has evaluated this evaluation"""
-
-    judge_evaluation_id: Mapped[str] = mapped_column(String(50), nullable=True)
-    """ID of judge evaluation (nullable, set when judge completes)"""
 
     # =====================================================
     # Timestamps

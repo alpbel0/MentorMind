@@ -69,7 +69,7 @@ class QuestionPrompt(Base):
     difficulty: Mapped[str] = mapped_column(String(10))
     """Difficulty level: 'easy', 'medium', or 'hard'"""
 
-    category_hints: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    category_hints: Mapped[list[str]] = mapped_column(JSONB, default=lambda: ["any"])
     """Array of category preferences (JSONB). Either ['any'] alone or non-empty list of categories"""
 
     # =====================================================
