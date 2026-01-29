@@ -27,11 +27,13 @@ logger = logging.getLogger(__name__)
 # =====================================================
 
 SCHEMA_FILES = [
+    "00_enums.sql",
     "01_question_prompts.sql",
     "02_questions.sql",
     "03_model_responses.sql",
     "04_user_evaluations.sql",
     "05_judge_evaluations.sql",
+    "06_triggers.sql",
 ]
 """SQL schema files to execute in order"""
 
@@ -136,10 +138,10 @@ def drop_all_tables() -> bool:
 
 def verify_tables() -> bool:
     """
-    Verify all expected tables exist.
+    Verify all expected database objects exist (tables, enums, triggers).
 
     Returns:
-        True if all tables exist, False otherwise
+        True if all objects exist, False otherwise
     """
     expected_tables = {
         "question_prompts",
@@ -149,22 +151,72 @@ def verify_tables() -> bool:
         "judge_evaluations",
     }
 
+    expected_enums = {
+        "metric_type",
+        "difficulty_level",
+    }
+
+    expected_triggers = {
+        "trigger_question_prompts_updated_at",
+        "trigger_questions_updated_at",
+        "trigger_user_evaluations_updated_at",
+    }
+
     try:
         with engine.connect() as conn:
+            # Verify tables
             result = conn.execute(text("""
                 SELECT tablename FROM pg_tables
                 WHERE schemaname = 'public'
             """))
             actual_tables = {row[0] for row in result}
 
-        missing = expected_tables - actual_tables
-        if missing:
-            logger.error(f"✗ Missing tables: {missing}")
-            return False
+            missing_tables = expected_tables - actual_tables
+            if missing_tables:
+                logger.error(f"✗ Missing tables: {missing_tables}")
+                return False
 
-        logger.info(f"✓ All {len(expected_tables)} tables verified")
-        for table in sorted(expected_tables):
-            logger.info(f"  - {table}")
+            logger.info(f"✓ All {len(expected_tables)} tables verified")
+            for table in sorted(expected_tables):
+                logger.info(f"  - {table}")
+
+            # Verify ENUM types
+            result = conn.execute(text("""
+                SELECT typname FROM pg_type
+                WHERE typtype = 'e' AND typnamespace = (
+                    SELECT oid FROM pg_namespace WHERE nspname = 'public'
+                )
+            """))
+            actual_enums = {row[0] for row in result}
+
+            missing_enums = expected_enums - actual_enums
+            if missing_enums:
+                logger.error(f"✗ Missing ENUM types: {missing_enums}")
+                return False
+
+            logger.info(f"✓ All {len(expected_enums)} ENUM types verified")
+            for enum_type in sorted(expected_enums):
+                logger.info(f"  - {enum_type}")
+
+            # Verify triggers
+            result = conn.execute(text("""
+                SELECT tgname FROM pg_trigger
+                JOIN pg_class ON pg_trigger.tgrelid = pg_class.oid
+                JOIN pg_namespace ON pg_class.relnamespace = pg_namespace.oid
+                WHERE pg_namespace.nspname = 'public'
+                AND pg_trigger.tgname LIKE '%updated_at%'
+            """))
+            actual_triggers = {row[0] for row in result}
+
+            missing_triggers = expected_triggers - actual_triggers
+            if missing_triggers:
+                logger.error(f"✗ Missing triggers: {missing_triggers}")
+                return False
+
+            logger.info(f"✓ All {len(expected_triggers)} auto-update triggers verified")
+            for trigger in sorted(expected_triggers):
+                logger.info(f"  - {trigger}")
+
         return True
 
     except SQLAlchemyError as e:
