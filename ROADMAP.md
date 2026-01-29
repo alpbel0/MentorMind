@@ -446,51 +446,28 @@ Phase 1 tamamlanmış sayılır eğer:
 
 ---
 
-### Task 2.1: Question Prompts Data Preparation
+ ### Task 2.1: Master Question Prompts & Golden Examples Preparation
 
 **Tahmini Süre:** 4 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
+**Açıklama:** 24 ayrı prompt yazmak yerine, her metrik için 1 adet "Master Prompt" hazırlanacak. Çeşitlilik
+      veritabanındaki `question_type` değişkeni ve o tipe özel `golden_examples` (few-shot) ile sağlanacak.
+
 **Yapılacaklar:**
+- [x] 8 metrik için dinamik "Master Prompt" şablonlarını oluştur.
+- [x] 24 farklı `question_type` senaryosu için kaliteli "Golden Examples" verilerini hazırla.
 
-**Truthfulness prompts:**
-- [ ] hallucination_test prompt yaz (user_prompt, golden_examples)
-- [ ] factual_accuracy prompt yaz
-- [ ] edge_case prompt yaz
-
-**Clarity prompts:**
-- [ ] explain_like_5 prompt yaz
-- [ ] technical_jargon prompt yaz
-- [ ] step_by_step prompt yaz
-
-**Safety prompts:**
-- [ ] harmful_content prompt yaz
-- [ ] medical_advice prompt yaz
-- [ ] illegal_activity prompt yaz
-
-**Bias prompts:**
-- [ ] stereotype_check prompt yaz
-- [ ] implicit_bias prompt yaz
-- [ ] fairness_test prompt yaz
-
-**Helpfulness prompts:**
-- [ ] practical_guidance prompt yaz
-- [ ] example_provision prompt yaz
-- [ ] actionable_advice prompt yaz
-
-**Consistency prompts:**
-- [ ] multi_part_question prompt yaz
-- [ ] repeated_query prompt yaz
-- [ ] contradiction_check prompt yaz
-
-**Efficiency prompts:**
-- [ ] concise_explanation prompt yaz
-- [ ] time_complexity prompt yaz
-- [ ] resource_optimization prompt yaz
-
-**Robustness prompts:**
-- [ ] edge_case prompt yaz
-- [ ] adversarial_input prompt yaz
-- [ ] stress_test prompt yaz
+**Metrik Grupları (Her biri 1 Master Prompt + 3 Tip Örnek):**
+- [x] **Truthfulness:** (hallucination_test, factual_accuracy, edge_case)
+- [x] **Clarity:** (explain_like_5, technical_jargon, step_by_step)
+- [x] **Safety:** (harmful_content, medical_advice, illegal_activity)
+- [x] **Bias:** (stereotype_check, implicit_bias, fairness_test)
+- [x] **Helpfulness:** (practical_guidance, example_provision, actionable_advice)
+- [x] **Consistency:** (multi_part_question, repeated_query, contradiction_check)
+- [x] **Efficiency:** (concise_explanation, time_complexity, resource_optimization)
+- [x] **Robustness:** (edge_case, adversarial_input, stress_test)
 
 ---
 
@@ -498,13 +475,15 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/scripts/seed_data.py`'daki seed_question_prompts() fonksiyonunu tamamla
-- [ ] 24 prompt'u dictionary formatında ekle
-- [ ] bonus_metrics'i belirle (her primary metric için 2 bonus)
-- [ ] difficulty ve category_hint ekle
-- [ ] Script'i çalıştır: `docker-compose exec backend python scripts/seed_data.py`
-- [ ] Database'i kontrol et: `SELECT COUNT(*) FROM question_prompts;` (24 olmalı)
+- [x] `backend/scripts/seed_data.py`'daki seed_question_prompts() fonksiyonunu tamamla
+- [x] promptlar'u dictionary formatında ekle
+- [x] bonus_metrics'i belirle (her primary metric için 2 bonus)
+- [x] difficulty ve category_hint ekle
+- [x] Script'i çalıştır: `docker-compose exec backend python scripts/seed_data.py`
+- [x] Database'i kontrol et: `SELECT COUNT(*) FROM question_prompts;` (24 kayıt doğrulandı) 
 
 ---
 

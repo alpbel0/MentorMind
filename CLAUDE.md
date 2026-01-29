@@ -1339,8 +1339,8 @@ pip-audit
 - [ ] LLM cost analysis script
 
 #### Week 2: Question Generation & K Models (Feb 3 - Feb 9)
-- [ ] Question prompts data (24 prompts)
-- [ ] Seed data implementation
+- [x] Question prompts data (24 prompts) (30 Ocak 2026)
+- [x] Seed data implementation (30 Ocak 2026)
 - [ ] Claude service setup
 - [ ] Category selection logic
 - [ ] Prompt template rendering
