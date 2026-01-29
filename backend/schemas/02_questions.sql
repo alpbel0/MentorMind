@@ -15,6 +15,7 @@ CREATE TABLE questions (
     -- Core fields
     question TEXT NOT NULL,
     category TEXT NOT NULL,
+    difficulty difficulty_level NOT NULL,
     reference_answer TEXT,
     expected_behavior TEXT,
 
@@ -23,7 +24,7 @@ CREATE TABLE questions (
         -- {"1": "description", "2": "description", ...}
 
     -- Denormalized fields (from question_prompts)
-    primary_metric TEXT NOT NULL,
+    primary_metric metric_type NOT NULL,
     bonus_metrics JSONB NOT NULL DEFAULT '[]'::jsonb,
 
     -- Foreign key to source prompt (nullable)
@@ -46,12 +47,15 @@ CREATE INDEX idx_questions_primary_metric
 CREATE INDEX idx_questions_category
     ON questions (category);
 
+CREATE INDEX idx_questions_difficulty
+    ON questions (difficulty);
+
 CREATE INDEX idx_questions_times_used
     ON questions (times_used);
 
 -- Composite index for pool selection (lowest times_used first)
 CREATE INDEX idx_questions_pool_selection
-    ON questions (primary_metric, times_used ASC);
+    ON questions (primary_metric, difficulty, times_used ASC);
 
 COMMENT ON TABLE questions IS
     'Generated questions from Claude. Denormalized primary_metric and bonus_metrics for query performance.';

@@ -8,7 +8,7 @@ Template definitions for question generation.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Text, CheckConstraint
+from sqlalchemy import String, Text, Boolean, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -72,6 +72,9 @@ class QuestionPrompt(Base):
     category_hints: Mapped[list[str]] = mapped_column(JSONB, default=lambda: ["any"])
     """Array of category preferences (JSONB). Either ['any'] alone or non-empty list of categories"""
 
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    """Whether this prompt template is active (default: TRUE)"""
+
     # =====================================================
     # Timestamps
     # =====================================================
@@ -86,11 +89,8 @@ class QuestionPrompt(Base):
     # Relationships
     # =====================================================
 
-    questions: Mapped[list["Question"]] = relationship(
-        back_populates="question_prompt",
-        lazy="selectin"
-    )
-    """List of questions generated from this prompt"""
+    # Note: questions relationship removed to avoid circular dependency
+    # Use Question.question_prompt for navigation
 
     # =====================================================
     # Table Constraints

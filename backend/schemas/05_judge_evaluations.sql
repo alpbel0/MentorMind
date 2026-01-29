@@ -50,7 +50,7 @@ CREATE TABLE judge_evaluations (
         -- Past mistakes retrieved from ChromaDB
 
     -- Gap metrics (for statistics)
-    primary_metric TEXT NOT NULL,
+    primary_metric metric_type NOT NULL,
     primary_metric_gap REAL NOT NULL,
     weighted_gap REAL NOT NULL,
         -- Formula: primary*0.7 + bonus_avg*0.2 + other_avg*0.1

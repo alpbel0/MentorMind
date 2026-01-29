@@ -8,7 +8,7 @@ User's evaluation of model responses.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, ForeignKey, Boolean
+from sqlalchemy import String, Boolean
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -49,10 +49,12 @@ class UserEvaluation(Base):
     # Foreign Key (we own this relationship)
     # =====================================================
 
-    response_id: Mapped[str] = mapped_column(
-        ForeignKey("model_responses.id", ondelete="CASCADE")
-    )
-    """Foreign key to model response (deleted if response deleted)"""
+    response_id: Mapped[str] = mapped_column(String(50))
+    """
+    Foreign key to model response (deleted if response deleted).
+    Note: ForeignKey constraint enforced at database level, not ORM level
+    to avoid circular dependency issues.
+    """
 
     # =====================================================
     # Evaluation Data (8 metrics)
@@ -91,22 +93,15 @@ class UserEvaluation(Base):
     created_at: Mapped[datetime] = mapped_column(default=datetime.now)
     """Timestamp when evaluation was created"""
 
+    updated_at: Mapped[datetime] = mapped_column(default=datetime.now)
+    """Timestamp when evaluation was last updated (auto-triggered)"""
+
     # =====================================================
     # Relationships
     # =====================================================
 
-    model_response: Mapped["ModelResponse"] = relationship(
-        back_populates="user_evaluation",
-        lazy="selectin"
-    )
-    """Model response that was evaluated (one-to-one, we own FK)"""
-
-    judge_evaluation: Mapped[Optional["JudgeEvaluation"]] = relationship(
-        back_populates="user_evaluation",
-        lazy="selectin",
-        uselist=False
-    )
-    """GPT-4o's two-stage evaluation (one-to-one, judge owns FK to us)"""
+    # Note: Relationships removed to avoid circular dependency issues
+    # Use manual joins with FK columns if needed
 
     # =====================================================
     # Representation

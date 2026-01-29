@@ -27,8 +27,6 @@ CREATE TABLE model_responses (
 
     -- Evaluation tracking
     evaluated BOOLEAN NOT NULL DEFAULT FALSE,
-    evaluation_id TEXT,
-        -- Will reference user_evaluations(id) after Task 1.9
 
     -- Timestamps
     created_at TIMESTAMP NOT NULL DEFAULT NOW()

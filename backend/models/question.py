@@ -8,7 +8,7 @@ Generated questions with denormalized metadata.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Text, ForeignKey, Integer
+from sqlalchemy import String, Text, Integer, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -64,6 +64,11 @@ class Question(Base):
     category: Mapped[str] = mapped_column(String(50))
     """Category: Math, Coding, Medical, General"""
 
+    difficulty: Mapped[str] = mapped_column(
+        Enum("easy", "medium", "hard", name="difficulty_level", create_type=False)
+    )
+    """Difficulty level ENUM: 'easy', 'medium', or 'hard' (references PostgreSQL ENUM)"""
+
     reference_answer: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     """Ideal answer (nullable)"""
 
@@ -87,11 +92,12 @@ class Question(Base):
     # Foreign Key
     # =====================================================
 
-    question_prompt_id: Mapped[Optional[int]] = mapped_column(
-        ForeignKey("question_prompts.id", ondelete="SET NULL"),
-        nullable=True
-    )
-    """Foreign key to source prompt (nullable, set NULL if prompt deleted)"""
+    question_prompt_id: Mapped[Optional[int]] = mapped_column(nullable=True)
+    """
+    Foreign key to source prompt (nullable, set NULL if prompt deleted).
+    Note: ForeignKey constraint enforced at database level, not ORM level
+    to avoid circular dependency issues.
+    """
 
     # =====================================================
     # Usage Tracking (for pool management)
@@ -120,18 +126,8 @@ class Question(Base):
     # Relationships
     # =====================================================
 
-    question_prompt: Mapped[Optional["QuestionPrompt"]] = relationship(
-        back_populates="questions",
-        lazy="selectin"
-    )
-    """Source prompt that generated this question"""
-
-    model_responses: Mapped[list["ModelResponse"]] = relationship(
-        back_populates="question",
-        lazy="selectin",
-        cascade="all, delete-orphan"
-    )
-    """List of responses from K models (deleted if question deleted)"""
+    # Note: Relationships removed to avoid circular dependency issues
+    # Use manual joins with FK columns if needed
 
     # =====================================================
     # Representation
@@ -140,5 +136,5 @@ class Question(Base):
     def __repr__(self) -> str:
         return (
             f"<Question(id={self.id}, category={self.category}, "
-            f"primary_metric={self.primary_metric})>"
+            f"difficulty={self.difficulty}, primary_metric={self.primary_metric})>"
         )

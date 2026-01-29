@@ -119,6 +119,7 @@ class QuestionPromptBase(BaseModel):
     golden_examples: list[dict] = Field(default_factory=list, description="Example Q&A pairs")
     difficulty: str = Field(..., description="Difficulty level")
     category_hints: list[str] = Field(default_factory=lambda: ["any"], description="Category preferences (default: ['any'])")
+    is_active: bool = Field(default=True, description="Whether prompt is active")
 
     _validate_category_hints = field_validator('category_hints')(validate_category_hints)
 
@@ -148,6 +149,7 @@ class QuestionBase(BaseModel):
 
     question: str = Field(..., description="Question text")
     category: str = Field(..., description="Question category")
+    difficulty: str = Field(..., description="Difficulty level")
     reference_answer: Optional[str] = Field(None, description="Ideal answer")
     expected_behavior: Optional[str] = Field(None, description="What model should do")
     rubric_breakdown: dict[str, str] = Field(..., description="Score descriptions (1-5)")
@@ -251,6 +253,7 @@ class UserEvaluationResponse(UserEvaluationBase):
     response_id: str = Field(..., description="Model response ID")
     judged: bool = Field(default=False, description="Whether judged by GPT-4o")
     created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
 
     model_config = {"from_attributes": True}
 

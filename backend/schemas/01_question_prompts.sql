@@ -13,7 +13,7 @@ CREATE TABLE question_prompts (
     id SERIAL PRIMARY KEY,
 
     -- Core fields
-    primary_metric TEXT NOT NULL,
+    primary_metric metric_type NOT NULL,
         -- Values: 'Truthfulness', 'Helpfulness', 'Safety', 'Bias',
         --         'Clarity', 'Consistency', 'Efficiency', 'Robustness'
 
@@ -30,10 +30,13 @@ CREATE TABLE question_prompts (
     golden_examples JSONB NOT NULL DEFAULT '[]'::jsonb,
         -- Array of example question-answer pairs
 
-    difficulty TEXT NOT NULL CHECK (difficulty IN ('easy', 'medium', 'hard')),
+    difficulty difficulty_level NOT NULL,
 
     category_hints JSONB NOT NULL DEFAULT '["any"]'::jsonb,
         -- Array of category preferences (e.g., ["Math", "Coding"] or ["any"])
+
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+        -- Whether this prompt template is active (default: TRUE)
 
     -- Timestamps
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -50,6 +53,9 @@ CREATE INDEX idx_question_prompts_primary_metric
 
 CREATE INDEX idx_question_prompts_difficulty
     ON question_prompts (difficulty);
+
+CREATE INDEX idx_question_prompts_is_active
+    ON question_prompts (is_active);
 
 -- Comment
 COMMENT ON TABLE question_prompts IS

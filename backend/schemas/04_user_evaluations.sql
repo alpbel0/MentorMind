@@ -27,7 +27,8 @@ CREATE TABLE user_evaluations (
     judged BOOLEAN NOT NULL DEFAULT FALSE,
 
     -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT NOW()
+    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 -- Performance indexes

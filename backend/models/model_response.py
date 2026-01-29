@@ -8,7 +8,7 @@ K model answers to questions.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Text, ForeignKey, Boolean, CheckConstraint
+from sqlalchemy import String, Text, Boolean, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from backend.models.database import Base
@@ -62,10 +62,12 @@ class ModelResponse(Base):
     # Foreign Key
     # =====================================================
 
-    question_id: Mapped[str] = mapped_column(
-        ForeignKey("questions.id", ondelete="CASCADE")
-    )
-    """Foreign key to question (deleted if question deleted)"""
+    question_id: Mapped[str] = mapped_column(String(50))
+    """
+    Foreign key to question (deleted if question deleted).
+    Note: ForeignKey constraint enforced at database level, not ORM level
+    to avoid circular dependency issues.
+    """
 
     # =====================================================
     # Model Info
@@ -95,18 +97,8 @@ class ModelResponse(Base):
     # Relationships
     # =====================================================
 
-    question: Mapped["Question"] = relationship(
-        back_populates="model_responses",
-        lazy="selectin"
-    )
-    """Question that this response answers"""
-
-    user_evaluation: Mapped[Optional["UserEvaluation"]] = relationship(
-        back_populates="model_response",
-        lazy="selectin",
-        uselist=False
-    )
-    """User's evaluation of this response (one-to-one)"""
+    # Note: Relationships removed to avoid circular dependency issues
+    # Use manual joins with FK columns if needed
 
     # =====================================================
     # Table Constraints

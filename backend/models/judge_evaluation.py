@@ -8,7 +8,7 @@ GPT-4o's two-stage evaluation of user assessments.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Text, ForeignKey, Integer, Float, CheckConstraint
+from sqlalchemy import String, Text, Integer, Float, CheckConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -55,10 +55,12 @@ class JudgeEvaluation(Base):
     # Foreign Key
     # =====================================================
 
-    user_evaluation_id: Mapped[str] = mapped_column(
-        ForeignKey("user_evaluations.id", ondelete="CASCADE")
-    )
-    """Foreign key to user evaluation (deleted if user evaluation deleted)"""
+    user_evaluation_id: Mapped[str] = mapped_column(String(50))
+    """
+    Foreign key to user evaluation (deleted if user evaluation deleted).
+    Note: ForeignKey constraint enforced at database level, not ORM level
+    to avoid circular dependency issues.
+    """
 
     # =====================================================
     # Stage 1: Independent Evaluation (GPT-4o blind scoring)
@@ -171,11 +173,8 @@ class JudgeEvaluation(Base):
     # Relationships
     # =====================================================
 
-    user_evaluation: Mapped["UserEvaluation"] = relationship(
-        back_populates="judge_evaluation",
-        lazy="selectin"
-    )
-    """User evaluation being judged"""
+    # Note: Relationships removed to avoid circular dependency issues
+    # Use manual joins with FK columns if needed
 
     # =====================================================
     # Table Constraints
