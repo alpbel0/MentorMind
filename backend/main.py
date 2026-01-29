@@ -6,24 +6,21 @@ all middleware, routers, and event handlers.
 """
 
 from contextlib import asynccontextmanager
-import logging
 import time
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.config.logging_config import setup_logging, get_logger
 from backend.config.settings import settings
+from backend.middleware.logging_middleware import RequestLoggingMiddleware
 from backend.models.database import test_database_connection, engine, get_pool_status
 
 # =====================================================
 # Configure Logging
 # =====================================================
-logging.basicConfig(
-    level=getattr(logging, settings.log_level),
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = get_logger(__name__)
 
 
 # =====================================================
@@ -93,6 +90,11 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# =====================================================
+# Configure Request Logging Middleware
+# =====================================================
+app.add_middleware(RequestLoggingMiddleware)
 
 
 # =====================================================

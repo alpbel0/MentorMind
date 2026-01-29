@@ -1,7 +1,9 @@
 """
-MentorMind - Middleware Package
+MentorMind Middleware Package
 
-This package contains custom middleware components.
+This package contains custom middleware for the MentorMind application.
 """
 
-# Middleware will be added in Task 1.14
+from backend.middleware.logging_middleware import RequestLoggingMiddleware
+
+__all__ = ["RequestLoggingMiddleware"]

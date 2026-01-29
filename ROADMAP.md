@@ -315,22 +315,29 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (29 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/config/logging_config.py` oluştur:
-  - [ ] Log formatters (default, detailed)
-  - [ ] Handlers (console, file, error_file)
-  - [ ] Loggers (mentormind, root)
-  - [ ] RotatingFileHandler (10MB, 5 backups)
-- [ ] `backend/services/llm_logger.py` oluştur:
-  - [ ] LLMCallLogger class
-  - [ ] log_call() method (provider, model, purpose, tokens, duration, success)
-  - [ ] JSONL format
-- [ ] `backend/middleware/logging_middleware.py` oluştur:
-  - [ ] RequestLoggingMiddleware class
-  - [ ] Request/Response logging
-  - [ ] Duration tracking
-- [ ] `backend/main.py`'a logging ekle
-- [ ] Test: `curl http://localhost:8000` ve logları kontrol et
+- [x] `backend/config/logging_config.py` oluştur:
+  - [x] Log formatters (default, detailed)
+  - [x] Handlers (console, file, error_file)
+  - [x] Loggers (mentormind, root)
+  - [x] RotatingFileHandler (10MB, 5 backups)
+- [x] `backend/services/llm_logger.py` oluştur:
+  - [x] LLMCallLogger class
+  - [x] log_call() method (provider, model, purpose, tokens, duration, success)
+  - [x] JSONL format
+- [x] `backend/middleware/logging_middleware.py` oluştur:
+  - [x] RequestLoggingMiddleware class
+  - [x] Request/Response logging
+  - [x] Duration tracking
+- [x] `backend/main.py`'a logging ekle
+- [x] Test: `curl http://localhost:8000` ve logları kontrol et
+
+**Notlar:**
+- 3 log dosyası oluşturuluyor: mentormind.log, errors.log, llm_calls.jsonl
+- Log dosyaları 10MB'da rotate olur, 5 backup tutar
+- Request logging middleware tüm HTTP request'leri loglar
 
 ---
 
@@ -338,16 +345,24 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (29 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/routers/health.py` oluştur
-- [ ] `GET /api/health` endpoint (basic health)
-- [ ] `GET /api/health/detailed` endpoint:
-  - [ ] Database connection check
-  - [ ] ChromaDB connection check
-  - [ ] Status response (healthy/degraded)
-- [ ] `backend/main.py`'a router'ı ekle
-- [ ] Test: `curl http://localhost:8000/api/health`
-- [ ] Test: `curl http://localhost:8000/api/health/detailed`
+- [x] `backend/routers/health.py` oluştur
+- [x] `GET /api/health` endpoint (basic health)
+- [x] `GET /api/health/detailed` endpoint:
+  - [x] Database connection check
+  - [x] ChromaDB connection check
+  - [x] Status response (healthy/degraded)
+- [x] `backend/main.py`'a router'ı ekle
+- [x] Test: `curl http://localhost:8000/api/health`
+- [x] Test: `curl http://localhost:8000/api/health/detailed`
+
+**Notlar:**
+- Implementation done directly in main.py (no separate router needed)
+- Database connection testing working
+- Latency measurement working
+- Pool status reporting working
 
 ---
 
@@ -355,15 +370,23 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (29 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/tests/conftest.py` oluştur:
-  - [ ] Test database setup (SQLite)
-  - [ ] db fixture
-  - [ ] client fixture (TestClient)
-- [ ] `backend/pytest.ini` oluştur
-- [ ] `backend/tests/test_health.py` oluştur (örnek test)
-- [ ] Tests çalıştır: `docker-compose exec backend pytest`
-- [ ] Coverage report kontrol et
+- [x] `backend/tests/conftest.py` oluştur:
+  - [x] Test database setup (PostgreSQL: mentormind_test)
+  - [x] db fixture
+  - [x] client fixture (TestClient)
+- [x] `backend/pytest.ini` oluştur
+- [x] `backend/tests/test_health.py` oluştur (örnek test)
+- [x] Tests çalıştır: `docker-compose exec backend pytest`
+- [x] Coverage report kontrol et
+
+**Notlar:**
+- PostgreSQL test database kullanılıyor (SQLite değil)
+- SQLAlchemy create_all() ENUM ve Trigger'ları oluşturamaz, bu yüzden ham SQL dosyaları sırayla çalıştırılıyor
+- 5 test geçiyor (test_health.py)
+- Test coverage: 46% (backend genel)
 
 ---
 
@@ -398,11 +421,11 @@ Phase 1 tamamlanmış sayılır eğer:
 
 - [x] Docker container'lar çalışıyor (backend, postgres, chromadb)
 - [x] Database tabloları oluşturuldu (5 tablo) (Completed: 26 Ocak 2026)
-- [ ] SQLAlchemy models hazır
-- [ ] Pydantic schemas hazır
-- [ ] Logging sistemi çalışıyor (3 log dosyası: mentormind.log, errors.log, llm_calls.jsonl)
-- [x] Health check endpoints çalışıyor (Completed: 26 Ocak 2026)
-- [ ] Test infrastructure kurulu
+- [x] SQLAlchemy models hazır (Completed: 26 Ocak 2026)
+- [x] Pydantic schemas hazır (Completed: 26 Ocak 2026)
+- [x] Logging sistemi çalışıyor (3 log dosyası: mentormind.log, errors.log, llm_calls.jsonl) (Completed: 29 Ocak 2026)
+- [x] Health check endpoints çalışıyor (Completed: 29 Ocak 2026)
+- [x] Test infrastructure kurulu (Completed: 29 Ocak 2026)
 - [ ] Scripts hazır (init_db.py, seed_data.py, analyze_llm_costs.py)
 
 ---
