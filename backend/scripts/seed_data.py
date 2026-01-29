@@ -4,7 +4,7 @@ Seed Data Script
 Populates the question_prompts table with evaluation question templates.
 
 Usage:
-    python scripts/seed_data.py              # Seed question prompts (skeleton mode)
+    python scripts/seed_data.py              # Seed question prompts
     python scripts/seed_data.py --verify     # Verify prompts exist
     python scripts/seed_data.py --reset      # Delete all prompts (DESTRUCTIVE)
     python scripts/seed_data.py --dry-run    # Show what will be seeded
@@ -13,12 +13,23 @@ Usage:
 import argparse
 import logging
 import sys
+from pathlib import Path
+
+# Add project root to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from backend.models.database import SessionLocal
 from backend.models.question_prompt import QuestionPrompt
+from backend.prompts.master_prompts import (
+    METRICS,
+    QUESTION_TYPES,
+    MASTER_PROMPTS,
+    BONUS_METRIC_MAPPINGS,
+    get_golden_example,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -26,27 +37,12 @@ logger = logging.getLogger(__name__)
 # Constants
 # =====================================================
 
-METRICS = [
-    "Truthfulness",
-    "Helpfulness",
-    "Safety",
-    "Bias",
-    "Clarity",
-    "Consistency",
-    "Efficiency",
-    "Robustness",
-]
-"""The 8 evaluation metrics for MentorMind"""
-
-DIFFICULTIES = ["easy", "medium", "hard"]
-"""Valid difficulty levels for question prompts"""
-
 CATEGORIES = ["Math", "Coding", "Medical", "General"]
 """Valid categories for questions"""
 
-# Expected counts after full implementation (Week 2)
-EXPECTED_COUNT = len(METRICS) * len(DIFFICULTIES)  # 8 * 3 = 24
-"""Total number of question prompts after Week 2 implementation"""
+# Expected count: 8 metrics × 3 question_types = 24 prompts
+EXPECTED_COUNT = sum(len(qt_list) for qt_list in QUESTION_TYPES.values())
+"""Total number of question prompts after Task 2.1 implementation"""
 
 
 # =====================================================
@@ -57,28 +53,71 @@ def seed_question_prompts(db: Session) -> int:
     """
     Seed question prompts into database.
 
-    SKELETON MODE: Returns message indicating Week 2 implementation.
-    In Week 2, this function will insert 24 question prompt templates
-    (8 metrics × 3 difficulty levels).
+    Creates 24 question prompt templates:
+    - 8 metrics × 3 question_types each
+    - All with difficulty='medium' (as per Task 2.1 spec)
+    - Each question_type has 1 golden example
 
     Args:
         db: SQLAlchemy database session
 
     Returns:
-        Number of prompts seeded (0 for skeleton mode)
+        Number of prompts seeded
     """
     logger.info("Seeding question prompts...")
     logger.info("")
-    logger.info("  Week 2'de doldurulacak - 24 soru şablonu eklenecek")
-    logger.info("  Her metrik için 3 şablon (easy, medium, hard)")
+    logger.info(f"  Creating {EXPECTED_COUNT} prompt templates:")
+    logger.info(f"    - {len(METRICS)} metrics")
+    logger.info(f"    - 3 question_types per metric")
+    logger.info(f"    - All with difficulty='medium'")
     logger.info("")
-    logger.info(f"  Metrikler ({len(METRICS)}):")
-    for metric in METRICS:
-        logger.info(f"    - {metric}")
-    logger.info("")
-    logger.info(f"  Toplam: {EXPECTED_COUNT} şablon")
 
-    return 0
+    count = 0
+
+    for metric in METRICS:
+        question_types = QUESTION_TYPES.get(metric, [])
+        logger.info(f"  Processing {metric}... ({len(question_types)} types)")
+
+        for question_type in question_types:
+            # Get golden example for this metric-type combination
+            golden_example = get_golden_example(metric, question_type)
+
+            if not golden_example:
+                logger.warning(f"    Warning: No golden example for {metric}:{question_type}")
+
+            # Create QuestionPrompt record
+            prompt = QuestionPrompt(
+                primary_metric=metric,
+                bonus_metrics=BONUS_METRIC_MAPPINGS.get(metric, []),
+                question_type=question_type,
+                user_prompt=MASTER_PROMPTS[metric]["user_prompt_template"],
+                golden_examples=[golden_example] if golden_example else [],
+                difficulty="medium",  # Fixed to medium for all prompts
+                category_hints=["any"],  # Default: any category
+                is_active=True
+            )
+            db.add(prompt)
+            count += 1
+
+    try:
+        db.commit()
+        logger.info("")
+        logger.info(f"✓ Seeded {count} question prompts")
+
+        # Log breakdown by metric
+        logger.info("")
+        logger.info("  Prompts by metric:")
+        for metric in METRICS:
+            qt_count = len(QUESTION_TYPES.get(metric, []))
+            logger.info(f"    - {metric}: {qt_count}")
+
+        return count
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Failed to seed prompts: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        return 0
 
 
 # =====================================================
@@ -107,16 +146,21 @@ def verify_prompts(db: Session) -> dict:
         count = db.query(QuestionPrompt).filter_by(primary_metric=metric).count()
         metric_counts[metric] = count
 
-    # Count by difficulty
-    difficulty_counts = {}
-    for difficulty in DIFFICULTIES:
-        count = db.query(QuestionPrompt).filter_by(difficulty=difficulty).count()
-        difficulty_counts[difficulty] = count
+    # Count by question type
+    type_counts = {}
+    for metric in METRICS:
+        for qt in QUESTION_TYPES.get(metric, []):
+            key = f"{metric}:{qt}"
+            count = db.query(QuestionPrompt).filter_by(
+                primary_metric=metric,
+                question_type=qt
+            ).count()
+            type_counts[key] = count
 
     return {
         "count": total_count,
         "by_metric": metric_counts,
-        "by_difficulty": difficulty_counts,
+        "by_question_type": type_counts,
         "is_complete": total_count == EXPECTED_COUNT,
         "expected_count": EXPECTED_COUNT,
     }
@@ -154,21 +198,22 @@ def reset_prompts(db: Session) -> bool:
 # =====================================================
 
 def show_dry_run() -> None:
-    """Display what will be seeded in Week 2."""
+    """Display what will be seeded."""
     logger.info("DRY RUN - No changes will be made")
     logger.info("")
-    logger.info("Week 2'de eklenecek şablonlar:")
-    logger.info(f"  - {len(METRICS)} metrik × {len(DIFFICULTIES)} zorluk seviyesi = {EXPECTED_COUNT} şablon")
+    logger.info(f"Will create {EXPECTED_COUNT} prompt templates:")
+    logger.info(f"  - {len(METRICS)} metrics")
+    logger.info(f"  - 3 question_types per metric")
+    logger.info(f"  - All with difficulty='medium'")
     logger.info("")
-    logger.info("Her metrik için:")
-    for difficulty in DIFFICULTIES:
-        logger.info(f"  - {difficulty} zorluk seviyesi")
-    logger.info("")
-    logger.info("Metrikler:")
+    logger.info("Prompts to be created:")
     for metric in METRICS:
-        logger.info(f"  - {metric}")
+        qts = QUESTION_TYPES.get(metric, [])
+        logger.info(f"  {metric}:")
+        for qt in qts:
+            logger.info(f"    - {qt}")
     logger.info("")
-    logger.info("Kategoriler:")
+    logger.info("Categories:")
     for category in CATEGORIES:
         logger.info(f"  - {category}")
 
@@ -189,7 +234,7 @@ def main() -> int:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python scripts/seed_data.py              # Seed prompts (skeleton mode)
+  python scripts/seed_data.py              # Seed prompts
   python scripts/seed_data.py --verify     # Verify prompts exist
   python scripts/seed_data.py --reset      # Delete all prompts (DESTRUCTIVE)
   python scripts/seed_data.py --dry-run    # Show what will be seeded
@@ -248,12 +293,13 @@ Examples:
                 status = "✓" if count == len(DIFFICULTIES) else "✗"
                 logger.info(f"  {status} {metric}: {count}")
             logger.info("")
-            logger.info("By Difficulty:")
-            for difficulty in DIFFICULTIES:
-                count = results['by_difficulty'][difficulty]
-                expected = len(METRICS)
-                status = "✓" if count == expected else "✗"
-                logger.info(f"  {status} {difficulty}: {count}/{expected}")
+            logger.info("By Question Type:")
+            for metric in METRICS:
+                for qt in QUESTION_TYPES.get(metric, []):
+                    key = f"{metric}:{qt}"
+                    count = results['by_question_type'].get(key, 0)
+                    status = "✓" if count == 1 else "✗"
+                    logger.info(f"  {status} {key}: {count}")
 
             logger.info("-" * 50)
             return 0 if results['is_complete'] else 1

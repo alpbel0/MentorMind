@@ -8,7 +8,7 @@ Template definitions for question generation.
 from datetime import datetime
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import String, Text, Boolean, CheckConstraint
+from sqlalchemy import String, Text, Boolean, CheckConstraint, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.dialects.postgresql import JSONB
 
@@ -51,7 +51,24 @@ class QuestionPrompt(Base):
     # Core Fields
     # =====================================================
 
-    primary_metric: Mapped[str] = mapped_column(String(50))
+    # Define the metric enum values
+    METRIC_VALUES = [
+        "Truthfulness",
+        "Helpfulness",
+        "Safety",
+        "Bias",
+        "Clarity",
+        "Consistency",
+        "Efficiency",
+        "Robustness",
+    ]
+
+    # Define the difficulty enum values
+    DIFFICULTY_VALUES = ["easy", "medium", "hard"]
+
+    primary_metric: Mapped[str] = mapped_column(
+        Enum(*METRIC_VALUES, name="metric_type", create_constraint=False)
+    )
     """Main metric being tested. Values: 'Truthfulness', 'Helpfulness', 'Safety', 'Bias', 'Clarity', 'Consistency', 'Efficiency', 'Robustness'"""
 
     bonus_metrics: Mapped[list[str]] = mapped_column(JSONB, default=list)
@@ -66,7 +83,9 @@ class QuestionPrompt(Base):
     golden_examples: Mapped[list[dict]] = mapped_column(JSONB, default=list)
     """Array of example question-answer pairs (JSONB)"""
 
-    difficulty: Mapped[str] = mapped_column(String(10))
+    difficulty: Mapped[str] = mapped_column(
+        Enum(*DIFFICULTY_VALUES, name="difficulty_level", create_constraint=False)
+    )
     """Difficulty level: 'easy', 'medium', or 'hard'"""
 
     category_hints: Mapped[list[str]] = mapped_column(JSONB, default=lambda: ["any"])
@@ -98,6 +117,10 @@ class QuestionPrompt(Base):
 
     __table_args__ = (
         CheckConstraint("difficulty IN ('easy', 'medium', 'hard')", name="check_difficulty"),
+        CheckConstraint(
+            f"primary_metric IN ({', '.join(repr(m) for m in METRIC_VALUES)})",
+            name="check_primary_metric"
+        ),
         {"schema": "public"}
     )
 
