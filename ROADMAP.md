@@ -394,12 +394,21 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (29 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/scripts/seed_data.py` oluştur
-- [ ] seed_question_prompts() fonksiyonu (boş, Week 2'de doldurulacak)
-- [ ] main() fonksiyonu
-- [ ] Error handling
-- [ ] Script çalıştırılabilir durumda bırak (empty seed)
+- [x] `backend/scripts/seed_data.py` oluştur
+- [x] seed_question_prompts() fonksiyonu (skeleton, Week 2'de doldurulacak)
+- [x] verify_prompts() fonksiyonu
+- [x] reset_prompts() fonksiyonu
+- [x] main() fonksiyonu (CLI with --verify, --reset, --dry-run flags)
+- [x] Error handling
+- [x] Script çalıştırılabilir durumda (skeleton mode)
+
+**Notlar:**
+- CLI flags: `--verify` (mevcut promptları kontrol et), `--reset` (tüm promptları sil), `--dry-run` (ne yapılacağını göster)
+- Normal mode: Week 2'de 24 şablon eklenecek (8 metrik × 3 zorluk)
+- Exit code 1 when incomplete (expected behavior)
 
 ---
 

@@ -1335,7 +1335,7 @@ pip-audit
 - [ ] Logging infrastructure
 - [x] Health check endpoints (Completed: Jan 26, 2026)
 - [ ] Testing infrastructure
-- [ ] Seed data script skeleton
+- [x] Seed data script skeleton (Completed: Jan 29, 2026)
 - [ ] LLM cost analysis script
 
 #### Week 2: Question Generation & K Models (Feb 3 - Feb 9)
