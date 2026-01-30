@@ -888,16 +888,26 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/prompts/judge_prompts.py` oluştur
-- [ ] JUDGE_PROMPTS dictionary:
-  - [ ] "independent" key:
-    - [ ] system_prompt
-    - [ ] user_prompt_template (placeholders: {question}, {model_name}, {model_response}, {reference_answer}, {expected_behavior}, {rubric_breakdown})
-  - [ ] "mentoring" key:
-    - [ ] system_prompt
-    - [ ] user_prompt_template
-- [ ] Prompt'ları yaz (detaylı, net instruction'lar)
+- [x] `backend/prompts/judge_prompts.py` oluştur
+- [x] JUDGE_PROMPTS dictionary:
+  - [x] "stage1" key:
+    - [x] system_prompt (5048 chars - 6+ paragraphs)
+    - [x] user_prompt_template (7 placeholders)
+  - [x] "stage2" key:
+    - [x] system_prompt (5363 chars - 6+ paragraphs)
+    - [x] user_prompt_template (6 placeholders)
+- [x] Prompt'ları yaz (detaylı, net instruction'lar)
+- [x] Helper functions: render_stage1_prompt(), render_stage2_prompt()
+- [x] Tests: 29 passed (test_judge_prompts.py)
+
+**Notlar:**
+- System prompts: İngilizce, 5000+ karakter (çok detaylı)
+- Output language: Türkçe (promptlarda belirtilmiş)
+- Few-shot examples: Her iki stage'de de mevcut
+- Export constants: JUDGE_STAGE1_VERDICTS, META_SCORE_THRESHOLDS, WEIGHTED_GAP_WEIGHTS
 
 ---
 
@@ -1031,9 +1041,9 @@ Phase 1 tamamlanmış sayılır eğer:
 
 ### ✅ Week 3 Checklist
 
-- [ ] User evaluation API çalışıyor
-- [ ] Evaluation validation doğru
-- [ ] Judge prompts hazır (hardcoded)
+- [x] User evaluation API çalışıyor (30 Ocak 2026)
+- [x] Evaluation validation doğru (30 Ocak 2026)
+- [x] Judge prompts hazır (hardcoded) (30 Ocak 2026)
 - [ ] Judge Stage 1 (independent) çalışıyor
 - [ ] Async task infrastructure kurulu
 - [ ] Judge feedback endpoint çalışıyor

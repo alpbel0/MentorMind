@@ -670,6 +670,8 @@ class ModelService:
 
 **Purpose:** Two-stage evaluation of user assessments.
 
+**Prompts Location:** `backend/prompts/judge_prompts.py`
+
 **Stage 1: Independent Evaluation**
 ```python
 def stage1_independent_evaluation(user_eval_id: str) -> dict:
@@ -687,6 +689,15 @@ def stage1_independent_evaluation(user_eval_id: str) -> dict:
     - independent_scores: 8 metrics with scores + rationale
     """
 ```
+
+**Stage 1 System Prompt:** ~5000 chars, English, covers:
+- Blind evaluation protocol
+- 8 metrics explanation
+- Scoring guidelines (1-5 scale)
+- Rubric interpretation
+- Objectivity principles
+- JSON output format (Turkish)
+- Few-shot example
 
 **Stage 2: Mentoring Comparison**
 ```python
@@ -714,6 +725,15 @@ def stage2_mentoring_comparison(
     - weighted_gap: Calculated score
     """
 ```
+
+**Stage 2 System Prompt:** ~5300 chars, English, covers:
+- Comparison methodology
+- Verdict categories (aligned, over/under estimated, significantly off)
+- Meta score calculation (weighted gap to 1-5 scale)
+- Feedback construction principles
+- Pattern recognition from past mistakes
+- JSON output format (Turkish)
+- Few-shot example
 
 **Gap Calculation:**
 ```python
