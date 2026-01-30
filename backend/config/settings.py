@@ -62,7 +62,12 @@ class Settings(BaseSettings):
     # =====================================================
     # LLM Model Configuration
     # =====================================================
+    # Question generation model (Haiku 4.5 - faster, cost-effective)
+    claude_question_model: str = "claude-haiku-4-5-20251001"
+    # Legacy: Backward compatibility (deprecated, use claude_question_model)
     claude_model: str = "claude-sonnet-4-20250514"
+    claude_api_timeout: int = 30  # Timeout for Claude API calls in seconds
+    # Judge model (unchanged - GPT-4o)
     judge_model: str = "gpt-4o"
     k_models: str = "gpt-3.5-turbo,gpt-4o-mini,claude-3-5-haiku-20241022,gemini-2.0-flash-exp"
     embedding_model: str = "text-embedding-3-small"

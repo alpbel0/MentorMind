@@ -59,7 +59,7 @@
 - Primary metrik %70 ağırlıklı değerlendirilir
 
 ### 🏊 Soru Havuzu Sistemi
-- **Yeni Üret:** Claude Sonnet 4.5 yeni soru üretir
+- **Yeni Üret:** Claude Haiku 4.5 yeni soru üretir
 - **Havuzdan Seç:** Mevcut sorulardan rastgele seç
 - Aynı soru farklı modeller tarafından cevaplanabilir
 - Model performans karşılaştırması yapabilirsin
@@ -109,7 +109,7 @@
 │  2. Soru Hazırlama                                              │
 │     EĞER "Yeni Üret":                                           │
 │       - question_prompts'tan primary_metric="Truthfulness" seç │
-│       - Claude Sonnet 4.5'e gönder                             │
+│       - Claude Haiku 4.5'e gönder                             │
 │       - Soru üret ve questions'a kaydet                        │
 │     EĞER "Havuzdan Seç":                                        │
 │       - questions'tan primary_metric="Truthfulness" seç        │
@@ -179,14 +179,14 @@
 - **FastAPI** - REST API framework
 - **PostgreSQL** - İlişkisel veritabanı
 - **ChromaDB** - Vector database (embedding hafızası)
-- **Anthropic Claude API** - Soru üretimi (Sonnet 4.5)
+- **Anthropic Claude API** - Soru üretimi (Haiku 4.5)
 - **OpenAI API** - GPT-4o judge + K modeller + embeddings
 - **Google Gemini API** - K model (Gemini 2.0 Flash)
 - **Docker & Docker Compose** - Konteynerizasyon
 
 ### LLM Modelleri
 **Soru Üretimi:**
-- Claude 3.5 Sonnet (`claude-sonnet-4-20250514`)
+- Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) - Hızlı ve maliyet-etkin
 
 **K Models (Değerlendirilecek):**
 - `gpt-3.5-turbo`
@@ -538,7 +538,7 @@ POST /api/evaluations/start
 # Backend:
 # - question_prompts'tan primary_metric="Truthfulness" random seç
 # - category_hint'e göre kategori belirle (backend)
-# - Claude Sonnet 4.5'e gönder
+# - Claude Haiku 4.5'e gönder
 # - questions'a kaydet
 # - Henüz cevaplamamış K model seç
 # - Model'e gönder
@@ -791,7 +791,7 @@ Her LLM API çağrısı `llm_calls.jsonl` dosyasına kaydedilir:
 {
   "timestamp": "2025-01-26T14:30:55",
   "provider": "anthropic",
-  "model": "claude-sonnet-4-20250514",
+  "model": "claude-haiku-4-5-20251001",
   "purpose": "question_generation",
   "prompt_tokens": 450,
   "completion_tokens": 320,
@@ -803,7 +803,7 @@ Her LLM API çağrısı `llm_calls.jsonl` dosyasına kaydedilir:
 ```
 
 **Tracked providers:**
-- `anthropic` - Claude Sonnet (soru üretimi)
+- `anthropic` - Claude Haiku 4.5 (soru üretimi)
 - `openai` - GPT-4o (judge), GPT-3.5/4o-mini (K models), embeddings
 - `google` - Gemini 2.0 Flash (K model)
 
@@ -843,7 +843,7 @@ docker-compose exec backend python scripts/analyze_llm_costs.py
 
 # Output:
 # LLM Usage Stats:
-# anthropic/claude-sonnet-4-20250514:
+# anthropic/claude-haiku-4-5-20251001:
 #   Calls: 42
 #   Total Tokens: 32,450
 #   Avg Duration: 2.14s

@@ -3,7 +3,7 @@
 **Project:** MentorMind - AI Evaluator Training System
 **Version:** 1.0.0-MVP
 **Status:** Active Development (Phase 1)
-**Last Updated:** 2025-01-26
+**Last Updated:** 2025-01-30
 **Language:** English (Technical Documentation Standard)
 
 ---
@@ -72,7 +72,7 @@ MentorMind is an **EvalOps (AI Evaluation Operations) training platform** design
 
 | Purpose | Provider | Model | API Key |
 |---------|----------|-------|---------|
-| **Question Generation** | Anthropic | `claude-sonnet-4-20250514` | `ANTHROPIC_API_KEY` |
+| **Question Generation** | Anthropic | `claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` |
 | **Judge Model** | OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
 | **K Model 1** | OpenAI | `gpt-3.5-turbo` | `OPENAI_API_KEY` |
 | **K Model 2** | OpenAI | `gpt-4o-mini` | `OPENAI_API_KEY` |
@@ -917,6 +917,9 @@ CHROMA_COLLECTION_NAME=evaluation_memory
 # Application (Optional)
 LOG_LEVEL=INFO           # DEBUG, INFO, WARNING, ERROR, CRITICAL
 ENVIRONMENT=development  # development, production
+
+# LLM API Configuration (Optional)
+CLAUDE_API_TIMEOUT=30    # Timeout for Claude API calls in seconds (default: 30)
 ```
 
 ---
@@ -1341,12 +1344,12 @@ pip-audit
 #### Week 2: Question Generation & K Models (Feb 3 - Feb 9)
 - [x] Question prompts data (24 prompts) (30 Ocak 2026)
 - [x] Seed data implementation (30 Ocak 2026)
-- [ ] Claude service setup
-- [ ] Category selection logic
-- [ ] Prompt template rendering
-- [ ] Question generation (Claude API)
-- [ ] Response parsing
-- [ ] Claude service tests
+- [x] Claude service setup (30 Ocak 2026)
+- [x] Category selection logic (30 Ocak 2026)
+- [x] Prompt template rendering (via master_prompts.py) (30 Ocak 2026)
+- [x] Question generation (Claude API) (30 Ocak 2026 - model updated to Haiku 4.5)
+- [x] Response parsing (30 Ocak 2026)
+- [x] Claude service tests (30 Ocak 2026 - live API tests)
 - [ ] K model service setup
 - [ ] Model selection logic
 - [ ] OpenAI integration

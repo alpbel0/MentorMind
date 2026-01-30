@@ -491,39 +491,53 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/services/claude_service.py` oluştur
-- [ ] Anthropic client initialize et
-- [ ] API key'i environment'tan al
-- [ ] Basic error handling ekle
-- [ ] Logger setup
+- [x] `backend/services/claude_service.py` oluştur
+- [x] Anthropic client initialize et
+- [x] API key'i environment'tan al
+- [x] Basic error handling ekle
+- [x] Logger setup
+- [x] `claude_api_timeout` configuration (settings.py)
 
 ---
 
-### Task 2.4: Claude Service - Category Selection
+### Task 2.4: Claude Service - Dynamic Category Selection
 
-**Tahmini Süre:** 2 saat
+**Tahmini Sure:** 2 saat (Mantik genisletildi)
 
-**Yapılacaklar:**
-- [ ] `select_category(category_hint: str) -> str` fonksiyonu yaz:
-  - [ ] "any" → random category seç
-  - [ ] "prefer_medical" → %80 Medical, %20 random
-  - [ ] "prefer_coding" → %80 Coding, %20 random
-  - [ ] "prefer_math" → %80 Math, %20 random
-- [ ] CATEGORIES constant tanımla: ["Math", "Coding", "Medical", "General"]
-- [ ] Test fonksiyonu
+**Durum:** TAMAMLANDI (30 Ocak 2026)
 
----
+**Aciklama:** Soru kategorilerini 4 ana baslikla sinirlamak yerine, veritabanindaki `category_hints`
+  alanina tam uyum saglayan ve "any" durumunda genis bir yelpazeden secim yapan dinamik bir yapilandi.
+
+**Yapilacaklar:**
+- [x] `backend/services/claude_service.py` icinde genis kapsamli bir `DEFAULT_CATEGORY_POOL` (21 kategori) tanimlandi.
+- [x] `select_category(category_hints: list[str]) -> str` fonksiyonu yazildi:
+  - [x] Eger `category_hints` ozel konular iceriyorsa (orn: `["React", "SQL"]`), bunlardan birini sec.
+  - [x] Eger `category_hints` `["any"]` iceriyorsa veya bossa, `DEFAULT_CATEGORY_POOL`'dan rastgele sec.
+  - [x] Legacy category mapping (Math->Mathematics, Coding->Programming, vb.) eklendi.
+- [x] `backend/services/__init__.py` export'lari guncellendi.
+
+**Notlar:**
+- 21 kategorilik DEFAULT_CATEGORY_POOL olusturuldu (Akademik, Teknoloji, Profesyonel, Sanat)
+- Legacy kategoriler (Math, Coding, Medical, General) yeni kategorilere map edildi
+
 
 ### Task 2.5: Claude Service - Prompt Template
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026 - Kod analizi ile tespit edildi)
+
+**Açıklama:** `render_user_prompt()` fonksiyonu `backend/prompts/master_prompts.py` dosyasında uygulanmış durumda. Fonksiyon template'taki placeholder'ları doldurur ve tam prompt döndürür.
+
 **Yapılacaklar:**
-- [ ] `render_question_prompt(prompt_data, category) -> str` fonksiyonu yaz
-- [ ] Template render et (user_prompt'ta {category}, {golden_examples} replace)
-- [ ] Golden examples formatla (eğer varsa)
-- [ ] Return full prompt
+- [x] `render_user_prompt(primary_metric, question_type, category, difficulty) -> str` fonksiyonu mevcut (master_prompts.py:947)
+- [x] Template render et (user_prompt'ta placeholder'ları replace)
+- [x] Golden examples formatla (format_golden_example fonksiyonu mevcut)
+- [x] Return full prompt
 
 ---
 
@@ -531,20 +545,24 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026 - Kod analizi ile tespit edildi + Model güncellendi)
+
+**Açıklama:** `_generate_new_question()` ve `generate_question()` fonksiyonları `backend/services/claude_service.py` dosyasında uygulanmış durumda. Model güncellemesi yapıldı.
+
 **Yapılacaklar:**
-- [ ] `generate_question(primary_metric: str, use_pool: bool) -> Question` fonksiyonu yaz:
-  - [ ] use_pool=True ise havuzdan seç (times_used en az olan)
-  - [ ] use_pool=False ise yeni üret
-- [ ] Yeni üretim logic'i:
-  - [ ] question_prompts'tan random seç (WHERE primary_metric=?)
-  - [ ] Category belirle
-  - [ ] Prompt render et
-  - [ ] Claude API'ya gönder (claude-sonnet-4-20250514)
-  - [ ] Response parse et (JSON)
-  - [ ] Question object oluştur (ID: q_YYYYMMDD_HHMMSS_randomhex)
-  - [ ] Database'e kaydet
-- [ ] LLM call logging ekle
-- [ ] Error handling (timeout, invalid JSON, API error)
+- [x] `generate_question(primary_metric: str, use_pool: bool) -> Question` fonksiyonu mevcut (claude_service.py:407)
+  - [x] use_pool=True ise havuzdan seç (_select_from_pool fonksiyonu mevcut)
+  - [x] use_pool=False ise yeni üret (_generate_new_question fonksiyonu mevcut)
+- [x] Yeni üretim logic'i:
+  - [x] question_prompts'tan random seç (WHERE primary_metric=?)
+  - [x] Category belirle (select_category fonksiyonu mevcut)
+  - [x] Prompt render et (render_user_prompt ile master_prompts'dan alıyor)
+  - [x] Claude API'ya gönder (claude-haiku-4-5-20251001 - YENİ MODEL!)
+  - [x] Response parse et (JSON)
+  - [x] Question object oluştur (ID: q_YYYYMMDD_HHMMSS_randomhex)
+  - [x] Database'e kaydet
+- [x] LLM call logging ekle (log_llm_call ile loglanıyor)
+- [x] Error handling (timeout, invalid JSON, API error)
 
 ---
 
@@ -552,15 +570,19 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026 - Kod analizi ile tespit edildi)
+
+**Açıklama:** `_parse_claude_response()` ve `_parse_json()` fonksiyonları `backend/services/claude_service.py` dosyasında uygulanmış durumuda. Markdown code block içindeki JSON'ı çıkarabilir.
+
 **Yapılacaklar:**
-- [ ] `parse_claude_response(response) -> dict` fonksiyonu yaz
-- [ ] Expected fields validate et:
-  - [ ] question (str)
-  - [ ] reference_answer (str)
-  - [ ] expected_behavior (str)
-  - [ ] rubric_breakdown (dict: 1-5 → descriptions)
-- [ ] Validation errors handle et
-- [ ] Return parsed data
+- [x] `_parse_claude_response(content: str) -> dict` fonksiyonu mevcut (claude_service.py:343)
+- [x] Expected fields validate et:
+  - [x] question (str)
+  - [x] reference_answer (str)
+  - [x] expected_behavior (str)
+  - [x] rubric_breakdown (dict: 1-5 → descriptions)
+- [x] Validation errors handle et (ValueError fırlatıyor)
+- [x] Return parsed data
 
 ---
 
@@ -568,13 +590,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026 - Canlı API testleri yazıldı)
+
+**Açıklama:** `backend/tests/test_claude_service.py` oluşturuldu. Unit testler ve canlı API testleri (mock yok) içeriyor.
+
 **Yapılacaklar:**
-- [ ] `backend/tests/test_claude_service.py` oluştur
-- [ ] test_select_category() (all category_hint variations)
-- [ ] test_render_question_prompt()
-- [ ] test_parse_claude_response()
-- [ ] test_generate_question() (mock API)
-- [ ] Tests çalıştır
+- [x] `backend/tests/test_claude_service.py` oluştur
+- [x] test_select_category() (all category_hint variations)
+- [x] test_parse_claude_response() (valid JSON, markdown, invalid)
+- [x] test_claude_service_initialization() (model check)
+- [x] test_generate_question_live_api() (CANLI API - gerçek Claude çağrısı)
+- [x] Tests çalıştır
 
 ---
 
