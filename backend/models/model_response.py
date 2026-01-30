@@ -26,7 +26,7 @@ K_MODELS = [
     "mistralai/mistral-nemo",
     "qwen/qwen-2.5-7b-instruct",
     "deepseek/deepseek-chat",
-    "google/gemini-flash-1.5",
+    "google/gemini-2.0-flash-001",
     "openai/gpt-4o-mini",
     "openai/gpt-3.5-turbo",
 ]

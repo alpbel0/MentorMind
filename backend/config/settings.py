@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     # Judge model (unchanged - GPT-4o)
     judge_model: str = "gpt-4o"
     # K Models (6 models via OpenRouter)
-    k_models: str = "mistralai/mistral-nemo,qwen/qwen-2.5-7b-instruct,deepseek/deepseek-chat,google/gemini-flash-1.5,openai/gpt-4o-mini,openai/gpt-3.5-turbo"
+    k_models: str = "mistralai/mistral-nemo,qwen/qwen-2.5-7b-instruct,deepseek/deepseek-chat,google/gemini-2.0-flash-001,openai/gpt-4o-mini,openai/gpt-3.5-turbo"
     # OpenRouter Configuration
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
     # Embedding model

@@ -299,10 +299,15 @@ class TestModelServiceIntegration:
 
     @pytest.mark.integration
     def test_live_openrouter_call_gemini(self, live_service):
-        """Test live OpenRouter API call with Gemini Flash."""
-        # Note: google/gemini-flash-1.5 may not be available on OpenRouter
-        # Skipping this test for now - model name needs verification
-        pytest.skip("google/gemini-flash-1.5 model not available on OpenRouter (404)")
+        """Test live OpenRouter API call with Gemini 2.0 Flash."""
+        result = live_service._call_openrouter(
+            "google/gemini-2.0-flash-001",
+            "What color is the sky? Answer with one word."
+        )
+        assert result is not None
+        assert isinstance(result, str)
+        assert len(result) > 0
+        assert any(x in result.lower() for x in ["blue", "azur"])
 
     @pytest.mark.integration
     def test_live_openrouter_call_gpt4o_mini(self, live_service):
