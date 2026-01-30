@@ -23,12 +23,14 @@ if TYPE_CHECKING:
 # =====================================================
 
 K_MODELS = [
-    "gpt-3.5-turbo",
-    "gpt-4o-mini",
-    "claude-3-5-haiku-20241022",
-    "gemini-2.0-flash-exp"
+    "mistralai/mistral-nemo",
+    "qwen/qwen-2.5-7b-instruct",
+    "deepseek/deepseek-chat",
+    "google/gemini-flash-1.5",
+    "openai/gpt-4o-mini",
+    "openai/gpt-3.5-turbo",
 ]
-"""Valid K model names for evaluation"""
+"""Valid K model names for evaluation (via OpenRouter)"""
 
 
 class ModelResponse(Base):

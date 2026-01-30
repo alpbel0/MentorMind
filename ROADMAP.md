@@ -604,23 +604,29 @@ Phase 1 tamamlanmış sayılır eğer:
 
 ---
 
-### Task 2.9: K Model Service - Setup
+### Task 2.9: K Model Service - Setup (OpenRouter Implementation)
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
+**Not:** OpenRouter kullanılarak 6 model entegrasyonu yapıldı.
+
 **Yapılacaklar:**
-- [ ] `backend/services/model_service.py` oluştur
-- [ ] K_MODELS constant tanımla:
+- [x] `backend/services/model_service.py` oluştur
+- [x] K_MODELS constant tanımla (6 model via OpenRouter):
   ```python
   K_MODELS = [
-      "gpt-3.5-turbo",
-      "gpt-4o-mini",
-      "claude-3-5-haiku-20241022",
-      "gemini-2.0-flash-exp"
+      "mistralai/mistral-nemo",
+      "qwen/qwen-2.5-7b-instruct",
+      "deepseek/deepseek-chat",
+      "google/gemini-flash-1.5",
+      "openai/gpt-4o-mini",
+      "openai/gpt-3.5-turbo",
   ]
   ```
-- [ ] API clients initialize et (OpenAI, Anthropic, Google)
-- [ ] Logger setup
+- [x] OpenAI client initialize et (base_url=https://openrouter.ai/api/v1)
+- [x] Logger setup
 
 ---
 
@@ -628,58 +634,54 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `select_model(question_id: str) -> str` fonksiyonu yaz:
-  - [ ] Bu soruyu hangi modeller cevapladı? (query model_responses)
-  - [ ] Cevaplamamış modeller listele
-  - [ ] Eğer tümü cevaplamış → random seç
-  - [ ] Eğer bazıları cevaplamamış → onlardan random seç
-- [ ] Test fonksiyonu
+- [x] `select_model(question_id: str, db: Session) -> str` fonksiyonu yaz:
+  - [x] Bu soruyu hangi modeller cevapladı? (query model_responses)
+  - [x] Cevaplamamış modeller listele
+  - [x] Eğer tümü cevaplamış → random seç
+  - [x] Eğer bazıları cevaplamamış → onlardan random seç
+- [x] Test fonksiyonu
 
 ---
 
-### Task 2.11: K Model Service - OpenAI Integration
+### Task 2.11: K Model Service - OpenRouter Integration
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
+**Not:** OpenRouter unified API gateway kullanıldı.
+
 **Yapılacaklar:**
-- [ ] `call_openai(model_name: str, question: str) -> str` fonksiyonu yaz
-- [ ] OpenAI client ile API call
-- [ ] Messages format: `[{"role": "user", "content": question}]`
-- [ ] Response parse et (message.content)
-- [ ] LLM call logging ekle
-- [ ] Error handling
-- [ ] Test (mock API)
+- [x] `_call_openrouter(model_name: str, question: str) -> str` fonksiyonu yaz
+- [x] OpenAI client ile OpenRouter API call (base_url=https://openrouter.ai/api/v1)
+- [x] Messages format: `[{"role": "user", "content": question}]`
+- [x] Response parse et (choices[0].message.content)
+- [x] LLM call logging ekle
+- [x] Error handling
+- [x] Test (mock API)
 
 ---
 
-### Task 2.12: K Model Service - Anthropic Integration
+### Task 2.12: K Model Service - (Skipped - Merged into 2.11)
 
 **Tahmini Süre:** 2 saat
 
-**Yapılacaklar:**
-- [ ] `call_anthropic(model_name: str, question: str) -> str` fonksiyonu yaz
-- [ ] Anthropic client ile API call
-- [ ] Messages format
-- [ ] Response parse et
-- [ ] LLM call logging ekle
-- [ ] Error handling
-- [ ] Test (mock API)
+**Durum:** ⏭️ **ATLANDI** (OpenRouter ile birleştirildi)
+
+**Not:** OpenRouter sayesinde ayrı Anthropic entegrasyonuna gerek kalmadı.
 
 ---
 
-### Task 2.13: K Model Service - Google Gemini Integration
+### Task 2.13: K Model Service - (Skipped - Merged into 2.11)
 
 **Tahmini Süre:** 2 saat
 
-**Yapılacaklar:**
-- [ ] `call_google(model_name: str, question: str) -> str` fonksiyonu yaz
-- [ ] Google Generative AI client ile API call
-- [ ] Prompt format
-- [ ] Response parse et
-- [ ] LLM call logging ekle
-- [ ] Error handling
-- [ ] Test (mock API)
+**Durum:** ⏭️ **ATLANDI** (OpenRouter ile birleştirildi)
+
+**Not:** OpenRouter sayesinde ayrı Google entegrasyonuna gerek kalmadı.
 
 ---
 
@@ -687,15 +689,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `answer_question(question_id: str, model_name: str) -> ModelResponse` fonksiyonu yaz:
-  - [ ] Question'ı database'den getir
-  - [ ] Model'e göre doğru provider'ı seç (if/elif)
-  - [ ] API call yap
-  - [ ] ModelResponse object oluştur (ID: resp_YYYYMMDD_HHMMSS_randomhex)
-  - [ ] Database'e kaydet
-  - [ ] Return response
-- [ ] Error handling
+- [x] `answer_question(question_id: str, model_name: str, db: Session) -> ModelResponse` fonksiyonu yaz:
+  - [x] Question'ı database'den getir
+  - [x] OpenRouter API call yap (_call_openrouter)
+  - [x] ModelResponse object oluştur (ID: resp_YYYYMMDD_HHMMSS_randomhex)
+  - [x] Database'e kaydet
+  - [x] Return response
+- [x] Error handling
 
 ---
 
@@ -703,14 +706,14 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/tests/test_model_service.py` oluştur
-- [ ] test_select_model()
-- [ ] test_call_openai() (mock)
-- [ ] test_call_anthropic() (mock)
-- [ ] test_call_google() (mock)
-- [ ] test_answer_question() (mock)
-- [ ] Tests çalıştır
+- [x] `backend/tests/test_model_service.py` oluştur
+- [x] test_select_model()
+- [x] test_call_openrouter() (mock)
+- [x] test_answer_question() (mock)
+- [x] Tests çalıştır (11 passed)
 
 ---
 
@@ -718,10 +721,12 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/routers/questions.py` oluştur
-- [ ] APIRouter oluştur
-- [ ] Logger setup
+- [x] `backend/routers/questions.py` oluştur
+- [x] APIRouter oluştur
+- [x] Logger setup
 
 ---
 
@@ -729,16 +734,18 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `POST /api/questions/generate` endpoint yaz:
-  - [ ] Request schema: `{primary_metric: str, use_pool: bool}`
-  - [ ] Claude service'i çağır (generate_question)
-  - [ ] Model seç (select_model)
-  - [ ] Model service'i çağır (answer_question)
-  - [ ] Response format: `{question_id, response_id, question, model_response, model_name, category}`
-  - [ ] Error handling
-- [ ] Pydantic request/response schemas
-- [ ] Test endpoint (integration test)
+- [x] `POST /api/questions/generate` endpoint yaz:
+  - [x] Request schema: `{primary_metric: str, use_pool: bool}`
+  - [x] Claude service'i çağır (generate_question)
+  - [x] Model seç (select_model)
+  - [x] Model service'i çağır (answer_question)
+  - [x] Response format: `{question_id, response_id, question, model_response, model_name, category}`
+  - [x] Error handling
+- [x] Pydantic request/response schemas
+- [x] Test endpoint (integration test - manual curl successful)
 
 ---
 
@@ -746,15 +753,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `GET /api/questions/pool/stats` endpoint yaz:
-  - [ ] Total questions count
-  - [ ] By metric breakdown
-  - [ ] By category breakdown
-  - [ ] By difficulty breakdown
-  - [ ] Average times_used
-- [ ] Response schema
-- [ ] Test endpoint
+- [x] `GET /api/questions/pool/stats` endpoint yaz:
+  - [x] Total questions count
+  - [x] By metric breakdown
+  - [x] By category breakdown
+  - [x] By difficulty breakdown
+  - [x] Average times_used
+- [x] Response schema
+- [x] Test endpoint (curl successful)
 
 ---
 
@@ -762,11 +771,13 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/main.py`'a questions router'ı ekle
-- [ ] Prefix: `/api/questions`
-- [ ] Tags: `["questions"]`
-- [ ] Test: `curl -X POST http://localhost:8000/api/questions/generate -d '{"primary_metric": "Truthfulness", "use_pool": false}'`
+- [x] `backend/main.py`'a questions router'ı ekle
+- [x] Prefix: `/api/questions`
+- [x] Tags: `["questions"]`
+- [x] Test: `curl -X POST http://localhost:8000/api/questions/generate -d '{"primary_metric": "Truthfulness", "use_pool": false}'`
 
 ---
 
@@ -774,26 +785,28 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] Manuel test senaryosu çalıştır:
-  1. [ ] Seed data yükle
-  2. [ ] Yeni soru üret (Truthfulness)
-  3. [ ] Havuzdan soru seç (Safety)
-  4. [ ] Pool stats kontrol et
-  5. [ ] Database'de question ve model_response kayıtlarını kontrol et
-- [ ] Logları incele (mentormind.log, llm_calls.jsonl)
-- [ ] Bug'ları tespit et ve fix'le
+- [x] Manuel test senaryosu çalıştır:
+  1. [x] Seed data yükle (24 prompts)
+  2. [x] Yeni soru üret (Truthfulness) - Başarılı
+  3. [x] K model cevapladı (mistralai/mistral-nemo)
+  4. [x] Pool stats kontrol et - Başarılı
+  5. [x] Database'de question ve model_response kayıtlarını kontrol et
+- [x] Logları incele (mentormind.log, llm_calls.jsonl) - Her şey loglanıyor
+- [x] Bug'ları tespit et ve fix'le
 
 ---
 
 ### ✅ Week 2 Checklist
 
-- [ ] 24 question_prompt seeded
-- [ ] Claude service soru üretebiliyor
-- [ ] 4 K model soru cevaplayabiliyor
-- [ ] Question pool sistemi çalışıyor
-- [ ] API endpoints çalışıyor (generate, pool stats)
-- [ ] LLM call logging aktif
+- [x] 24 question_prompt seeded (30 Ocak 2026)
+- [x] Claude service soru üretebiliyor (Önceki tasks'te yapıldı)
+- [x] 6 K model soru cevaplayabiliyor (30 Ocak 2026)
+- [x] Question pool sistemi çalışıyor
+- [x] API endpoints çalışıyor (generate, pool stats)
+- [x] LLM call logging aktif
 - [ ] Integration tests geçiyor
 
 ---

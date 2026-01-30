@@ -74,10 +74,13 @@ MentorMind is an **EvalOps (AI Evaluation Operations) training platform** design
 |---------|----------|-------|---------|
 | **Question Generation** | Anthropic | `claude-haiku-4-5-20251001` | `ANTHROPIC_API_KEY` |
 | **Judge Model** | OpenAI | `gpt-4o` | `OPENAI_API_KEY` |
-| **K Model 1** | OpenAI | `gpt-3.5-turbo` | `OPENAI_API_KEY` |
-| **K Model 2** | OpenAI | `gpt-4o-mini` | `OPENAI_API_KEY` |
-| **K Model 3** | Anthropic | `claude-3-5-haiku-20241022` | `ANTHROPIC_API_KEY` |
-| **K Model 4** | Google | `gemini-2.0-flash-exp` | `GOOGLE_API_KEY` |
+| **K Models (via OpenRouter)** | OpenRouter | 6 models (see below) | `OPENROUTER_API_KEY` |
+| **K Model 1** | Mistral AI | `mistralai/mistral-nemo` | `OPENROUTER_API_KEY` |
+| **K Model 2** | Qwen | `qwen/qwen-2.5-7b-instruct` | `OPENROUTER_API_KEY` |
+| **K Model 3** | DeepSeek | `deepseek/deepseek-chat` | `OPENROUTER_API_KEY` |
+| **K Model 4** | Google | `google/gemini-flash-1.5` | `OPENROUTER_API_KEY` |
+| **K Model 5** | OpenAI | `openai/gpt-4o-mini` | `OPENROUTER_API_KEY` |
+| **K Model 6** | OpenAI | `openai/gpt-3.5-turbo` | `OPENROUTER_API_KEY` |
 | **Embeddings** | OpenAI | `text-embedding-3-small` | `OPENAI_API_KEY` |
 
 ### Infrastructure
@@ -535,43 +538,77 @@ async def run_judge_evaluation(user_eval_id: str):
 
 **Location:** `backend/services/claude_service.py`
 
-**Model:** `claude-sonnet-4-20250514`
+**Model:** `claude-haiku-4-5-20251001`
 
 **Purpose:** Generate evaluation questions based on prompts.
 
 **Key Functions:**
 ```python
 class ClaudeService:
-    def select_category(category_hint: str) -> str:
+    def select_category(category_hints: list[str]) -> str:
         """
-        Select question category based on hint.
-        - "any" → random
-        - "prefer_X" → 80% X, 20% random
-        """
-
-    def render_question_prompt(prompt_data, category) -> str:
-        """
-        Replace placeholders in user_prompt.
-        {category}, {golden_examples}
+        Select question category based on hints.
+        - ["any"] → random from DEFAULT_CATEGORY_POOL (21 categories)
+        - ["React", "SQL"] → random from provided hints
         """
 
     def generate_question(primary_metric: str, use_pool: bool) -> Question:
         """
         Main function:
-        1. Select prompt from database
+        1. Select prompt from database (or pool if use_pool=True)
         2. Determine category
-        3. Render prompt
+        3. Render prompt (via master_prompts.py)
         4. Call Claude API
         5. Parse JSON response
         6. Create Question object
         7. Save to database
         """
+```
 
-    def parse_claude_response(response) -> dict:
+### Model Service (K Models via OpenRouter)
+
+**Location:** `backend/services/model_service.py`
+
+**Provider:** OpenRouter (unified API gateway)
+
+**Models:** 6 K models via single API key
+
+**Purpose:** Get responses from K models for evaluation.
+
+**Key Functions:**
+```python
+class ModelService:
+    K_MODELS = [
+        "mistralai/mistral-nemo",
+        "qwen/qwen-2.5-7b-instruct",
+        "deepseek/deepseek-chat",
+        "google/gemini-flash-1.5",
+        "openai/gpt-4o-mini",
+        "openai/gpt-3.5-turbo",
+    ]
+
+    def select_model(question_id: str, db: Session) -> str:
         """
-        Validate and parse Claude JSON response.
-        Required fields: question, reference_answer,
-        expected_behavior, rubric_breakdown
+        Select a K model that hasn't answered this question.
+        - Unanswered models → random selection
+        - All answered → random selection from all
+        """
+
+    def _call_openrouter(model_name: str, question: str) -> str:
+        """
+        Call OpenRouter API using OpenAI client.
+        - base_url: https://openrouter.ai/api/v1
+        - Returns model response text
+        """
+
+    def answer_question(question_id: str, model_name: str, db: Session) -> ModelResponse:
+        """
+        Get K model's response:
+        1. Fetch question from database
+        2. Call OpenRouter API
+        3. Create ModelResponse object
+        4. Save to database
+        5. Return response
         """
 ```
 
@@ -1350,18 +1387,16 @@ pip-audit
 - [x] Question generation (Claude API) (30 Ocak 2026 - model updated to Haiku 4.5)
 - [x] Response parsing (30 Ocak 2026)
 - [x] Claude service tests (30 Ocak 2026 - live API tests)
-- [ ] K model service setup
-- [ ] Model selection logic
-- [ ] OpenAI integration
-- [ ] Anthropic integration
-- [ ] Google Gemini integration
-- [ ] Unified interface
-- [ ] K model service tests
-- [ ] Questions router setup
-- [ ] Generate endpoint
-- [ ] Pool stats endpoint
-- [ ] Router integration
-- [ ] End-to-end test
+- [x] K model service setup (OpenRouter implementation) (30 Ocak 2026)
+- [x] Model selection logic (30 Ocak 2026)
+- [x] OpenRouter integration (unified API) (30 Ocak 2026)
+- [x] Unified interface (answer_question) (30 Ocak 2026)
+- [x] K model service tests (11 passed) (30 Ocak 2026)
+- [x] Questions router setup (30 Ocak 2026)
+- [x] Generate endpoint (30 Ocak 2026)
+- [x] Pool stats endpoint (30 Ocak 2026)
+- [x] Router integration (30 Ocak 2026)
+- [x] End-to-end test (manual + live API) (30 Ocak 2026)
 
 #### Week 3: User Evaluation & Judge Stage 1 (Feb 10 - Feb 16)
 - [ ] Evaluation router setup
@@ -1412,7 +1447,7 @@ pip-audit
 
 **Functional Metrics:**
 - Question generation: 100% success rate
-- K model answers: 4/4 models working
+- K model answers: 6/6 models working (via OpenRouter)
 - User evaluation: Validation 100% correct
 - Judge evaluation: 2-stage workflow 100% successful
 - ChromaDB memory: Past mistakes correctly retrieved
@@ -1450,7 +1485,7 @@ pip-audit
    - Evaluations: `eval_YYYYMMDD_HHMMSS_randomhex`
    - Judges: `judge_YYYYMMDD_HHMMSS_randomhex`
 
-8. **Model Selection:** K models are selected to ensure all 4 models answer each question over time.
+8. **Model Selection:** K models are selected to ensure all 6 models answer each question over time.
 
 9. **ChromaDB Context:** Only last 5 similar evaluations retrieved for judge feedback.
 

@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     anthropic_api_key: str
     openai_api_key: str
     google_api_key: str
+    openrouter_api_key: str
 
     # =====================================================
     # PostgreSQL Database (REQUIRED)
@@ -69,7 +70,11 @@ class Settings(BaseSettings):
     claude_api_timeout: int = 30  # Timeout for Claude API calls in seconds
     # Judge model (unchanged - GPT-4o)
     judge_model: str = "gpt-4o"
-    k_models: str = "gpt-3.5-turbo,gpt-4o-mini,claude-3-5-haiku-20241022,gemini-2.0-flash-exp"
+    # K Models (6 models via OpenRouter)
+    k_models: str = "mistralai/mistral-nemo,qwen/qwen-2.5-7b-instruct,deepseek/deepseek-chat,google/gemini-flash-1.5,openai/gpt-4o-mini,openai/gpt-3.5-turbo"
+    # OpenRouter Configuration
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    # Embedding model
     embedding_model: str = "text-embedding-3-small"
 
     # =====================================================

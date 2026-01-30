@@ -14,12 +14,14 @@ CREATE TABLE model_responses (
     -- Foreign key to question
     question_id TEXT NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
 
-    -- Model info
+    -- Model info (6 models via OpenRouter)
     model_name TEXT NOT NULL CHECK (model_name IN (
-        'gpt-3.5-turbo',
-        'gpt-4o-mini',
-        'claude-3-5-haiku-20241022',
-        'gemini-2.0-flash-exp'
+        'mistralai/mistral-nemo',
+        'qwen/qwen-2.5-7b-instruct',
+        'deepseek/deepseek-chat',
+        'google/gemini-flash-1.5',
+        'openai/gpt-4o-mini',
+        'openai/gpt-3.5-turbo'
     )),
 
     -- Response
@@ -51,4 +53,4 @@ CREATE INDEX idx_model_responses_pending_evaluations
     ON model_responses (evaluated) WHERE evaluated = FALSE;
 
 COMMENT ON TABLE model_responses IS
-    'Responses from K models (GPT-3.5, GPT-4o-mini, Claude Haiku, Gemini). Each model answers each question exactly once.';
+    'Responses from K models via OpenRouter (Mistral Nemo, Qwen 2.5, DeepSeek, Gemini Flash, GPT-4o-mini, GPT-3.5-turbo). Each model answers each question exactly once.';
