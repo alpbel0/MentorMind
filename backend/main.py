@@ -15,7 +15,7 @@ from backend.config.logging_config import setup_logging, get_logger
 from backend.config.settings import settings
 from backend.middleware.logging_middleware import RequestLoggingMiddleware
 from backend.models.database import test_database_connection, engine, get_pool_status
-from backend.routers import questions
+from backend.routers import questions, evaluations
 
 # =====================================================
 # Configure Logging
@@ -105,6 +105,11 @@ app.include_router(
     questions.router,
     prefix="/api/questions",
     tags=["questions"]
+)
+app.include_router(
+    evaluations.router,
+    prefix="/api/evaluations",
+    tags=["evaluations"]
 )
 
 

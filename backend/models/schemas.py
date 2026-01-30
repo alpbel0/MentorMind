@@ -261,6 +261,33 @@ class UserEvaluationResponse(UserEvaluationBase):
 
 
 # =====================================================
+# Evaluation Submission Schemas (API Request/Response)
+# =====================================================
+
+class EvaluationSubmitRequest(BaseModel):
+    """Request schema for evaluation submission."""
+
+    response_id: str = Field(..., description="Model response ID being evaluated")
+    evaluations: dict[str, MetricEvaluation] = Field(
+        ...,
+        description="Evaluation across all 8 metrics"
+    )
+
+    _validate_metrics = field_validator('evaluations')(validate_metrics_dict)
+
+
+class EvaluationSubmitResponse(BaseModel):
+    """Response schema for evaluation submission."""
+
+    evaluation_id: str = Field(..., description="Evaluation ID")
+    status: str = Field(default="submitted", description="Submission status")
+    message: str = Field(
+        default="Evaluation submitted successfully",
+        description="Status message"
+    )
+
+
+# =====================================================
 # JudgeEvaluation Schemas
 # =====================================================
 

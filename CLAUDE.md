@@ -1399,9 +1399,9 @@ pip-audit
 - [x] End-to-end test (manual + live API) (30 Ocak 2026)
 
 #### Week 3: User Evaluation & Judge Stage 1 (Feb 10 - Feb 16)
-- [ ] Evaluation router setup
-- [ ] Evaluation schemas
-- [ ] Evaluation submit endpoint
+- [x] Evaluation router setup (30 Ocak 2026)
+- [x] Evaluation schemas (30 Ocak 2026)
+- [x] Evaluation submit endpoint (30 Ocak 2026)
 - [ ] Evaluation update endpoint
 - [ ] Judge prompts (hardcoded)
 - [ ] Judge service setup

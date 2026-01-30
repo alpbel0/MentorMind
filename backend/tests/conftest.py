@@ -19,6 +19,7 @@ from sqlalchemy.orm import sessionmaker
 from backend.config.logging_config import setup_logging
 from backend.config.settings import settings
 from backend.main import app
+from backend.models.database import get_db
 
 
 # =====================================================
@@ -170,18 +171,32 @@ def db_session(test_engine):
 # =====================================================
 
 @pytest.fixture(scope="function")
-def test_client():
+def test_client(db_session):
     """
-    Create a FastAPI test client.
+    Create a FastAPI test client with database override.
 
     The test client can make HTTP requests to the application
     without running a server.
+    Uses db_session to override the database dependency.
+
+    Args:
+        db_session: Database session fixture
 
     Yields:
-        TestClient instance
+        TestClient instance with database override
     """
+    def override_get_db():
+        try:
+            yield db_session
+        finally:
+            pass
+
+    app.dependency_overrides[get_db] = override_get_db
+
     with TestClient(app=app) as client:
         yield client
+
+    app.dependency_overrides.clear()
 
 
 # =====================================================

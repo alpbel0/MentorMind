@@ -822,10 +822,12 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/routers/evaluations.py` oluştur
-- [ ] APIRouter oluştur
-- [ ] Logger setup
+- [x] `backend/routers/evaluations.py` oluştur
+- [x] APIRouter oluştur
+- [x] Logger setup
 
 ---
 
@@ -833,15 +835,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/models/schemas.py`'ye ekle:
-  - [ ] MetricEvaluation schema (score: 1-5 or null, reasoning: str)
-  - [ ] EvaluationSubmitRequest schema (response_id, evaluations: Dict[str, MetricEvaluation])
-  - [ ] EvaluationSubmitResponse schema (evaluation_id, status, judge_status)
-- [ ] Validation logic:
-  - [ ] 8 metrik olmalı
-  - [ ] Score 1-5 veya null
-  - [ ] Reasoning required if score given
+- [x] `backend/models/schemas.py`'ye ekle:
+  - [x] MetricEvaluation schema (score: 1-5 or null, reasoning: str)
+  - [x] EvaluationSubmitRequest schema (response_id, evaluations: Dict[str, MetricEvaluation])
+  - [x] EvaluationSubmitResponse schema (evaluation_id, status, message)
+- [x] Validation logic:
+  - [x] 8 metrik olmalı
+  - [x] Score 1-5 veya null
+  - [x] Reasoning required if score given
 
 ---
 
@@ -849,15 +853,19 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `POST /api/evaluations/submit` endpoint yaz:
-  - [ ] Request validate et
-  - [ ] UserEvaluation object oluştur (ID: eval_YYYYMMDD_HHMMSS_randomhex)
-  - [ ] evaluations JSON'u serialize et
-  - [ ] Database'e kaydet
-  - [ ] Async judge task başlat (arka planda)
-  - [ ] Immediate response dön: `{evaluation_id, status: "submitted", judge_status: "processing"}`
-- [ ] Error handling
+- [x] `POST /api/evaluations/submit` endpoint yaz:
+  - [x] Request validate et
+  - [x] UserEvaluation object oluştur (ID: eval_YYYYMMDD_HHMMSS_randomhex)
+  - [x] evaluations JSON'u serialize et
+  - [x] Database'e kaydet
+  - [ ] Async judge task başlat (arka planda) → Task 3.11'de yapılacak
+  - [x] Immediate response dön: `{evaluation_id, status: "submitted", message}`
+- [x] Error handling
+- [x] Router integration (main.py)
+- [x] Unit tests (test_evaluations.py)
 
 ---
 
@@ -865,10 +873,14 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (30 Ocak 2026)
+
+**Not:** Dairesel ilişki (circular dependency) nedeniyle `evaluation_id` maddesi iptal edildi, diğer işlemler Task 3.3 ile birleştirildi.
+
 **Yapılacaklar:**
-- [ ] model_responses tablosunda evaluated flag'i update et
-- [ ] evaluation_id'yi set et
-- [ ] Endpoint çağrısında bu update'i yap
+- [x] model_responses tablosunda evaluated flag'i update et
+- [x] evaluation_id'yi set et (iptal - circular dependency)
+- [x] Endpoint çağrısında bu update'i yap (Task 3.3'te yapıldı)
 
 ---
 
