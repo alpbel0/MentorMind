@@ -29,6 +29,11 @@ from backend.services.model_service import (
 # =====================================================
 from backend.services.llm_logger import llm_logger, log_llm_call
 
+# =====================================================
+# Judge Service (GPT-4o)
+# =====================================================
+from backend.services.judge_service import JudgeService, judge_service
+
 __all__ = [
     # Claude Service
     "ClaudeService",
@@ -43,4 +48,7 @@ __all__ = [
     # LLM Logger
     "llm_logger",
     "log_llm_call",
+    # Judge Service
+    "JudgeService",
+    "judge_service",
 ]

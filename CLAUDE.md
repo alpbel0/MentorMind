@@ -1422,16 +1422,16 @@ pip-audit
 - [x] Evaluation router setup (30 Ocak 2026)
 - [x] Evaluation schemas (30 Ocak 2026)
 - [x] Evaluation submit endpoint (30 Ocak 2026)
-- [ ] Evaluation update endpoint
-- [ ] Judge prompts (hardcoded)
-- [ ] Judge service setup
-- [ ] Data fetching logic
-- [ ] Stage 1 implementation
-- [ ] Response parsing
+- [x] Evaluation update endpoint (30 Ocak 2026)
+- [x] Judge prompts (hardcoded) (30 Ocak 2026)
+- [x] Judge service setup (31 Ocak 2026)
+- [x] Data fetching logic (31 Ocak 2026)
+- [x] Stage 1 implementation (31 Ocak 2026)
+- [x] Response parsing (31 Ocak 2026)
 - [ ] Async task infrastructure
 - [ ] Judge task implementation
 - [ ] Judge feedback endpoint (basic)
-- [ ] Judge service tests
+- [x] Judge service tests (11 passed) (31 Ocak 2026)
 - [ ] Integration test
 
 #### Week 4: Judge Stage 2 & End-to-End Testing (Feb 17 - Feb 23)

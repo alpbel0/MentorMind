@@ -915,11 +915,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (31 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/services/judge_service.py` oluştur
-- [ ] OpenAI client initialize et (GPT-4o için)
-- [ ] Logger setup
-- [ ] Import judge_prompts
+- [x] `backend/services/judge_service.py` oluştur
+- [x] OpenAI client initialize et (GPT-4o için)
+- [x] Logger setup
+- [x] Import judge_prompts
+- [x] THE_EIGHT_METRICS constant ekle
+- [x] Global judge_service instance
+- [x] Export to services/__init__.py
 
 ---
 
@@ -927,13 +932,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (31 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `fetch_evaluation_data(user_eval_id: str) -> dict` fonksiyonu yaz:
-  - [ ] user_evaluation getir
-  - [ ] model_response getir (response_id üzerinden)
-  - [ ] question getir (question_id üzerinden)
-  - [ ] Return: `{user_eval, model_response, question, user_scores: dict}`
-- [ ] Test fonksiyonu
+- [x] `fetch_evaluation_data(user_eval_id: str, db: Session) -> dict` fonksiyonu yaz:
+  - [x] user_evaluation getir
+  - [x] model_response getir (response_id üzerinden)
+  - [x] question getir (question_id üzerinden)
+  - [x] Return: `{user_eval, model_response, question, user_scores: dict}`
+- [x] Validate 8 metrics present
+- [x] Error handling for missing data
 
 ---
 
@@ -941,17 +949,18 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 4 saat
 
+**Durum:** ✅ **TAMAMLANDI** (31 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `stage1_independent_evaluation(user_eval_id: str) -> dict` fonksiyonu yaz:
-  - [ ] Evaluation data fetch et
-  - [ ] Prompt render et (judge_prompts["independent"])
-  - [ ] Placeholders replace et
-  - [ ] GPT-4o'ya gönder
-  - [ ] Response parse et (JSON)
-  - [ ] Validate: 8 metrik, her biri {score, rationale}
-  - [ ] Return independent_scores dict
-- [ ] LLM call logging ekle
-- [ ] Error handling (timeout, invalid JSON)
+- [x] `stage1_independent_evaluation(user_eval_id: str, db: Session) -> dict` fonksiyonu yaz:
+  - [x] Evaluation data fetch et
+  - [x] Prompt render et (JUDGE_PROMPTS["stage1"]["system_prompt"] + render_stage1_prompt())
+  - [x] GPT-4o'ya gönder (temperature=0.3)
+  - [x] Response parse et (JSON)
+  - [x] Validate: 8 metrik, her biri {score (1-5 or null), rationale (str)}
+  - [x] Return independent_scores dict
+- [x] LLM call logging ekle (log_llm_call with token tracking)
+- [x] Error handling (APITimeoutError, RateLimitError, APIConnectionError, APIError)
 
 ---
 
@@ -959,12 +968,22 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (31 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `parse_judge_response(response: str) -> dict` fonksiyonu yaz
-- [ ] JSON parse et
-- [ ] Validate structure
-- [ ] Handle errors (malformed JSON)
-- [ ] Return parsed dict
+- [x] `parse_judge_response(response: str) -> dict` fonksiyonu yaz
+- [x] Direct JSON parsing (try first)
+- [x] Markdown code blocks (```json ... ```)
+- [x] Generic code blocks (``` ... ```)
+- [x] Nested brace extraction (count braces manually)
+- [x] Validate structure (independent_scores key exists)
+- [x] Return parsed dict
+- [x] Tests: 11 passed (test_judge_service.py)
+
+**Notlar:**
+- Live API tests use actual GPT-4o API calls
+- All 11 tests passing (init, fetch, parse, live API)
+- LLM logging working (1622-1686 tokens per evaluation)
 
 ---
 
