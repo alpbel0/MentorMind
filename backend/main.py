@@ -16,6 +16,7 @@ from backend.config.settings import settings
 from backend.middleware.logging_middleware import RequestLoggingMiddleware
 from backend.models.database import test_database_connection, engine, get_pool_status
 from backend.routers import questions, evaluations
+from backend.services.chromadb_service import chromadb_service
 
 # =====================================================
 # Configure Logging
@@ -141,15 +142,16 @@ async def health_check() -> dict:
     Health check endpoint.
 
     Returns the current health status of the API and its dependencies.
-    Database connection is tested on each request.
+    Database and ChromaDB connections are tested on each request.
     """
     db_connected = test_database_connection()
+    chromadb_connected = chromadb_service.test_connection()
 
     return {
-        "status": "healthy" if db_connected else "degraded",
+        "status": "healthy" if db_connected and chromadb_connected else "degraded",
         "api": "connected",
         "database": "connected" if db_connected else "disconnected",
-        "chromadb": "not yet connected",
+        "chromadb": "connected" if chromadb_connected else "disconnected",
     }
 
 
@@ -168,6 +170,21 @@ async def health_check_detailed() -> dict:
     db_connected = test_database_connection()
     db_latency = (time.time() - start_time) * 1000
 
+    # ChromaDB status - direct service call (no database.py dependency)
+    if chromadb_service.test_connection():
+        chroma_count = chromadb_service.get_collection_count()
+        chroma_status = {
+            "status": "connected",
+            "collection": chromadb_service.collection_name,
+            "count": chroma_count
+        }
+    else:
+        chroma_status = {
+            "status": "disconnected",
+            "collection": chromadb_service.collection_name,
+            "count": 0
+        }
+
     return {
         "status": "healthy" if db_connected else "degraded",
         "api": {
@@ -180,10 +197,7 @@ async def health_check_detailed() -> dict:
             "latency_ms": round(db_latency, 2),
             **get_pool_status(),
         },
-        "chromadb": {
-            "status": "not connected",
-            "message": "ChromaDB connection will be established in later tasks",
-        },
+        "chromadb": chroma_status,
     }
 
 

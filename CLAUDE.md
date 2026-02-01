@@ -1441,7 +1441,7 @@ pip-audit
 - [x] Integration test (13 passed) (1 Şubat 2026)
 
 #### Week 4: Judge Stage 2 & End-to-End Testing (Feb 17 - Feb 23)
-- [ ] ChromaDB service setup
+- [x] ChromaDB service setup (1 Şubat 2026)
 - [ ] Add to memory function
 - [ ] Query past mistakes function
 - [ ] Comparison table generator

@@ -34,6 +34,11 @@ from backend.services.llm_logger import llm_logger, log_llm_call
 # =====================================================
 from backend.services.judge_service import JudgeService, judge_service
 
+# =====================================================
+# ChromaDB Vector Memory Service
+# =====================================================
+from backend.services.chromadb_service import ChromaDBService, chromadb_service
+
 __all__ = [
     # Claude Service
     "ClaudeService",
@@ -51,4 +56,7 @@ __all__ = [
     # Judge Service
     "JudgeService",
     "judge_service",
+    # ChromaDB Service
+    "ChromaDBService",
+    "chromadb_service",
 ]
