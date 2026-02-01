@@ -139,7 +139,8 @@ class TestEvaluationsRouter:
         data = response.json()
         assert data["evaluation_id"].startswith("eval_")
         assert data["status"] == "submitted"
-        assert data["message"] == "Evaluation submitted successfully"
+        # Note: Message now includes background task info
+        assert "Evaluation submitted successfully" in data["message"]
 
         # Verify database state
         db_session.expire_all()
@@ -155,6 +156,10 @@ class TestEvaluationsRouter:
             ModelResponse.id == model_response.id
         ).first()
         assert mr.evaluated is True
+
+        # Note: Background task runs in separate session and may fail to find
+        # the evaluation since test session data isn't visible to other sessions.
+        # This is expected behavior - in production, data is committed immediately.
 
     def test_submit_evaluation_missing_metrics(self, test_client, db_session):
         """Test evaluation with missing metrics fails validation."""

@@ -861,7 +861,7 @@ Phase 1 tamamlanmış sayılır eğer:
   - [x] UserEvaluation object oluştur (ID: eval_YYYYMMDD_HHMMSS_randomhex)
   - [x] evaluations JSON'u serialize et
   - [x] Database'e kaydet
-  - [ ] Async judge task başlat (arka planda) → Task 3.11'de yapılacak
+  - [x] Async judge task başlat (arka planda) → ✅ **TAMAMLANDI** (1 Şubat 2026)
   - [x] Immediate response dön: `{evaluation_id, status: "submitted", message}`
 - [x] Error handling
 - [x] Router integration (main.py)
@@ -991,11 +991,13 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/tasks/__init__.py` oluştur
-- [ ] `backend/tasks/judge_task.py` oluştur
-- [ ] Background task decorator kullan (FastAPI BackgroundTasks)
-- [ ] Logger setup
+- [x] `backend/tasks/__init__.py` oluştur
+- [x] `backend/tasks/judge_task.py` oluştur
+- [x] Background task decorator kullan (FastAPI BackgroundTasks)
+- [x] Logger setup
 
 ---
 
@@ -1003,14 +1005,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `run_judge_evaluation(user_eval_id: str)` async fonksiyonu yaz:
-  - [ ] Try/except wrapper
-  - [ ] Stage 1 çağır
-  - [ ] (Stage 2 Week 4'te eklenecek)
-  - [ ] user_evaluations.judged = TRUE set et
-  - [ ] Errors handle et ve logla
-- [ ] Task'ı evaluation submit endpoint'ten çağır (BackgroundTasks)
+- [x] `run_judge_evaluation(user_eval_id: str)` async fonksiyonu yaz:
+  - [x] Try/except wrapper
+  - [x] Stage 1 çağır
+  - [x] (Stage 2 Week 4'te eklenecek)
+  - [x] user_evaluations.judged = TRUE set et
+  - [x] Errors handle et ve logla
+- [x] Task'ı evaluation submit endpoint'ten çağır (BackgroundTasks)
 
 ---
 
@@ -1018,14 +1022,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `GET /api/evaluations/{evaluation_id}/feedback` endpoint yaz:
-  - [ ] user_evaluation getir
-  - [ ] judged flag kontrol et
-  - [ ] Eğer FALSE → return `{status: "processing"}`
-  - [ ] Eğer TRUE → judge_evaluation getir ve return
-- [ ] Response schema
-- [ ] Test endpoint
+- [x] `GET /api/evaluations/{evaluation_id}/feedback` endpoint yaz:
+  - [x] user_evaluation getir
+  - [x] judged flag kontrol et
+  - [x] Eğer FALSE → return `{status: "processing"}`
+  - [x] Eğer TRUE → return `{status: "completed"}` (Stage 2 Week 4'te eklenecek)
+- [x] Response schema
+- [x] Test endpoint
+- [x] `POST /api/evaluations/{evaluation_id}/retry` endpoint (ekstra - retry için)
 
 ---
 
