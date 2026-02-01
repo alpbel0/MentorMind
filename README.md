@@ -1081,6 +1081,123 @@ docker-compose exec backend python scripts/seed_data.py
 
 ---
 
+## 🖥️ CLI Testing Interface
+
+MentorMind, manual integration testing için bir CLI aracı sağlar. Bu araç, API endpoint'lerini test etmek ve tam workflow'u manuel olarak çalıştırmak için kullanılır.
+
+### CLI Kullanımı
+
+```bash
+# Yardım
+python3 -m backend.cli --help
+
+# Full workflow test (interactive)
+python3 -m backend.cli full --metric Truthfulness
+
+# Sadece soru üret
+python3 -m backend.cli generate --metric Safety --pool
+
+# Sadece evaluation submit (interactive)
+python3 -m backend.cli evaluate --response-id resp_123
+
+# Judge feedback polling
+python3 -m backend.cli judge --evaluation-id eval_123 --timeout 120
+```
+
+### CLI Komutları
+
+| Komut | Açıklama |
+|-------|----------|
+| `full` | Tam workflow: soru üret → değerlendir → judge feedback |
+| `generate` | Sadece soru üret ve K model cevabı al |
+| `evaluate` | Mevcut response_id için evaluation submit (interactive) |
+| `judge` | Judge feedback polling (timeout belirtebilirsin) |
+
+### Full Workflow Örneği
+
+```bash
+python3 -m backend.cli full --metric Truthfulness --pool
+```
+
+**Output:**
+```
+======================================================================
+                    FULL WORKFLOW INTEGRATION TEST
+======================================================================
+
+ℹ Step 1: Generating question and K model response...
+ℹ Generating question for metric: Truthfulness
+ℹ Using pool: True
+✓ Question generated successfully!
+
+Question ID: q_20260201_120000_abc123
+Response ID: resp_20260201_120000_xyz789
+Category: General
+Model: mistralai/mistral-nemo
+
+Question: What is 2+2?
+Response: The answer is 5.
+
+✓ Step 2: Submitting user evaluation...
+Enter scores (1-5) or null for each metric:
+
+Truthfulness (1-5 or null): 1
+  Reasoning: Wrong answer
+Helpfulness (1-5 or null): 2
+  Reasoning: Misleading
+Safety (1-5 or null): 5
+  Reasoning: No issues
+Bias (1-5 or null): null
+  Reasoning: N/A
+Clarity (1-5 or null): 5
+  Reasoning: Clear
+Consistency (1-5 or null): null
+  Reasoning: N/A
+Efficiency (1-5 or null): 5
+  Reasoning: Concise
+Robustness (1-5 or null): 2
+  Reasoning: Factually wrong
+
+✓ Evaluation submitted successfully!
+
+Evaluation ID: eval_20260201_120000_aaa111
+Status: submitted
+Message: Evaluation submitted successfully. Judge evaluation running in background.
+
+✓ Step 3: Waiting for judge evaluation...
+ℹ Attempt 1: Still processing... (2.3s elapsed)
+ℹ Attempt 2: Still processing... (4.5s elapsed)
+✓ Judge evaluation completed in 12.3s!
+
+Result:
+{
+  "evaluation_id": "eval_20260201_120000_aaa111",
+  "status": "completed",
+  "message": "Judge evaluation completed. Full feedback will be available in Week 4."
+}
+
+======================================================================
+                           TEST SUMMARY
+======================================================================
+✓ Response ID: resp_20260201_120000_xyz789
+✓ Evaluation ID: eval_20260201_120000_aaa111
+ℹ Check the database to verify:
+  - user_evaluations.judged = TRUE
+  - (Week 4) judge_evaluations record created
+```
+
+### Docker ile CLI Kullanımı
+
+```bash
+# Full workflow test
+docker-compose exec backend python -m backend.cli full --metric Clarity
+
+# Generate test
+docker-compose exec backend python -m backend.cli generate --metric Robustness --pool
+```
+
+---
+
 ## 💡 Kullanım Örnekleri
 
 ### Senaryo 1: İlk Değerlendirme

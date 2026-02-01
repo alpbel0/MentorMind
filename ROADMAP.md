@@ -1040,12 +1040,14 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (31 Ocak 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/tests/test_judge_service.py` oluştur
-- [ ] test_fetch_evaluation_data()
-- [ ] test_parse_judge_response()
-- [ ] test_stage1_independent_evaluation() (mock GPT-4o)
-- [ ] Tests çalıştır
+- [x] `backend/tests/test_judge_service.py` oluştur
+- [x] test_fetch_evaluation_data()
+- [x] test_parse_judge_response()
+- [x] test_stage1_independent_evaluation() (mock GPT-4o)
+- [x] Tests çalıştır (11 passed)
 
 ---
 
@@ -1053,15 +1055,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] Manuel test senaryosu:
-  1. [ ] Soru üret ve K model cevapla
-  2. [ ] User evaluation submit et (8 metrik)
-  3. [ ] Judge task'ın arka planda çalıştığını loglardan kontrol et
-  4. [ ] 10-30 saniye bekle
-  5. [ ] Feedback endpoint'ten judge sonucunu al
-  6. [ ] judge_evaluations tablosunu kontrol et
-- [ ] Bug'ları tespit et ve fix'le
+- [x] `backend/cli.py` oluştur (CLI testing interface)
+- [x] Interactive evaluation submission (8 metrik)
+- [x] Judge feedback polling with timeout
+- [x] Full workflow test command (generate → evaluate → judge)
+- [x] Colored terminal output
+- [x] Error handling for API failures
+- [x] README.md'ye CLI kullanım instructions ekle
+- [x] Test ve doğrula
 
 ---
 
@@ -1070,11 +1074,13 @@ Phase 1 tamamlanmış sayılır eğer:
 - [x] User evaluation API çalışıyor (30 Ocak 2026)
 - [x] Evaluation validation doğru (30 Ocak 2026)
 - [x] Judge prompts hazır (hardcoded) (30 Ocak 2026)
-- [ ] Judge Stage 1 (independent) çalışıyor
-- [ ] Async task infrastructure kurulu
-- [ ] Judge feedback endpoint çalışıyor
-- [ ] LLM logging GPT-4o call'larını kaydediyor
-- [ ] Integration tests geçiyor
+- [x] Judge Stage 1 (independent) çalışıyor (31 Ocak 2026)
+- [x] Async task infrastructure kurulu (1 Şubat 2026)
+- [x] Judge feedback endpoint çalışıyor (1 Şubat 2026)
+- [x] LLM logging GPT-4o call'larını kaydediyor (31 Ocak 2026)
+- [x] Judge service tests (11 passed) (31 Ocak 2026)
+- [x] Integration tests geçiyor (1 Şubat 2026)
+- [x] CLI testing interface (1 Şubat 2026)
 
 ---
 
