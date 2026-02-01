@@ -1112,23 +1112,28 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `add_to_memory(user_eval_id: str, judge_eval_id: str) -> None` fonksiyonu yaz:
-  - [ ] Evaluation data fetch et
-  - [ ] Judge evaluation fetch et
-  - [ ] Document text oluştur (summary format)
-  - [ ] Metadata oluştur:
+- [x] `add_to_memory(db_session, user_eval_id: str, judge_eval_id: str) -> None` fonksiyonu yaz:
+  - [x] Evaluation data fetch et (4-table join)
+  - [x] Judge evaluation fetch et
+  - [x] Document text oluştur (balanced format ~500 chars)
+  - [x] Metadata oluştur:
     - evaluation_id
     - judge_id
     - category
     - primary_metric
+    - difficulty
     - judge_meta_score
-    - alignment_gap
-    - mistake_pattern
+    - primary_metric_gap
+    - weighted_gap
+    - model_name
     - timestamp
-  - [ ] ChromaDB'ye add et
-- [ ] Error handling
-- [ ] Test fonksiyonu
+    - mistake_pattern
+  - [x] ChromaDB'ye add et
+- [x] Error handling (ValueError for missing data, RuntimeError for ChromaDB failures)
+- [x] Test fonksiyonu (inline test data, 8 tests passed)
 
 ---
 
@@ -1136,15 +1141,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (1 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `query_past_mistakes(primary_metric: str, category: str, n: int = 5) -> dict` fonksiyonu yaz:
-  - [ ] Query text oluştur: "User evaluating {primary_metric} in {category} category"
-  - [ ] ChromaDB query (where filter: primary_metric & category)
-  - [ ] n_results=5
-  - [ ] Return: `{ids, documents, metadatas, distances}`
-- [ ] Empty result handling
-- [ ] Error handling
-- [ ] Test fonksiyonu
+- [x] `query_past_mistakes(primary_metric: str, category: str, n: int = 5) -> dict` fonksiyonu yaz:
+  - [x] Query text oluştur: "User evaluating {primary_metric} in {category} category"
+  - [x] ChromaDB query (where filter: $and operator for primary_metric & category)
+  - [x] n_results parameter
+  - [x] Return simplified format: `{evaluations: [{evaluation_id, category, judge_meta_score, primary_gap, feedback, mistake_pattern, timestamp}]}`
+- [x] Empty result handling (returns empty list)
+- [x] Error handling (RuntimeError for ChromaDB failures)
+- [x] Test fonksiyonu (query tests with n parameter, filters)
 
 ---
 

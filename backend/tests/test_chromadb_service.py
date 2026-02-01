@@ -144,15 +144,20 @@ class TestChromaDBService:
         count = collection.count()
         assert isinstance(count, int)
 
-    def test_add_to_memory_not_implemented(self):
-        """Test add_to_memory raises NotImplementedError."""
-        with pytest.raises(NotImplementedError, match="will be implemented in Task 4.2"):
+    def test_add_to_memory_requires_db_session(self):
+        """Test add_to_memory requires db_session parameter."""
+        # Should raise TypeError since we're not passing db_session
+        with pytest.raises(TypeError):
             chromadb_service.add_to_memory("eval_123", "judge_456")
 
-    def test_query_past_mistakes_not_implemented(self):
-        """Test query_past_mistakes raises NotImplementedError."""
-        with pytest.raises(NotImplementedError, match="will be implemented in Task 4.3"):
-            chromadb_service.query_past_mistakes("Truthfulness", "Math")
+    def test_query_past_mistakes_returns_dict(self):
+        """Test query_past_mistakes returns proper dict structure."""
+        result = chromadb_service.query_past_mistakes("NonExistent", "NonExistent")
+
+        assert result is not None
+        assert isinstance(result, dict)
+        assert "evaluations" in result
+        assert isinstance(result["evaluations"], list)
 
     def test_heartbeat(self):
         """Test ChromaDB server heartbeat."""

@@ -12,15 +12,18 @@ Usage:
     if chromadb_service.test_connection():
         collection = chromadb_service.get_collection()
 
-    # Future: Add to memory (Task 4.2)
-    # chromadb_service.add_to_memory("eval_123", "judge_456")
+    # Add evaluation to memory (Task 4.2)
+    from backend.models.database import SessionLocal
+    db = SessionLocal()
+    chromadb_service.add_to_memory(db, "eval_123", "judge_456")
 
-    # Future: Query past mistakes (Task 4.3)
-    # results = chromadb_service.query_past_mistakes("Truthfulness", "Math", n=5)
+    # Query past mistakes (Task 4.3)
+    results = chromadb_service.query_past_mistakes("Truthfulness", "Math", n=5)
 """
 
+import json
 import logging
-from typing import Optional
+from typing import Optional, Any
 
 import chromadb
 from chromadb.config import Settings
@@ -191,28 +194,93 @@ class ChromaDBService:
             return 0
 
     # =====================================================
-    # Placeholder for Future Tasks
+    # Memory Operations (Tasks 4.2 & 4.3)
     # =====================================================
 
-    def add_to_memory(self, user_eval_id: str, judge_eval_id: str) -> None:
+    def add_to_memory(
+        self,
+        db_session: Any,
+        user_eval_id: str,
+        judge_eval_id: str
+    ) -> None:
         """
-        Store evaluation in ChromaDB vector memory.
+        Store evaluation in ChromaDB vector memory (Task 4.2).
 
-        **IMPLEMENTATION IN TASK 4.2**
-
-        Creates an embedding from evaluation data and stores
-        in collection with metadata for filtering.
+        Fetches evaluation data from PostgreSQL, creates a document with
+        balanced detail level (~500 chars), and stores as embedding for
+        pattern recognition in future judge evaluations.
 
         Args:
-            user_eval_id: User evaluation ID
-            judge_eval_id: Judge evaluation ID
+            db_session: SQLAlchemy database session (dependency injection)
+            user_eval_id: User evaluation ID (format: eval_YYYYMMDD_...)
+            judge_eval_id: Judge evaluation ID (format: judge_YYYYMMDD_...)
 
         Raises:
-            NotImplementedError: Until Task 4.2
+            ValueError: If evaluation data not found
+            RuntimeError: If ChromaDB operation fails
         """
-        raise NotImplementedError(
-            "add_to_memory() will be implemented in Task 4.2"
+        from backend.models.user_evaluation import UserEvaluation
+        from backend.models.judge_evaluation import JudgeEvaluation
+        from backend.models.model_response import ModelResponse
+        from backend.models.question import Question
+
+        # Fetch evaluation data (4-table join via manual queries)
+        user_eval = db_session.query(UserEvaluation).filter_by(id=user_eval_id).first()
+        if not user_eval:
+            raise ValueError(f"User evaluation {user_eval_id} not found")
+
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(id=judge_eval_id).first()
+        if not judge_eval:
+            raise ValueError(f"Judge evaluation {judge_eval_id} not found")
+
+        model_response = db_session.query(ModelResponse).filter_by(id=user_eval.response_id).first()
+        if not model_response:
+            raise ValueError(f"Model response {user_eval.response_id} not found")
+
+        question = db_session.query(Question).filter_by(id=model_response.question_id).first()
+        if not question:
+            raise ValueError(f"Question {model_response.question_id} not found")
+
+        # Determine primary metric
+        primary_metric = judge_eval.primary_metric
+        bonus_metrics = question.bonus_metrics or []
+
+        # Create balanced document text (~500 chars)
+        document_text = self._create_document_text(
+            user_eval=user_eval,
+            judge_eval=judge_eval,
+            question=question,
+            model_response=model_response,
+            primary_metric=primary_metric
         )
+
+        # Create metadata for filtering
+        metadata = {
+            "evaluation_id": user_eval_id,
+            "judge_id": judge_eval_id,
+            "category": question.category,
+            "primary_metric": primary_metric,
+            "difficulty": question.difficulty,
+            "judge_meta_score": judge_eval.judge_meta_score,
+            "primary_metric_gap": judge_eval.primary_metric_gap,
+            "weighted_gap": judge_eval.weighted_gap,
+            "model_name": model_response.model_name,
+            "timestamp": judge_eval.created_at.isoformat(),
+            "mistake_pattern": self._extract_mistake_pattern(judge_eval.alignment_analysis)
+        }
+
+        # Add to ChromaDB collection
+        try:
+            collection = self.get_collection()
+            collection.add(
+                ids=[user_eval_id],  # Use user_eval_id as document ID
+                documents=[document_text],
+                metadatas=[metadata]
+            )
+            logger.info(f"Added evaluation {user_eval_id} to ChromaDB memory")
+        except Exception as e:
+            logger.error(f"Failed to add to ChromaDB: {e}")
+            raise RuntimeError(f"ChromaDB add failed: {e}")
 
     def query_past_mistakes(
         self,
@@ -221,12 +289,10 @@ class ChromaDBService:
         n: int = 5
     ) -> dict:
         """
-        Query similar past evaluations from memory.
+        Query similar past evaluations from memory (Task 4.3).
 
-        **IMPLEMENTATION IN TASK 4.3**
-
-        Searches for evaluations matching the same primary_metric
-        and category to find patterns in user mistakes.
+        Searches for evaluations matching the same primary_metric and category
+        to find patterns in user mistakes for context in Stage 2 feedback.
 
         Args:
             primary_metric: Metric being evaluated (e.g., "Truthfulness")
@@ -235,18 +301,183 @@ class ChromaDBService:
 
         Returns:
             {
-                "ids": [["eval_001", "eval_042", ...]],
-                "documents": [["...", ...]],
-                "metadatas": [[{...}, ...]],
-                "distances": [[0.12, 0.18, ...]]
+                "evaluations": [
+                    {
+                        "evaluation_id": "eval_...",
+                        "category": "Math",
+                        "judge_meta_score": 3,
+                        "primary_gap": 1.2,
+                        "feedback": "Overestimated minor errors...",
+                        "mistake_pattern": "Truthfulness_bias",
+                        "timestamp": "2025-01-30T14:30:00Z"
+                    },
+                    ...
+                ]
             }
 
         Raises:
-            NotImplementedError: Until Task 4.3
+            RuntimeError: If ChromaDB query fails
         """
-        raise NotImplementedError(
-            "query_past_mistakes() will be implemented in Task 4.3"
+        try:
+            collection = self.get_collection()
+
+            # Query text for embedding
+            query_text = f"User evaluating {primary_metric} in {category} category"
+
+            # Query with metadata filter (ChromaDB 1.x syntax)
+            results = collection.query(
+                query_texts=[query_text],
+                n_results=n,
+                where={"$and": [
+                    {"primary_metric": primary_metric},
+                    {"category": category}
+                ]}
+            )
+
+            # Handle empty results
+            if not results or not results['ids'] or not results['ids'][0]:
+                logger.info(f"No past mistakes found for {primary_metric} in {category}")
+                return {"evaluations": []}
+
+            # Format results into simplified structure
+            evaluations = []
+            for i, doc_id in enumerate(results['ids'][0]):
+                metadata = results['metadatas'][0][i]
+                # Extract feedback from document if available
+                feedback = self._extract_feedback_from_doc(
+                    results.get('documents', [[]])[0][i] if results.get('documents') else ""
+                )
+                evaluations.append({
+                    "evaluation_id": metadata.get('evaluation_id', doc_id),
+                    "category": metadata.get('category', ''),
+                    "judge_meta_score": metadata.get('judge_meta_score', 0),
+                    "primary_gap": metadata.get('primary_metric_gap', 0.0),
+                    "feedback": feedback,
+                    "mistake_pattern": metadata.get('mistake_pattern', ''),
+                    "timestamp": metadata.get('timestamp', '')
+                })
+
+            logger.info(f"Found {len(evaluations)} past mistakes for {primary_metric} in {category}")
+            return {"evaluations": evaluations}
+
+        except Exception as e:
+            logger.error(f"Failed to query ChromaDB: {e}")
+            raise RuntimeError(f"ChromaDB query failed: {e}")
+
+    # =====================================================
+    # Helper Methods
+    # =====================================================
+
+    def _create_document_text(
+        self,
+        user_eval: Any,
+        judge_eval: Any,
+        question: Any,
+        model_response: Any,
+        primary_metric: str
+    ) -> str:
+        """
+        Create balanced document text for embedding (~500 chars).
+
+        Includes key fields for semantic search while keeping size
+        manageable for embedding generation.
+
+        Args:
+            user_eval: UserEvaluation ORM object
+            judge_eval: JudgeEvaluation ORM object
+            question: Question ORM object
+            model_response: ModelResponse ORM object
+            primary_metric: Primary metric name
+
+        Returns:
+            Document text string (~500 chars)
+        """
+        # Extract user scores (only non-null scores)
+        user_scores = {
+            k: v['score']
+            for k, v in user_eval.evaluations.items()
+            if v.get('score') is not None
+        }
+
+        # Extract judge scores
+        judge_scores = {
+            k: v['score']
+            for k, v in judge_eval.independent_scores.items()
+        }
+
+        # Build document text
+        doc = (
+            f"User evaluated {model_response.model_name} on {question.category} question. "
+            f"Primary metric: {primary_metric}. "
+            f"User scores: {json.dumps(user_scores)}. "
+            f"Judge scores: {json.dumps(judge_scores)}. "
+            f"Meta score: {judge_eval.judge_meta_score}/5. "
+            f"Primary gap: {judge_eval.primary_metric_gap}. "
         )
+
+        # Truncate feedback if needed (keep first 150 chars)
+        feedback = judge_eval.overall_feedback or ""
+        if len(feedback) > 150:
+            feedback = feedback[:147] + "..."
+        doc += f"Feedback: {feedback}"
+
+        # Add timestamp
+        doc += f". Timestamp: {judge_eval.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+        return doc
+
+    def _extract_mistake_pattern(self, alignment_analysis: dict) -> str:
+        """
+        Extract common mistake pattern from alignment analysis.
+
+        Analyzes verdicts to detect patterns like overestimation,
+        underestimation, or significant misalignment.
+
+        Args:
+            alignment_analysis: Alignment analysis dict from judge evaluation
+
+        Returns:
+            Pattern string (e.g., "Truthfulness_bias", "no_clear_pattern")
+        """
+        patterns = []
+        for metric, data in alignment_analysis.items():
+            if isinstance(data, dict):
+                verdict = data.get('verdict', '')
+                if 'significantly_over' in verdict or 'over_estimated' in verdict:
+                    patterns.append(f"{metric}_over")
+                elif 'significantly_under' in verdict or 'under_estimated' in verdict:
+                    patterns.append(f"{metric}_under")
+                elif 'significantly_off' in verdict:
+                    patterns.append(f"{metric}_off")
+
+        return "_".join(patterns) if patterns else "no_clear_pattern"
+
+    def _extract_feedback_from_doc(self, document: str) -> str:
+        """
+        Extract feedback text from stored document.
+
+        Args:
+            document: Document text string
+
+        Returns:
+            Feedback excerpt (up to 200 chars)
+        """
+        if not document:
+            return ""
+
+        # Find "Feedback: " in document
+        if "Feedback: " in document:
+            try:
+                feedback_start = document.index("Feedback: ") + len("Feedback: ")
+                feedback_end = document.find(".", feedback_start)
+                if feedback_end > feedback_start:
+                    feedback = document[feedback_start:feedback_end]
+                    return feedback[:200] if len(feedback) > 200 else feedback
+            except (ValueError, IndexError):
+                pass
+
+        # Fallback: return last 200 chars of document
+        return document[-200:] if len(document) > 200 else document
 
 
 # =====================================================

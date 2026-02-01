@@ -817,13 +817,17 @@ Feedback: Overestimated minor errors. Missed critical factual inaccuracies...
 
 ```python
 class ChromaDBService:
-    def add_to_memory(user_eval_id: str, judge_eval_id: str) -> None:
+    def add_to_memory(
+        db_session: Session,
+        user_eval_id: str,
+        judge_eval_id: str
+    ) -> None:
         """
         After judge evaluation completes:
-        1. Fetch evaluation data
-        2. Create document text
-        3. Create metadata
-        4. Add to ChromaDB collection
+        1. Fetch evaluation data from PostgreSQL (4-table join)
+        2. Create document text (~500 chars balanced format)
+        3. Create metadata (category, metric, gaps, pattern, etc.)
+        4. Add to ChromaDB collection with user_eval_id as document ID
         """
 
     def query_past_mistakes(
@@ -843,7 +847,20 @@ class ChromaDBService:
             ]
         }
 
-        Returns: {ids, documents, metadatas, distances}
+        Returns: {
+            "evaluations": [
+                {
+                    "evaluation_id": "eval_...",
+                    "category": "Math",
+                    "judge_meta_score": 3,
+                    "primary_gap": 1.2,
+                    "feedback": "Overestimated minor errors...",
+                    "mistake_pattern": "Truthfulness_bias",
+                    "timestamp": "2025-01-30T14:30:00Z"
+                },
+                ...
+            ]
+        }
         """
 ```
 
@@ -857,18 +874,28 @@ results = chromadb_service.query_past_mistakes(
     n=5
 )
 
-# Result might include:
+# Result format:
 {
-    "ids": [["eval_001", "eval_042", "eval_089"]],
-    "metadatas": [[
+    "evaluations": [
         {
-            "mistake_pattern": "over_estimating_minor_errors",
-            "alignment_gap": 1.2,
-            "timestamp": "2025-01-20T10:30:00Z"
+            "evaluation_id": "eval_001",
+            "category": "Math",
+            "judge_meta_score": 3,
+            "primary_gap": 1.2,
+            "feedback": "Overestimated minor errors",
+            "mistake_pattern": "Truthfulness_over",
+            "timestamp": "2025-01-30T14:30:00Z"
         },
-        ...
-    ]],
-    "distances": [[0.12, 0.18, 0.25]]
+        {
+            "evaluation_id": "eval_042",
+            "category": "Math",
+            "judge_meta_score": 2,
+            "primary_gap": 1.8,
+            "feedback": "Missed factual error",
+            "mistake_pattern": "Truthfulness_under",
+            "timestamp": "2025-01-28T10:15:00Z"
+        }
+    ]
 }
 
 # Judge uses this in Stage 2 feedback:
@@ -1442,8 +1469,8 @@ pip-audit
 
 #### Week 4: Judge Stage 2 & End-to-End Testing (Feb 17 - Feb 23)
 - [x] ChromaDB service setup (1 Şubat 2026)
-- [ ] Add to memory function
-- [ ] Query past mistakes function
+- [x] Add to memory function (1 Şubat 2026)
+- [x] Query past mistakes function (1 Şubat 2026)
 - [ ] Comparison table generator
 - [ ] Weighted gap calculation
 - [ ] Meta score mapping
