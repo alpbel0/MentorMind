@@ -10,7 +10,7 @@ Endpoints:
 """
 
 import logging
-from typing import Literal
+from typing import Literal, Optional
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
@@ -51,6 +51,7 @@ class QuestionGenerateResponse(BaseModel):
     model_response: str = Field(..., description="K model's answer")
     model_name: str = Field(..., description="K model name")
     category: str = Field(..., description="Question category")
+    question_type: Optional[str] = Field(None, description="Type of question")
 
 
 # =====================================================
@@ -110,7 +111,8 @@ async def generate_question(
             question=question.question,
             model_response=model_response.response_text,
             model_name=model_response.model_name,
-            category=question.category
+            category=question.category,
+            question_type=question.question_type
         )
 
     except ValueError as e:

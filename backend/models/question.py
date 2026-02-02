@@ -88,6 +88,9 @@ class Question(Base):
     bonus_metrics: Mapped[list[str]] = mapped_column(JSONB, default=list)
     """Hidden secondary metrics (JSONB array, denormalized for query performance)"""
 
+    question_type: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
+    """Question type denormalized from question_prompts (e.g., hallucination_test, factual_accuracy)"""
+
     # =====================================================
     # Foreign Key
     # =====================================================

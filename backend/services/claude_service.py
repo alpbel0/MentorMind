@@ -328,6 +328,7 @@ class ClaudeService:
             rubric_breakdown=question_data["rubric_breakdown"],
             primary_metric=primary_metric,
             bonus_metrics=prompt.bonus_metrics if prompt else [],
+            question_type=question_type,
             question_prompt_id=prompt.id if prompt else None,
             times_used=0
         )

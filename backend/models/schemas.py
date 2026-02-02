@@ -157,6 +157,7 @@ class QuestionBase(BaseModel):
     rubric_breakdown: dict[str, str] = Field(..., description="Score descriptions (1-5)")
     primary_metric: str = Field(..., description="Main metric being tested")
     bonus_metrics: list[str] = Field(default_factory=list, description="Hidden secondary metrics")
+    question_type: Optional[str] = Field(None, description="Question type (e.g., hallucination_test)")
 
 
 class QuestionCreate(QuestionBase):
