@@ -1294,10 +1294,12 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/routers/stats.py` oluştur
-- [ ] APIRouter oluştur
-- [ ] Logger setup
+- [x] `backend/routers/stats.py` oluştur
+- [x] APIRouter oluştur
+- [x] Logger setup
 
 ---
 
@@ -1305,17 +1307,19 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `GET /api/stats/overview` endpoint yaz:
-  - [ ] Total evaluations (COUNT user_evaluations)
-  - [ ] Average meta score (AVG judge_meta_score)
-  - [ ] Metrics performance:
-    - Her metrik için: avg primary_metric_gap, count
-    - Trend hesapla (son 10 vs önceki 10)
-  - [ ] Improvement trend (overall)
-  - [ ] Response format
-- [ ] Database queries optimize et (indexes kullan)
-- [ ] Test endpoint
+- [x] `GET /api/stats/overview` endpoint yaz:
+  - [x] Total evaluations (COUNT user_evaluations)
+  - [x] Average meta score (AVG judge_meta_score)
+  - [x] Metrics performance:
+    - [x] Her metrik için: avg primary_metric_gap, count
+    - [x] Trend hesapla (son 10 vs önceki 10)
+  - [x] Improvement trend (overall)
+  - [x] Response format
+- [x] Database queries optimize et (indexes kullan)
+- [x] Test endpoint (8 tests passing)
 
 ---
 
@@ -1323,15 +1327,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 3 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/cli.py` oluştur:
-  - [ ] `start_evaluation(primary_metric, use_pool)` → API call
-  - [ ] `submit_evaluation(response_id, evaluations)` → API call
-  - [ ] `get_feedback(evaluation_id)` → API call
-  - [ ] `get_stats()` → API call
-  - [ ] Pretty print results
-- [ ] Interactive CLI (input prompts)
-- [ ] Test CLI
+- [x] `backend/cli.py` güncelle:
+  - [x] `start_evaluation(primary_metric, use_pool)` → API call (zaten mevcut)
+  - [x] `submit_evaluation(response_id, evaluations)` → API call (zaten mevcut)
+  - [x] `get_feedback(evaluation_id)` → API call (zaten mevcut)
+  - [x] `get_stats()` → API call (yeni eklendi)
+  - [x] Pretty print results
+- [x] Interactive CLI (input prompts) (zaten mevcut)
+- [x] Test CLI
 
 ---
 
@@ -1339,18 +1345,20 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 4 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `backend/tests/test_e2e.py` oluştur
-- [ ] Test Scenario 1: Yeni soru üretme → değerlendirme → judge → feedback
-- [ ] Test Scenario 2: Havuzdan soru seçme → değerlendirme → judge → feedback
-- [ ] Test Scenario 3: Tekrar eden hata (ChromaDB hafıza)
-- [ ] Test Scenario 4: İstatistikler
-- [ ] Assert conditions:
-  - [ ] Database records created
-  - [ ] Judge meta score calculated
-  - [ ] ChromaDB document added
-  - [ ] Feedback returned
-- [ ] Tests çalıştır
+- [x] `backend/tests/test_e2e.py` oluştur
+- [x] Test Scenario 1: Yeni soru üretme → değerlendirme → judge → feedback
+- [x] Test Scenario 2: Havuzdan soru seçme → değerlendirme → judge → feedback
+- [x] Test Scenario 3: Tekrar eden hata (ChromaDB hafıza)
+- [x] Test Scenario 4: İstatistikler
+- [x] Assert conditions:
+  - [x] Database records created
+  - [x] Judge meta score calculated
+  - [x] ChromaDB document added
+  - [x] Feedback returned
+- [x] Tests çalıştır (7 tests passing)
 
 ---
 
@@ -1435,6 +1443,45 @@ Phase 1 tamamlanmış sayılır eğer:
 - [ ] Docker run: `docker-compose up -d`
 - [ ] Health check: All services healthy
 - [ ] End-to-end workflow: Baştan sona çalışıyor mu?
+
+---
+
+### Task 4.20: Enhancement - question_type Denormalization
+
+**Tahmini Süre:** 1 saat
+
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `backend/schemas/07_add_question_type_to_questions.sql` oluştur:
+  - [x] `question_type` column ekle (TEXT, nullable)
+  - [x] Existing data migrate et (question_prompts'tan questions'a)
+  - [x] Index oluştur (idx_questions_question_type)
+- [x] `backend/models/question.py` güncelle:
+  - [x] `question_type: Mapped[Optional[str]]` field ekle
+  - [x] String(50), nullable=True for backward compatibility
+- [x] `backend/models/schemas.py` güncelle:
+  - [x] QuestionBase'e `question_type: Optional[str]` field ekle
+  - [x] Field description ekle
+- [x] `backend/services/claude_service.py` güncelle:
+  - [x] `_generate_new_question()` fonksiyonuna `question_type=question_type` ekle
+- [x] `backend/routers/questions.py` güncelle:
+  - [x] QuestionGenerateResponse'a `question_type: Optional[str]` field ekle
+  - [x] Return statement'a `question_type=question.question_type` ekle
+  - [x] Optional import ekle
+- [x] SQL migration execute et:
+  - [x] Column added (ALTER TABLE)
+  - [x] Data migrated (15 questions updated)
+  - [x] Index created
+- [x] Test API response:
+  - [x] `/api/questions/generate` returns `question_type`
+  - [x] Pool selection works with `question_type`
+  - [x] New generation populates `question_type`
+
+**Notlar:**
+- question_type denormalized from question_prompts for query performance
+- Backward compatible (nullable column)
+- All existing questions migrated (15 rows)
 
 ---
 

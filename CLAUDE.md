@@ -134,12 +134,13 @@ Generated questions with denormalized metadata.
 | `rubric_breakdown` | JSONB | Score descriptions (1-5) |
 | `primary_metric` | TEXT | Denormalized from prompt |
 | `bonus_metrics` | JSONB | Denormalized from prompt (array) |
+| `question_type` | TEXT | Denormalized from prompt (e.g., hallucination_test) |
 | `question_prompt_id` | INTEGER | FK to question_prompts (nullable) |
 | `times_used` | INTEGER | Pool usage tracking |
 | `first_used_at` | TIMESTAMP | First usage |
 | `last_used_at` | TIMESTAMP | Last usage |
 
-**Indexes:** `primary_metric`, `category`, `times_used`, `pool_selection (composite)`
+**Indexes:** `primary_metric`, `category`, `question_type`, `times_used`, `pool_selection (composite)`
 
 #### 3. model_responses
 K model answers to questions.
@@ -254,6 +255,7 @@ Start a new evaluation session.
   "model_response": "Jennifer Doudna won...",
   "model_name": "gpt-3.5-turbo",
   "category": "General",
+  "question_type": "hallucination_test",
   "primary_metric": "Truthfulness",
   "bonus_metrics": ["Clarity", "Helpfulness"]
 }
@@ -1478,10 +1480,11 @@ pip-audit
 - [x] Full flow integration (2 Şubat 2026)
 - [x] Full judge task (2 Şubat 2026)
 - [x] **Complete feedback endpoint (Task 4.10)** (2 Şubat 2026)
-- [ ] Statistics router setup
-- [ ] Overview endpoint
-- [ ] CLI testing interface
-- [x] End-to-end test suite (2 Şubat 2026 - 23 tests passed)
+- [x] **Statistics router setup (Task 4.11)** (2 Şubat 2026)
+- [x] **Overview endpoint (Task 4.12)** (2 Şubat 2026)
+- [x] **CLI testing interface stats command (Task 4.13)** (2 Şubat 2026)
+- [x] **End-to-end test suite (Task 4.14 - 7 tests passed)** (2 Şubat 2026)
+- [x] **question_type denormalization enhancement (Task 4.20)** (2 Şubat 2026)
 - [ ] Manual testing session
 - [ ] Performance testing
 - [x] Documentation update (2 Şubat 2026)
