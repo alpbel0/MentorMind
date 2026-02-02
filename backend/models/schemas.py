@@ -296,7 +296,7 @@ class AlignmentMetric(BaseModel):
 
     user_score: int = Field(..., ge=1, le=5, description="User's score")
     judge_score: int = Field(..., ge=1, le=5, description="Judge's score")
-    gap: int = Field(..., description="Score difference")
+    gap: int | float = Field(..., description="Score difference")
     verdict: str = Field(..., description="Alignment verdict")
     feedback: str = Field(..., description="Detailed feedback")
 

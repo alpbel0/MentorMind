@@ -1272,9 +1272,11 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `GET /api/evaluations/{evaluation_id}/feedback` endpoint'i güncelle:
-  - [ ] Complete response format:
+- [x] `GET /api/evaluations/{evaluation_id}/feedback` endpoint'i güncelle:
+  - [x] Complete response format:
     - evaluation_id
     - judge_meta_score
     - overall_feedback
@@ -1282,8 +1284,9 @@ Phase 1 tamamlanmış sayılır eğer:
     - improvement_areas
     - positive_feedback
     - past_patterns_referenced (ChromaDB'den)
-  - [ ] Response schema güncelle
-- [ ] Test endpoint
+  - [x] Response schema güncelle (AlignmentMetric.gap: int | float)
+- [x] Test endpoint (7 new tests added)
+- [x] Fix tests (UserEvaluation flush before JudgeEvaluation)
 
 ---
 
@@ -1441,9 +1444,10 @@ Phase 1 tamamlanmış sayılır eğer:
 - [x] Judge Stage 2 (mentoring) çalışıyor
 - [x] Full judge workflow (Stage 1 + ChromaDB + Stage 2) çalışıyor
 - [x] Past mistakes judge'a hatırlatılıyor
+- [x] **Judge Feedback Endpoint Complete** (Task 4.10) (2 Şubat 2026)
 - [ ] Statistics API çalışıyor
 - [ ] CLI testing interface hazır
-- [x] End-to-end tests geçiyor (38 tests passed)
+- [x] End-to-end tests geçiyor (16 tests + 7 new = 23 tests passed)
 - [ ] Manual test senaryoları başarılı
 - [x] Documentation güncel
 - [ ] Code clean ve formatlanmış

@@ -14,8 +14,10 @@ from sqlalchemy.orm import Session
 
 from backend.models.database import get_db
 from backend.models.schemas import (
+    AlignmentMetric,
     EvaluationSubmitRequest,
     EvaluationSubmitResponse,
+    JudgeFeedbackResponse,
 )
 from backend.tasks.judge_task import run_judge_evaluation, retry_judge_evaluation
 
@@ -148,26 +150,33 @@ async def submit_evaluation(
 async def get_evaluation_feedback(
     evaluation_id: str,
     db: Session = Depends(get_db)
-):
+) -> dict:
     """
-    Get judge feedback for an evaluation.
+    Get complete judge feedback for an evaluation.
 
-    Polling endpoint for clients to check if judge evaluation is complete.
+    Polling endpoint for clients to check judge evaluation results.
+    Returns HTTP 200 always - check 'status' field for processing vs completed.
 
     Args:
         evaluation_id: User evaluation ID
         db: Database session
 
     Returns:
-        - If judged=FALSE: {status: "processing", message: "..."}
-        - If judged=TRUE: {status: "completed", message: "..."}
-
-        Note: Full judge feedback (including scores) will be added in Week 4
-        with Stage 2 implementation.
+        If processing: {"status": "processing", "message": "..."}
+        If completed: JudgeFeedbackResponse as dict with:
+        - evaluation_id: Evaluation ID
+        - judge_meta_score: Overall evaluation quality (1-5)
+        - overall_feedback: Summary feedback
+        - alignment_analysis: Per-metric gap analysis
+        - improvement_areas: Areas where user needs improvement
+        - positive_feedback: What user did well
+        - past_patterns_referenced: Past evaluation IDs from ChromaDB
 
     Raises:
         HTTPException 404: Evaluation not found
+        HTTPException 500: Judge data not found (internal error)
     """
+    from backend.models.judge_evaluation import JudgeEvaluation
     from backend.models.user_evaluation import UserEvaluation
 
     user_eval = db.query(UserEvaluation).filter(
@@ -182,18 +191,60 @@ async def get_evaluation_feedback(
 
     if not user_eval.judged:
         return {
-            "evaluation_id": evaluation_id,
             "status": "processing",
             "message": "Judge evaluation in progress. Please try again later."
         }
 
-    # Fetch judge evaluation (will be implemented in Week 4 with Stage 2)
-    # For now, return basic completion status
-    return {
-        "evaluation_id": evaluation_id,
-        "status": "completed",
-        "message": "Judge evaluation completed. Full feedback will be available in Week 4."
-    }
+    # Fetch JudgeEvaluation
+    judge_eval = db.query(JudgeEvaluation).filter(
+        JudgeEvaluation.user_evaluation_id == evaluation_id
+    ).first()
+
+    if not judge_eval:
+        # This shouldn't happen if judged=TRUE, but handle gracefully
+        raise HTTPException(
+            status_code=500,
+            detail="Judge evaluation data not found. Please contact support."
+        )
+
+    # Extract past_patterns_referenced from vector_context
+    # vector_context format from ChromaDB: {"evaluations": [{evaluation_id, ...}, ...]}
+    past_patterns = []
+    if judge_eval.vector_context:
+        evaluations = judge_eval.vector_context.get("evaluations", [])
+        past_patterns = [
+            eval_data.get("evaluation_id")
+            for eval_data in evaluations
+            if eval_data.get("evaluation_id")
+        ]
+
+    # Convert alignment_analysis dict values to AlignmentMetric objects
+    # The database stores plain dicts, but we need proper AlignmentMetric objects
+    alignment_metrics = {}
+    for metric, data in judge_eval.alignment_analysis.items():
+        # Handle both dict and potentially already-converted objects
+        if isinstance(data, dict):
+            alignment_metrics[metric] = AlignmentMetric(
+                user_score=int(data.get("user_score", 0)),
+                judge_score=int(data.get("judge_score", 0)),
+                gap=int(data.get("gap", 0)) if isinstance(data.get("gap"), int) else float(data.get("gap", 0)),
+                verdict=str(data.get("verdict", "")),
+                feedback=str(data.get("feedback", ""))
+            )
+        else:
+            # Already an AlignmentMetric or similar object
+            alignment_metrics[metric] = data
+
+    # Return complete feedback (Pydantic model validates, returns dict)
+    return JudgeFeedbackResponse(
+        evaluation_id=evaluation_id,
+        judge_meta_score=judge_eval.judge_meta_score,
+        overall_feedback=judge_eval.overall_feedback,
+        alignment_analysis=alignment_metrics,
+        improvement_areas=list(judge_eval.improvement_areas) if judge_eval.improvement_areas else [],
+        positive_feedback=list(judge_eval.positive_feedback) if judge_eval.positive_feedback else [],
+        past_patterns_referenced=past_patterns
+    ).model_dump()  # Convert Pydantic to dict for JSON response
 
 
 @router.post("/{evaluation_id}/retry")
