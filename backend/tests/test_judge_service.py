@@ -330,13 +330,39 @@ class TestComparisonTableGenerator:
         service = JudgeService()
         table = service.generate_comparison_table(user_scores, judge_scores)
 
-        # Verify all rows show "aligned" verdict
+        # Verify table structure: header + separator + 8 data rows = 10 rows
+        rows = table.strip().split("\n")
+        assert len(rows) == 10
+
+        # Verify header row
+        assert rows[0] == "| Metric | User Score | Judge Score | Gap | Verdict |"
+        # Verify separator row
+        assert rows[1] == "|--------|------------|-------------|-----|---------|"
+
+        # Verify all data rows show "aligned" verdict
         for metric in THE_EIGHT_METRICS:
             assert f"{metric} | 3 | 3 | 0 | aligned" in table
 
-        # Verify table has 8 rows (one per metric)
-        rows = table.strip().split("\n")
-        assert len(rows) == 8
+    def test_generate_comparison_table_header_format(self):
+        """Test that table has proper Markdown header and separator."""
+        user_scores = {metric: {"score": 3, "reasoning": "..."} for metric in THE_EIGHT_METRICS}
+        judge_scores = {metric: {"score": 3, "rationale": "..."} for metric in THE_EIGHT_METRICS}
+
+        service = JudgeService()
+        table = service.generate_comparison_table(user_scores, judge_scores)
+
+        lines = table.strip().split("\n")
+
+        # Header must be first
+        assert "| Metric |" in lines[0]
+        assert "| User Score |" in lines[0]
+        assert "| Judge Score |" in lines[0]
+        assert "| Gap |" in lines[0]
+        assert "| Verdict |" in lines[0]
+
+        # Separator must be second with dashes
+        assert "|--------|" in lines[1]
+        assert lines[1].count("---") >= 5  # At least 5 column separators
 
     def test_generate_comparison_table_with_nulls(self):
         """Test table with null scores."""

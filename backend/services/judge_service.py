@@ -454,6 +454,13 @@ class JudgeService:
         """
         rows = []
 
+        # Add header row (Markdown table format requires header)
+        rows.append("| Metric | User Score | Judge Score | Gap | Verdict |")
+
+        # Add separator row (Markdown table format requires separator after header)
+        rows.append("|--------|------------|-------------|-----|---------|")
+
+        # Add data rows for each metric
         for metric in THE_EIGHT_METRICS:
             user_data = user_scores.get(metric, {})
             judge_data = judge_scores.get(metric, {})
