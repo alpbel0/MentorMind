@@ -1471,9 +1471,9 @@ pip-audit
 - [x] ChromaDB service setup (1 Şubat 2026)
 - [x] Add to memory function (1 Şubat 2026)
 - [x] Query past mistakes function (1 Şubat 2026)
-- [ ] Comparison table generator
-- [ ] Weighted gap calculation
-- [ ] Meta score mapping
+- [x] Comparison table generator (2 Şubat 2026)
+- [x] Weighted gap calculation (2 Şubat 2026)
+- [x] Meta score mapping (2 Şubat 2026)
 - [ ] Stage 2 implementation
 - [ ] Full flow integration
 - [ ] Full judge task

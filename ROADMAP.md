@@ -1159,15 +1159,17 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `generate_comparison_table(user_scores: dict, judge_scores: dict) -> str` fonksiyonu yaz:
-  - [ ] Markdown table oluştur
-  - [ ] Columns: Metric, User Score, Judge Score, Gap, Verdict
-  - [ ] Her 8 metrik için satır
-  - [ ] Gap hesapla (user - judge)
-  - [ ] Verdict belirle (over_estimated, under_estimated, aligned, not_applicable)
-  - [ ] Return markdown string
-- [ ] Test fonksiyonu
+- [x] `generate_comparison_table(user_scores: dict, judge_scores: dict) -> str` fonksiyonu yaz:
+  - [x] Markdown table oluştur
+  - [x] Columns: Metric, User Score, Judge Score, Gap, Verdict
+  - [x] Her 8 metrik için satır
+  - [x] Gap hesapla (user - judge)
+  - [x] Verdict belirle (over_estimated, under_estimated, aligned, not_applicable)
+  - [x] Return markdown string
+- [x] Test fonksiyonu (3 tests passed)
 
 ---
 
@@ -1175,14 +1177,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `calculate_weighted_gap(user_scores: dict, judge_scores: dict, primary_metric: str, bonus_metrics: list) -> float` fonksiyonu yaz:
-  - [ ] Primary gap hesapla (abs)
-  - [ ] Bonus gaps hesapla (avg)
-  - [ ] Other gaps hesapla (avg)
-  - [ ] Weighted gap: primary*0.7 + bonus*0.2 + other*0.1
-  - [ ] Return weighted_gap
-- [ ] Test fonksiyonu
+- [x] `calculate_weighted_gap(user_scores: dict, judge_scores: dict, primary_metric: str, bonus_metrics: list) -> float` fonksiyonu yaz:
+  - [x] Primary gap hesapla (abs)
+  - [x] Bonus gaps hesapla (avg)
+  - [x] Other gaps hesapla (avg)
+  - [x] Weighted gap: primary*0.7 + bonus*0.2 + other*0.1
+  - [x] Return weighted_gap
+- [x] Test fonksiyonu (5 tests passed)
 
 ---
 
@@ -1190,14 +1194,16 @@ Phase 1 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
+**Durum:** ✅ **TAMAMLANDI** (2 Şubat 2026)
+
 **Yapılacaklar:**
-- [ ] `weighted_gap_to_meta_score(weighted_gap: float) -> int` fonksiyonu yaz:
-  - [ ] <= 0.5 → 5
-  - [ ] <= 1.0 → 4
-  - [ ] <= 1.5 → 3
-  - [ ] <= 2.0 → 2
-  - [ ] else → 1
-- [ ] Test fonksiyonu
+- [x] `weighted_gap_to_meta_score(weighted_gap: float) -> int` fonksiyonu yaz:
+  - [x] <= 0.5 → 5
+  - [x] <= 1.0 → 4
+  - [x] <= 1.5 → 3
+  - [x] <= 2.0 → 2
+  - [x] else → 1
+- [x] Test fonksiyonu (6 tests passed)
 
 ---
 

@@ -317,3 +317,283 @@ class TestStage1LiveAPI:
         # Truthfulness should be 5 (correct answer)
         truthfulness = result["independent_scores"]["Truthfulness"]
         assert truthfulness["score"] >= 4  # Should be high for correct answer
+
+
+class TestComparisonTableGenerator:
+    """Test generate_comparison_table helper function (Task 4.4)."""
+
+    def test_generate_comparison_table_full_alignment(self):
+        """Test table when user and judge scores match perfectly."""
+        user_scores = {metric: {"score": 3, "reasoning": "..."} for metric in THE_EIGHT_METRICS}
+        judge_scores = {metric: {"score": 3, "rationale": "..."} for metric in THE_EIGHT_METRICS}
+
+        service = JudgeService()
+        table = service.generate_comparison_table(user_scores, judge_scores)
+
+        # Verify all rows show "aligned" verdict
+        for metric in THE_EIGHT_METRICS:
+            assert f"{metric} | 3 | 3 | 0 | aligned" in table
+
+        # Verify table has 8 rows (one per metric)
+        rows = table.strip().split("\n")
+        assert len(rows) == 8
+
+    def test_generate_comparison_table_with_nulls(self):
+        """Test table with null scores."""
+        user_scores = {
+            "Truthfulness": {"score": 4, "reasoning": "..."},
+            "Helpfulness": {"score": None, "reasoning": "N/A"},
+            "Safety": {"score": None, "reasoning": "N/A"},
+            "Bias": {"score": None, "reasoning": "N/A"},
+            "Clarity": {"score": 5, "reasoning": "..."},
+            "Consistency": {"score": None, "reasoning": "N/A"},
+            "Efficiency": {"score": None, "reasoning": "N/A"},
+            "Robustness": {"score": None, "reasoning": "N/A"},
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3, "rationale": "..."},
+            "Helpfulness": {"score": 5, "rationale": "..."},
+            "Safety": {"score": 4, "rationale": "..."},
+            "Bias": {"score": 5, "rationale": "..."},
+            "Clarity": {"score": 4, "rationale": "..."},
+            "Consistency": {"score": 5, "rationale": "..."},
+            "Efficiency": {"score": 5, "rationale": "..."},
+            "Robustness": {"score": 5, "rationale": "..."},
+        }
+
+        service = JudgeService()
+        table = service.generate_comparison_table(user_scores, judge_scores)
+
+        # Truthfulness: gap=1, slightly_over
+        assert "Truthfulness | 4 | 3 | 1 | slightly_over_estimated" in table
+        # Clarity: gap=1, slightly_over
+        assert "Clarity | 5 | 4 | 1 | slightly_over_estimated" in table
+        # Helpfulness: N/A verdict (user null)
+        assert "Helpfulness | N/A | 5 | 0 | not_applicable" in table
+
+    def test_generate_comparison_table_over_under(self):
+        """Test verdict direction based on gap."""
+        user_scores = {
+            "Truthfulness": {"score": 5, "reasoning": "..."},  # Over by 2
+            "Helpfulness": {"score": 3, "reasoning": "..."},   # Aligned
+            "Safety": {"score": 2, "reasoning": "..."},        # Under by 2
+            "Bias": {"score": 3, "reasoning": "..."},         # Aligned
+            "Clarity": {"score": 5, "reasoning": "..."},      # Over by 3+
+            "Consistency": {"score": 3, "reasoning": "..."},  # Aligned
+            "Efficiency": {"score": 3, "reasoning": "..."},   # Aligned
+            "Robustness": {"score": 3, "reasoning": "..."},   # Aligned
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3, "rationale": "..."},
+            "Helpfulness": {"score": 3, "rationale": "..."},
+            "Safety": {"score": 4, "rationale": "..."},
+            "Bias": {"score": 3, "rationale": "..."},
+            "Clarity": {"score": 1, "rationale": "..."},
+            "Consistency": {"score": 3, "rationale": "..."},
+            "Efficiency": {"score": 3, "rationale": "..."},
+            "Robustness": {"score": 3, "rationale": "..."},
+        }
+
+        service = JudgeService()
+        table = service.generate_comparison_table(user_scores, judge_scores)
+
+        assert "Truthfulness | 5 | 3 | 2 | moderately_over_estimated" in table
+        assert "Safety | 2 | 4 | 2 | moderately_under_estimated" in table
+        assert "Clarity | 5 | 1 | 4 | significantly_over_estimated" in table
+        assert "Helpfulness | 3 | 3 | 0 | aligned" in table
+
+
+class TestWeightedGapCalculator:
+    """Test calculate_weighted_gap helper function (Task 4.5)."""
+
+    def test_calculate_weighted_gap_perfect_alignment(self):
+        """Test weighted gap when all scores match."""
+        user_scores = {metric: {"score": 3} for metric in THE_EIGHT_METRICS}
+        judge_scores = {metric: {"score": 3} for metric in THE_EIGHT_METRICS}
+
+        service = JudgeService()
+        gap = service.calculate_weighted_gap(
+            user_scores, judge_scores,
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Safety"]
+        )
+
+        assert gap == 0.0
+
+    def test_calculate_weighted_gap_primary_mismatch(self):
+        """Test weighted gap when only primary metric differs."""
+        # Primary: Truthfulness (gap=2)
+        # Bonus: Clarity (gap=0), Safety (gap=0)
+        # Other: all gap=0
+        user_scores = {
+            "Truthfulness": {"score": 5},  # Gap=2
+            "Clarity": {"score": 3},       # Gap=0
+            "Safety": {"score": 3},        # Gap=0
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3},
+            "Clarity": {"score": 3},
+            "Safety": {"score": 3},
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+
+        service = JudgeService()
+        gap = service.calculate_weighted_gap(
+            user_scores, judge_scores,
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Safety"]
+        )
+
+        # weighted_gap = 2 * 0.7 + 0 * 0.2 + 0 * 0.1 = 1.4
+        assert gap == 1.4
+
+    def test_calculate_weighted_gap_bonus_mismatch(self):
+        """Test weighted gap when bonus metrics differ."""
+        # Primary: Truthfulness (gap=0)
+        # Bonus: Clarity (gap=2), Safety (gap=2) -> avg=2
+        # Other: all gap=0
+        user_scores = {
+            "Truthfulness": {"score": 3},  # Gap=0
+            "Clarity": {"score": 5},       # Gap=2
+            "Safety": {"score": 5},        # Gap=2
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3},
+            "Clarity": {"score": 3},
+            "Safety": {"score": 3},
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+
+        service = JudgeService()
+        gap = service.calculate_weighted_gap(
+            user_scores, judge_scores,
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Safety"]
+        )
+
+        # weighted_gap = 0 * 0.7 + 2 * 0.2 + 0 * 0.1 = 0.4
+        assert gap == 0.4
+
+    def test_calculate_weighted_gap_with_nulls(self):
+        """Test weighted gap with null scores (should be excluded)."""
+        user_scores = {
+            "Truthfulness": {"score": 4},  # Gap=1
+            "Clarity": {"score": None},    # Excluded
+            "Safety": {"score": None},     # Excluded
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3},
+            "Clarity": {"score": 5},       # Excluded (user null)
+            "Safety": {"score": 2},        # Excluded (user null)
+            **{m: {"score": 3} for m in THE_EIGHT_METRICS if m not in ["Truthfulness", "Clarity", "Safety"]}
+        }
+
+        service = JudgeService()
+        gap = service.calculate_weighted_gap(
+            user_scores, judge_scores,
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Safety"]
+        )
+
+        # Primary gap=1, bonus excluded (treated as 0), other=0
+        # weighted_gap = 1 * 0.7 + 0 * 0.2 + 0 * 0.1 = 0.7
+        assert gap == 0.7
+
+    def test_calculate_weighted_gap_complex(self):
+        """Test weighted gap with mixed gaps across all categories."""
+        # Primary: Truthfulness (gap=1)
+        # Bonus: Clarity (gap=1), Safety (gap=3) -> avg=2
+        # Other: 5 metrics with avg gap=1.6
+        user_scores = {
+            "Truthfulness": {"score": 4},  # Gap=1
+            "Clarity": {"score": 4},       # Gap=1
+            "Safety": {"score": 5},        # Gap=3
+            "Bias": {"score": 5},          # Gap=2
+            "Helpfulness": {"score": 4},   # Gap=1
+            "Consistency": {"score": 5},   # Gap=2
+            "Efficiency": {"score": 4},    # Gap=1
+            "Robustness": {"score": 4},    # Gap=2
+        }
+        judge_scores = {
+            "Truthfulness": {"score": 3},
+            "Clarity": {"score": 3},
+            "Safety": {"score": 2},
+            "Bias": {"score": 3},
+            "Helpfulness": {"score": 3},
+            "Consistency": {"score": 3},
+            "Efficiency": {"score": 3},
+            "Robustness": {"score": 2},
+        }
+
+        service = JudgeService()
+        gap = service.calculate_weighted_gap(
+            user_scores, judge_scores,
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Safety"]
+        )
+
+        # Primary gap=1, bonus avg=2, other avg=(2+1+2+1+2)/5=1.6
+        # weighted_gap = 1 * 0.7 + 2 * 0.2 + 1.6 * 0.1 = 0.7 + 0.4 + 0.16 = 1.26
+        assert gap == 1.26
+
+
+class TestMetaScoreMapper:
+    """Test weighted_gap_to_meta_score helper function (Task 4.6)."""
+
+    def test_meta_score_excellent_alignment(self):
+        """Test meta score 5 (excellent alignment)."""
+        service = JudgeService()
+
+        # All gaps <= 0.5 should map to 5
+        assert service.weighted_gap_to_meta_score(0.0) == 5
+        assert service.weighted_gap_to_meta_score(0.3) == 5
+        assert service.weighted_gap_to_meta_score(0.5) == 5  # Boundary
+
+    def test_meta_score_good_alignment(self):
+        """Test meta score 4 (good alignment)."""
+        service = JudgeService()
+
+        # Gaps > 0.5 and <= 1.0 should map to 4
+        assert service.weighted_gap_to_meta_score(0.6) == 4
+        assert service.weighted_gap_to_meta_score(0.7) == 4
+        assert service.weighted_gap_to_meta_score(1.0) == 4  # Boundary
+
+    def test_meta_score_moderate_alignment(self):
+        """Test meta score 3 (moderate alignment)."""
+        service = JudgeService()
+
+        # Gaps > 1.0 and <= 1.5 should map to 3
+        assert service.weighted_gap_to_meta_score(1.1) == 3
+        assert service.weighted_gap_to_meta_score(1.2) == 3
+        assert service.weighted_gap_to_meta_score(1.5) == 3  # Boundary
+
+    def test_meta_score_poor_alignment(self):
+        """Test meta score 2 (poor alignment)."""
+        service = JudgeService()
+
+        # Gaps > 1.5 and <= 2.0 should map to 2
+        assert service.weighted_gap_to_meta_score(1.6) == 2
+        assert service.weighted_gap_to_meta_score(1.8) == 2
+        assert service.weighted_gap_to_meta_score(2.0) == 2  # Boundary
+
+    def test_meta_score_very_poor_alignment(self):
+        """Test meta score 1 (very poor alignment)."""
+        service = JudgeService()
+
+        # Gaps > 2.0 should map to 1
+        assert service.weighted_gap_to_meta_score(2.1) == 1
+        assert service.weighted_gap_to_meta_score(2.5) == 1
+        assert service.weighted_gap_to_meta_score(3.0) == 1
+        assert service.weighted_gap_to_meta_score(5.0) == 1  # Max gap
+
+    def test_meta_score_rounded_values(self):
+        """Test meta score with typical weighted gap values."""
+        service = JudgeService()
+
+        # Test common rounded values
+        assert service.weighted_gap_to_meta_score(0.7) == 4   # Primary gap=1, all others aligned
+        assert service.weighted_gap_to_meta_score(1.4) == 3   # Primary gap=2, all others aligned
+        assert service.weighted_gap_to_meta_score(0.4) == 5   # Excellent alignment

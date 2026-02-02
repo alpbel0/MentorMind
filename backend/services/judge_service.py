@@ -22,7 +22,10 @@ from backend.config.settings import settings
 from backend.models.question import Question
 from backend.models.user_evaluation import UserEvaluation
 from backend.models.model_response import ModelResponse
-from backend.prompts.judge_prompts import JUDGE_PROMPTS, render_stage1_prompt
+from backend.prompts.judge_prompts import (
+    JUDGE_PROMPTS, render_stage1_prompt,
+    JUDGE_STAGE1_VERDICTS, WEIGHTED_GAP_WEIGHTS, META_SCORE_THRESHOLDS
+)
 from backend.services.llm_logger import log_llm_call, LLMProvider
 
 logger = logging.getLogger(__name__)
@@ -418,6 +421,169 @@ class JudgeService:
             raise ValueError("'independent_scores' must be object")
 
         return parsed
+
+    # =====================================================
+    # Stage 2 Helper Functions (Tasks 4.4, 4.5 & 4.6)
+    # =====================================================
+
+    def generate_comparison_table(
+        self,
+        user_scores: dict[str, dict[str, Any]],
+        judge_scores: dict[str, dict[str, Any]]
+    ) -> str:
+        """
+        Generate markdown comparison table for Stage 2 prompt.
+
+        Creates a table showing user scores, judge scores, gaps, and verdicts
+        for all 8 metrics. This table is included in the Stage 2 prompt to
+        help GPT-4o provide targeted feedback.
+
+        Args:
+            user_scores: User's evaluation scores
+                {"Truthfulness": {"score": 3, "reasoning": "..."}, ...}
+            judge_scores: Judge's independent scores
+                {"Truthfulness": {"score": 4, "rationale": "..."}, ...}
+
+        Returns:
+            Markdown table string with rows for each metric.
+
+        Example:
+            "| Metric | User Score | Judge Score | Gap | Verdict |"
+            "|--------|------------|-------------|-----|---------|"
+            "| Truthfulness | 4 | 3 | 1 | slightly_over_estimated |"
+        """
+        rows = []
+
+        for metric in THE_EIGHT_METRICS:
+            user_data = user_scores.get(metric, {})
+            judge_data = judge_scores.get(metric, {})
+
+            user_score = user_data.get("score")
+            judge_score = judge_data.get("score")
+
+            # Handle null scores
+            if user_score is None or judge_score is None:
+                gap = 0
+                verdict = "not_applicable"
+                user_display = "N/A"
+                judge_display = "N/A" if judge_score is None else str(judge_score)
+            else:
+                gap = abs(user_score - judge_score)
+                user_display = str(user_score)
+                judge_display = str(judge_score)
+
+                # Determine verdict based on gap and direction
+                if gap == 0:
+                    verdict = "aligned"
+                elif gap == 1:
+                    verdict = "slightly_over_estimated" if user_score > judge_score else "slightly_under_estimated"
+                elif gap == 2:
+                    verdict = "moderately_over_estimated" if user_score > judge_score else "moderately_under_estimated"
+                else:  # gap >= 3
+                    verdict = "significantly_over_estimated" if user_score > judge_score else "significantly_under_estimated"
+
+            # Format as markdown table row
+            row = f"| {metric} | {user_display} | {judge_display} | {gap} | {verdict} |"
+            rows.append(row)
+
+        # Join with newlines
+        return "\n".join(rows)
+
+    def calculate_weighted_gap(
+        self,
+        user_scores: dict[str, dict[str, Any]],
+        judge_scores: dict[str, dict[str, Any]],
+        primary_metric: str,
+        bonus_metrics: list[str]
+    ) -> float:
+        """
+        Calculate weighted gap for meta score computation.
+
+        The weighted gap formula prioritizes alignment on the primary metric
+        (what the user is training on) while considering bonus and other metrics.
+
+        Formula:
+            weighted_gap = (primary_gap * 0.7) + (bonus_avg * 0.2) + (other_avg * 0.1)
+
+        Args:
+            user_scores: User's evaluation scores
+            judge_scores: Judge's independent scores
+            primary_metric: The metric being tested (e.g., "Truthfulness")
+            bonus_metrics: List of 2 bonus metrics (hidden from user)
+
+        Returns:
+            Weighted gap as float (0-5 scale)
+
+        Example:
+            user_scores = {"Truthfulness": {"score": 4}, ...}
+            judge_scores = {"Truthfulness": {"score": 3}, ...}
+            primary_metric = "Truthfulness"
+            bonus_metrics = ["Clarity", "Safety"]
+            -> Returns 0.7 (primary gap=1, bonus avg=0.5, other avg=0.5)
+        """
+        # Calculate gaps for all metrics (only where both scores exist)
+        gaps = {}
+
+        for metric in THE_EIGHT_METRICS:
+            user_score = user_scores.get(metric, {}).get("score")
+            judge_score = judge_scores.get(metric, {}).get("score")
+
+            if user_score is not None and judge_score is not None:
+                gaps[metric] = abs(user_score - judge_score)
+
+        # Extract primary gap
+        primary_gap = gaps.get(primary_metric, 0.0)
+
+        # Calculate bonus average
+        bonus_gaps = [gaps.get(m, 0.0) for m in bonus_metrics]
+        bonus_avg = sum(bonus_gaps) / len(bonus_gaps) if bonus_gaps else 0.0
+
+        # Calculate other average (remaining metrics)
+        other_metrics = set(THE_EIGHT_METRICS) - {primary_metric} - set(bonus_metrics)
+        other_gaps = [gaps.get(m, 0.0) for m in other_metrics]
+        other_avg = sum(other_gaps) / len(other_gaps) if other_gaps else 0.0
+
+        # Apply weights
+        weights = WEIGHTED_GAP_WEIGHTS
+        weighted_gap = (primary_gap * weights["primary"] +
+                        bonus_avg * weights["bonus"] +
+                        other_avg * weights["other"])
+
+        # Round to 2 decimal places for consistency
+        return round(weighted_gap, 2)
+
+    @staticmethod
+    def weighted_gap_to_meta_score(weighted_gap: float) -> int:
+        """
+        Map weighted gap to meta score (1-5).
+
+        The meta score represents the user's overall evaluation quality.
+        Lower gap = better alignment = higher meta score.
+
+        Args:
+            weighted_gap: Calculated weighted gap (0-5 scale)
+
+        Returns:
+            Meta score as integer (1-5)
+
+        Mapping:
+            gap <= 0.5 -> 5 (Excellent alignment)
+            gap <= 1.0 -> 4 (Good alignment)
+            gap <= 1.5 -> 3 (Moderate alignment)
+            gap <= 2.0 -> 2 (Poor alignment)
+            gap > 2.0  -> 1 (Very poor alignment)
+        """
+        # Check thresholds in descending order
+        if weighted_gap <= META_SCORE_THRESHOLDS[5]:
+            return 5
+        elif weighted_gap <= META_SCORE_THRESHOLDS[4]:
+            return 4
+        elif weighted_gap <= META_SCORE_THRESHOLDS[3]:
+            return 3
+        elif weighted_gap <= META_SCORE_THRESHOLDS[2]:
+            return 2
+        else:
+            return 1
 
 
 # =====================================================
