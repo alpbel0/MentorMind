@@ -1022,24 +1022,412 @@ frontend/
 
 ---
 
-## Next Steps
+## Design Decisions & UI Specifications
 
-### Phase 1: Foundation (Week 1)
-- [ ] Initialize Next.js project with TypeScript
-- [ ] Setup Tailwind CSS + shadcn/ui
-- [ ] Configure TanStack Query + Zustand
-- [ ] Setup API client with axios
-- [ ] Create base layout with navigation
-- [ ] Setup routing structure
+### Design Narrative: "The Evaluation Terminal"
 
-### Phase 2: Core Features (Week 2-3)
-- [ ] Implement evaluation flow
-- [ ] Create evaluation form component
-- [ ] Implement judge feedback polling
-- [ ] Build feedback display components
-- [ ] Add draft auto-save functionality
+**Theme:** Technical & Hacker (Terminal-inspired, dark mode, data-dense)
 
-### Phase 3: Statistics & Dashboard (Week 4)
+**Setting:** A dark, data-dense terminal where users analyze AI outputs like code reviewers inspecting pull requests.
+
+**Protagonist:** The user is a "Data Sensei in Training" - developing AI evaluation expertise through focused practice.
+
+**Conflict:** Evaluating 8 metrics simultaneously creates cognitive load. The UI must reduce this friction through progressive disclosure.
+
+**Resolution:** A guided, phased interface that reveals complexity progressively, not all at once.
+
+### Visual Language
+
+```css
+/* Terminal-inspired Dark Theme */
+:root {
+  /* Backgrounds */
+  --bg-primary: #0a0a0a;      /* Deep black */
+  --bg-secondary: #111111;    /* Slightly lighter */
+  --bg-tertiary: #1a1a1a;     /* Card backgrounds */
+
+  /* Terminal Accents */
+  --accent-terminal: #00ff41;  /* Terminal green */
+  --accent-warning: #ffb000;   /* Amber */
+  --accent-error: #ff4444;     /* Red */
+  --accent-info: #00d9ff;      /* Cyan */
+
+  /* Metric Colors (8 distinct for visual distinction) */
+  --metric-truthfulness: #4dabf7;   /* Blue */
+  --metric-helpfulness: #51cf66;   /* Green */
+  --metric-safety: #ff6b6b;        /* Red */
+  --metric-bias: #cc5de8;          /* Purple */
+  --metric-clarity: #ffd43b;       /* Yellow */
+  --metric-consistency: #22b8cf;   /* Cyan */
+  --metric-efficiency: #ff922b;    /* Orange */
+  --metric-robustness: #f06595;    /* Pink */
+
+  /* Typography */
+  --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* CRT Subtle Effect (Optional) */
+.terminal::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg, rgba(0,0,0,0.1), rgba(0,0,0,0.1) 1px, transparent 1px, transparent 2px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+```
+
+### Layout Architecture
+
+**Hybrid Layout:** Sidebar Navigation + Immersive Evaluation
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    TerminalLayout                        │
+├──────────┬──────────────────────────────────────────────┤
+│          │                                               │
+│  Side-   │         MainContentArea                       │
+│  bar     │  ┌─────────────────────────────────────────┐ │
+│  (Col-   │  │                                         │ │
+│  lapsed) │  │   Dynamic View (Dashboard/Eval/Stats)   │ │
+│          │  │                                         │ │
+│ - Logo   │  └─────────────────────────────────────────┘ │
+│ - Dash   │                                               │
+│ - Eval   │  NOTE: During evaluation, sidebar            │
+│ - Stats  │        collapses for full-screen immersion   │
+│          │                                               │
+└──────────┴──────────────────────────────────────────────┘
+```
+
+### Component Hierarchy
+
+```
+TerminalLayout (Root - Server Component)
+├── SidebarNavigation (Client Component - Collapsible)
+│   ├── Logo + App Name
+│   ├── Nav Items (Dashboard, Evaluation, Statistics)
+│   └── User Status (Meta score display)
+│
+├── MainContentArea
+│   ├── DashboardView (Overview + Quick Start)
+│   │   ├── WelcomeCard
+│   │   ├── QuickStartButton (per metric)
+│   │   └── RecentActivityList
+│   │
+│   ├── EvaluationView (Full-screen immersive - Client)
+│   │   ├── QuestionCard (Question + Model Response)
+│   │   │   ├── QuestionText
+│   │   │   ├── ModelResponse (with syntax highlighting)
+│   │   │   └── ModelBadge (K model identifier)
+│   │   │
+│   │   ├── EvaluationForm (Accordion - Client)
+│   │   │   └── MetricSlider (Score 1-5 + Reasoning)
+│   │   │       ├── RangeInput (1-5)
+│   │   │       ├── TextArea (reasoning)
+│   │   │       └── MetricBadge (color-coded)
+│   │   │
+│   │   └── SubmitBar (Sticky bottom - Client)
+│   │       ├── DraftIndicator (auto-save status)
+│   │       ├── ValidationMessage
+│   │       └── SubmitButton
+│   │
+│   ├── FeedbackView (Judge Results - Client)
+│   │   ├── MetaScoreDisplay (Large 1-5 score with animation)
+│   │   ├── OverallFeedbackCard
+│   │   ├── ExpandableMetricsTable (Progressive disclosure)
+│   │   │   └── MetricAlignmentRow (user vs judge)
+│   │   └── PatternHighlights (ChromaDB references)
+│   │
+│   └── StatisticsView (Server + Client)
+│       ├── PerformanceOverview (Total evaluations, avg meta score)
+│       ├── MetricCards (8 metrics with trends)
+│       ├── TrendChart (Line chart - Recharts)
+│       └── RadarChart (Metric comparison - Recharts)
+```
+
+### Interaction Patterns
+
+#### 1. Evaluation Form (Accordion)
+```
+┌─────────────────────────────────────────────────┐
+│  Truthfulness ▼                     [Score: 4]   │
+│  ┌───────────────────────────────────────────┐ │
+│  │  [=====●=====] 1 2 3 4 5                 │ │
+│  │                                           │ │
+│  │  Reasoning: _________________________     │ │
+│  │            [Good response, accurate...]   │ │
+│  └───────────────────────────────────────────┘ │
+│  Helpfulness ▶                     [N/A]       │
+│  Safety ▶                           [N/A]       │
+│  ... (5 more collapsed)                        │
+└─────────────────────────────────────────────────┘
+```
+
+#### 2. Judge Feedback (Progressive Disclosure)
+```
+Step 1: Meta Score
+┌─────────────────────────────────────────────────┐
+│              JUDGE EVALUATION                   │
+│                                                 │
+│           ★★★★★  4.2 / 5.0                    │
+│        Excellent evaluation!                   │
+│                                                 │
+│           [View Detailed Feedback]             │
+└─────────────────────────────────────────────────┘
+
+Step 2: Detailed View (After click)
+┌─────────────────────────────────────────────────┐
+│  Overall Feedback                              │
+│  ┌───────────────────────────────────────────┐ │
+│  │ Excellent evaluation on Truthfulness!     │ │
+│  │ Slight overestimation on Clarity...       │ │
+│  └───────────────────────────────────────────┘ │
+│                                                 │
+│  Metric Alignment [Expand All]                  │
+│  ┌───────────────────────────────────────────┐ │
+│  │ Truthfulness     You: 4  Judge: 4  ✓      │ │
+│  │ Clarity          You: 5  Judge: 4  ⚠ +1   │ │
+│  │ ...                                        │ │
+│  └───────────────────────────────────────────┘ │
+│                                                 │
+│  Past Patterns Referenced                       │
+│  ┌───────────────────────────────────────────┐ │
+│  │ • Overestimating minor errors (3rd time)  │ │
+│  └───────────────────────────────────────────┘ │
+└─────────────────────────────────────────────────┘
+```
+
+### Animation Specifications
+
+**Framer Motion Spring Constants:**
+```typescript
+export const springs = {
+  snappy: { stiffness: 400, damping: 17 },   // Buttons, micro-interactions
+  fluid: { stiffness: 100, damping: 20 },    // Modals, accordions
+  heavy: { stiffness: 50, damping: 10 },     // Background parallax
+};
+```
+
+**Key Animations:**
+1. **Page Transitions:** Fade out (200ms) → Slide in (300ms)
+2. **Accordion Expand:** Spring-based, `height: auto`
+3. **Feedback Reveal:** Staggered children, 40ms delay increment
+4. **Metric Slider:** Real-time color change (red → yellow → green)
+5. **Meta Score:** Count-up animation (0 → 4.2)
+
+### Data Flow
+
+```
+USER ACTION                    COMPONENT              API/SERVER
+─────────────────────────────────────────────────────────────────
+Click "Start Evaluation"  →  DashboardView  →    POST /api/questions/generate
+                               │                        ↓
+                               │                  { question, response }
+                               ↓
+QuestionCard displays data ←───┘
+
+Fill form (Accordion)    →  EvaluationForm → (Draft: localStorage)
+                               │
+Click "Submit"          →  SubmitBar     →    POST /api/evaluations/submit
+                               │                        ↓
+                               │                  { evaluation_id }
+                               ↓
+Navigate to feedback    →  Router.push(`/evaluation/${id}/feedback`)
+                               │
+                               ↓
+Polling starts          →  useJudgeFeedback →  GET /api/evaluations/${id}/feedback
+                               │       (every 3s)         ↓
+                               │                  { status: "processing" }
+                               ↓                        ↓
+                         LoadingSpinner           Continue polling...
+                               │                        ↓
+                               │                  { status: "complete",
+                               │                    feedback: {...} }
+                               ↓
+JudgeFeedbackPanel displays results
+```
+
+### State Management Split
+
+**Server State (TanStack Query):**
+```typescript
+// Queries
+const { data: question } = useQuery({
+  queryKey: ['question', metric],
+  queryFn: () => api.generateQuestion(metric)
+});
+
+const { data: feedback, status } = useQuery({
+  queryKey: ['feedback', evaluationId],
+  queryFn: () => api.getFeedback(evaluationId),
+  refetchInterval: status === 'processing' ? 3000 : false
+});
+```
+
+**Client State (Zustand):**
+```typescript
+// Evaluation Store
+interface EvaluationStore {
+  currentQuestion: Question | null;
+  currentResponse: ModelResponse | null;
+  evaluationDraft: Record<string, MetricEvaluation>;
+  sidebarOpen: boolean;
+
+  // Actions
+  setCurrentQuestion: (q: Question) => void;
+  updateDraft: (metric: string, data: MetricEvaluation) => void;
+  toggleSidebar: () => void;
+}
+```
+
+### File Structure (Implementation)
+
+```
+frontend/
+├── app/
+│   ├── layout.tsx                 # TerminalLayout wrapper
+│   ├── page.tsx                   # Dashboard (redirect)
+│   ├── globals.css                # Dark theme + CRT effects
+│   ├── dashboard/
+│   │   └── page.tsx               # Dashboard overview
+│   ├── evaluation/
+│   │   ├── page.tsx               # New evaluation start
+│   │   └── [id]/
+│   │       ├── page.tsx           # Evaluation session
+│   │       └── feedback/
+│   │           └── page.tsx       # Judge feedback results
+│   └── statistics/
+│       └── page.tsx               # Statistics dashboard
+│
+├── components/
+│   ├── layout/
+│   │   ├── SidebarNavigation.tsx  # Collapsible sidebar
+│   │   └── TerminalLayout.tsx     # Root layout wrapper
+│   ├── dashboard/
+│   │   ├── WelcomeCard.tsx
+│   │   └── QuickStartButton.tsx
+│   ├── evaluation/
+│   │   ├── QuestionCard.tsx
+│   │   ├── EvaluationForm.tsx     # Accordion with 8 metrics
+│   │   ├── MetricSlider.tsx       # Score input + reasoning
+│   │   └── SubmitBar.tsx          # Sticky bottom bar
+│   ├── feedback/
+│   │   ├── MetaScoreDisplay.tsx   # Large score with animation
+│   │   ├── OverallFeedbackCard.tsx
+│   │   ├── ExpandableMetricsTable.tsx
+│   │   └── PatternHighlights.tsx  # ChromaDB patterns
+│   └── statistics/
+│       ├── PerformanceOverview.tsx
+│       ├── MetricCards.tsx
+│       ├── TrendChart.tsx         # Recharts line
+│       └── RadarChart.tsx         # Recharts radar
+│
+├── lib/
+│   ├── api/
+│   │   ├── client.ts              # Axios instance
+│   │   └── evaluations.ts         # API functions
+│   ├── query/
+│   │   ├── client.ts              # QueryClient setup
+│   │   └── keys.ts                # Query keys factory
+│   ├── store/
+│   │   ├── evaluation.ts          # Zustand store
+│   │   └── ui.ts                  # UI preferences store
+│   └── utils/
+│       ├── format-score.ts        # Score formatting
+│       └── metric-colors.ts       # Color utilities
+│
+├── styles/
+│   └── themes.css                 # Terminal dark theme
+│
+└── hooks/
+    ├── use-judge-feedback.ts      # Polling hook
+    ├── use-evaluation-draft.ts    # Draft auto-save
+    └── use-metric-colors.ts       # Color mapping
+```
+
+---
+
+## Implementation Progress
+
+### Phase 1: Foundation ✅ COMPLETED (2026-02-02)
+- [x] Initialize Next.js project with TypeScript (Next.js 16.1.6)
+- [x] Setup Tailwind CSS v4 + shadcn/ui (11 components added)
+- [x] Configure TanStack Query + Zustand (stores created)
+- [x] Setup API client with axios (evaluations API ready)
+- [x] Create base layout with providers (dark theme default)
+- [x] Setup routing structure (dashboard, evaluation, statistics routes)
+- [x] Terminal dark theme colors + metric colors defined
+- [x] Utility functions (metric-colors, format-score)
+- [x] Zustand stores (evaluation, ui)
+- [x] Query client + keys factory
+- [x] Dashboard page with metric quick-start cards
+- [x] Docker configuration (Dockerfile, docker-compose updated)
+- [x] .env files (.env.local, .env.example)
+
+**Current Files Created:**
+```
+frontend/
+├── app/
+│   ├── layout.tsx              # ✅ Root layout with providers
+│   ├── page.tsx                # ✅ Redirect to dashboard
+│   ├── globals.css             # ✅ Terminal dark theme
+│   └── dashboard/
+│       └── page.tsx           # ✅ Dashboard overview
+├── components/
+│   ├── providers.tsx           # ✅ QueryClient provider
+│   └── ui/                     # ✅ shadcn/ui components (11)
+├── lib/
+│   ├── api/
+│   │   ├── client.ts           # ✅ Axios client
+│   │   └── evaluations.ts      # ✅ Evaluation API
+│   ├── query/
+│   │   ├── client.ts           # ✅ QueryClient setup
+│   │   └── keys.ts             # ✅ Query keys
+│   ├── store/
+│   │   ├── evaluation.ts       # ✅ Evaluation store
+│   │   └── ui.ts               # ✅ UI preferences store
+│   └── utils/
+│       ├── metric-colors.ts    # ✅ Color utilities
+│       └── format-score.ts     # ✅ Score formatting
+├── Dockerfile                  # ✅ Production Dockerfile
+├── .dockerignore               # ✅ Docker ignore file
+├── .env.local                  # ✅ Environment variables
+└── .env.example                # ✅ Environment template
+```
+
+### Phase 2: Core Features (Week 2-3) ✅ COMPLETED (2026-02-02)
+- [x] Implement evaluation flow
+- [x] Create evaluation form component (Accordion with 8 metrics)
+- [x] QuestionCard component (Question + Model Response display)
+- [x] MetricSlider component (Score 1-5 + Reasoning)
+- [x] Draft auto-save (localStorage integration)
+- [x] Evaluation page (Metric selection + Evaluation)
+- [x] Implement judge feedback polling (use-judge-feedback hook)
+- [x] Build feedback display components (MetaScoreDisplay, AlignmentAnalysis)
+- [x] Create [id]/feedback route with complete UI
+- [x] Processing state with progress indicator
+- [x] Complete/Failed state handling
+
+**Phase 2 Files Created:**
+```
+components/evaluation/
+├── MetricSlider.tsx       # ✅ Accordion metric input with slider
+├── EvaluationForm.tsx     # ✅ Form with 8 metrics + submit bar
+└── QuestionCard.tsx       # ✅ Display question + model response
+
+app/evaluation/
+├── page.tsx               # ✅ Metric selection + evaluation session
+└── [id]/feedback/
+    └── page.tsx           # ✅ Judge feedback display with polling
+
+hooks/
+└── use-judge-feedback.ts  # ✅ Polling hook for judge feedback
+```
+
+### Phase 3: Statistics & Dashboard (Week 4) - NEXT
 - [ ] Implement statistics dashboard
 - [ ] Create performance charts
 - [ ] Add metric comparison views
