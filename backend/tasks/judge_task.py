@@ -1,7 +1,7 @@
 """
 MentorMind - Judge Task (Background)
 
-Async task for GPT-4o judge evaluation (Stage 1 only).
+Async task for GPT-4o two-stage judge evaluation.
 Runs in background via FastAPI BackgroundTasks.
 """
 
@@ -39,13 +39,18 @@ RETRIABLE_ERRORS = (
 
 def run_judge_evaluation(user_eval_id: str) -> Literal["success", "failed"]:
     """
-    Run judge evaluation in background (Stage 1 only).
+    Run judge evaluation in background (full two-stage flow).
 
     Process:
     1. Create new database session (SessionLocal)
-    2. Call judge_service.stage1_independent_evaluation()
+    2. Call judge_service.full_judge_evaluation()
+       - Stage 1: Independent blind evaluation
+       - ChromaDB query for past mistakes
+       - Stage 2: Mentoring comparison
+       - Save JudgeEvaluation to database
+       - Add to ChromaDB memory
     3. Retry on retriable errors (exponential backoff)
-    4. Update user_evaluations.judged = TRUE on success
+    4. Return success/failure status
     5. Always close session in finally block
 
     Args:
@@ -57,7 +62,7 @@ def run_judge_evaluation(user_eval_id: str) -> Literal["success", "failed"]:
     Note:
         - Database session created locally (FastAPI DI unavailable in background)
         - Session always closed in finally block
-        - Stage 2 will be added in Week 4
+        - Full flow handles Stage 1, ChromaDB query, Stage 2, DB save, and memory add
     """
     db = None
     attempt = 0
@@ -66,36 +71,25 @@ def run_judge_evaluation(user_eval_id: str) -> Literal["success", "failed"]:
         # Create database session
         db = SessionLocal()
 
-        logger.info(f"Starting judge evaluation for {user_eval_id}")
+        logger.info(f"Starting full judge evaluation for {user_eval_id}")
 
         # Retry loop
         while attempt < MAX_RETRIES:
             attempt += 1
 
             try:
-                # Call Stage 1 (already implemented)
-                result = judge_service.stage1_independent_evaluation(
+                # Call full judge evaluation flow (Stage 1 → ChromaDB → Stage 2 → DB)
+                judge_eval_id = judge_service.full_judge_evaluation(
                     user_eval_id=user_eval_id,
                     db=db
                 )
 
-                # Success - update judged flag
-                user_eval = db.query(UserEvaluation).filter(
-                    UserEvaluation.id == user_eval_id
-                ).first()
-
-                if user_eval:
-                    user_eval.judged = True
-                    db.commit()
-
-                    logger.info(
-                        f"Judge evaluation completed: {user_eval_id} "
-                        f"(attempt {attempt}/{MAX_RETRIES})"
-                    )
-                    return "success"
-                else:
-                    logger.error(f"User evaluation not found: {user_eval_id}")
-                    return "failed"
+                # Success
+                logger.info(
+                    f"Judge evaluation completed: {user_eval_id} -> {judge_eval_id} "
+                    f"(attempt {attempt}/{MAX_RETRIES})"
+                )
+                return "success"
 
             except RETRIABLE_ERRORS as e:
                 # Retryable error - check if we should retry

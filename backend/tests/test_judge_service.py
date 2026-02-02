@@ -623,3 +623,548 @@ class TestMetaScoreMapper:
         assert service.weighted_gap_to_meta_score(0.7) == 4   # Primary gap=1, all others aligned
         assert service.weighted_gap_to_meta_score(1.4) == 3   # Primary gap=2, all others aligned
         assert service.weighted_gap_to_meta_score(0.4) == 5   # Excellent alignment
+
+
+class TestFormatPastMistakes:
+    """Test _format_past_mistakes helper function (Task 4.7)."""
+
+    def test_format_past_mistakes_empty(self):
+        """Test formatting with empty ChromaDB results."""
+        service = JudgeService()
+        result = service._format_past_mistakes({"evaluations": []})
+        assert result == ""
+
+    def test_format_past_mistakes_with_data(self):
+        """Test formatting with actual ChromaDB results."""
+        service = JudgeService()
+        vector_context = {
+            "evaluations": [
+                {
+                    "evaluation_id": "eval_001",
+                    "judge_meta_score": 3,
+                    "primary_gap": 1.2,
+                    "feedback": "Overestimated minor errors in Truthfulness"
+                },
+                {
+                    "evaluation_id": "eval_002",
+                    "judge_meta_score": 4,
+                    "primary_gap": 0.5,
+                    "feedback": "Good alignment overall"
+                }
+            ]
+        }
+
+        result = service._format_past_mistakes(vector_context)
+
+        assert "Önceki benzer değerlendirmelerinizden dikkate değer kalıplar:" in result
+        assert "Meta Skor: 3/5" in result
+        assert "Birincil Metrik Farkı: 1.2" in result
+        assert "Overestimated minor errors" in result
+
+    def test_format_past_mistakes_truncates_long_feedback(self):
+        """Test that long feedback is truncated."""
+        service = JudgeService()
+        long_feedback = "A" * 200
+        vector_context = {
+            "evaluations": [
+                {
+                    "evaluation_id": "eval_001",
+                    "judge_meta_score": 3,
+                    "primary_gap": 1.0,
+                    "feedback": long_feedback
+                }
+            ]
+        }
+
+        result = service._format_past_mistakes(vector_context)
+
+        # Should be truncated with ellipsis (check feedback line specifically)
+        assert "..." in result
+        # The feedback itself should be truncated to 100 chars + "..."
+        assert "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA..." in result
+
+
+class TestParseStage2Response:
+    """Test parse_stage2_response method (Task 4.7)."""
+
+    def test_parse_stage2_response_valid(self):
+        """Test parsing valid Stage 2 JSON response."""
+        service = JudgeService()
+        response = '''{
+  "alignment_analysis": {
+    "Truthfulness": {"user_score": 4, "judge_score": 3, "gap": 1, "verdict": "slightly_over_estimated", "feedback": "Test"},
+    "Helpfulness": {"user_score": 5, "judge_score": 5, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Safety": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Bias": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Clarity": {"user_score": 3, "judge_score": 4, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Consistency": {"user_score": 4, "judge_score": 4, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Efficiency": {"user_score": 4, "judge_score": 5, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Robustness": {"user_score": 2, "judge_score": 3, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"}
+  },
+  "judge_meta_score": 4,
+  "overall_feedback": "Genel olarak başarılı",
+  "improvement_areas": ["Daha eleştirel olun"],
+  "positive_feedback": ["Doğru değerlendirme"]
+}'''
+        result = service.parse_stage2_response(response)
+
+        assert "alignment_analysis" in result
+        assert result["judge_meta_score"] == 4
+        assert result["overall_feedback"] == "Genel olarak başarılı"
+        assert len(result["improvement_areas"]) == 1
+        assert len(result["positive_feedback"]) == 1
+
+    def test_parse_stage2_response_markdown(self):
+        """Test parsing Stage 2 response in markdown code block."""
+        service = JudgeService()
+        response = '''```json
+{
+  "alignment_analysis": {
+    "Truthfulness": {"user_score": 4, "judge_score": 3, "gap": 1, "verdict": "slightly_over_estimated", "feedback": "Test"},
+    "Helpfulness": {"user_score": 5, "judge_score": 5, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Safety": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Bias": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Clarity": {"user_score": 3, "judge_score": 4, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Consistency": {"user_score": 4, "judge_score": 4, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Efficiency": {"user_score": 4, "judge_score": 5, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Robustness": {"user_score": 2, "judge_score": 3, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"}
+  },
+  "judge_meta_score": 4,
+  "overall_feedback": "Test feedback",
+  "improvement_areas": [],
+  "positive_feedback": []
+}
+```'''
+        result = service.parse_stage2_response(response)
+
+        assert result["judge_meta_score"] == 4
+        assert "Truthfulness" in result["alignment_analysis"]
+
+    def test_validate_stage2_response_missing_field(self):
+        """Test validation catches missing required fields."""
+        service = JudgeService()
+        invalid_response = '{"alignment_analysis": {}, "judge_meta_score": 4}'
+
+        with pytest.raises(ValueError, match="missing 'overall_feedback'"):
+            service.parse_stage2_response(invalid_response)
+
+    def test_validate_stage2_response_invalid_meta_score(self):
+        """Test validation catches invalid meta score."""
+        service = JudgeService()
+        response = '''{
+  "alignment_analysis": {
+    "Truthfulness": {"user_score": 4, "judge_score": 3, "gap": 1, "verdict": "slightly_over_estimated", "feedback": "Test"},
+    "Helpfulness": {"user_score": 5, "judge_score": 5, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Safety": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Bias": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Clarity": {"user_score": 3, "judge_score": 4, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Consistency": {"user_score": 4, "judge_score": 4, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Efficiency": {"user_score": 4, "judge_score": 5, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Robustness": {"user_score": 2, "judge_score": 3, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"}
+  },
+  "judge_meta_score": 6,
+  "overall_feedback": "Test",
+  "improvement_areas": [],
+  "positive_feedback": []
+}'''
+
+        with pytest.raises(ValueError, match="judge_meta_score must be 1-5"):
+            service.parse_stage2_response(response)
+
+    def test_validate_stage2_response_invalid_verdict(self):
+        """Test validation catches invalid verdict."""
+        service = JudgeService()
+        response = '''{
+  "alignment_analysis": {
+    "Truthfulness": {"user_score": 4, "judge_score": 3, "gap": 1, "verdict": "invalid_verdict", "feedback": "Test"},
+    "Helpfulness": {"user_score": 5, "judge_score": 5, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Safety": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Bias": {"user_score": null, "judge_score": 5, "gap": 0, "verdict": "not_applicable", "feedback": "Test"},
+    "Clarity": {"user_score": 3, "judge_score": 4, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Consistency": {"user_score": 4, "judge_score": 4, "gap": 0, "verdict": "aligned", "feedback": "Test"},
+    "Efficiency": {"user_score": 4, "judge_score": 5, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"},
+    "Robustness": {"user_score": 2, "judge_score": 3, "gap": 1, "verdict": "slightly_under_estimated", "feedback": "Test"}
+  },
+  "judge_meta_score": 4,
+  "overall_feedback": "Test",
+  "improvement_areas": [],
+  "positive_feedback": []
+}'''
+
+        with pytest.raises(ValueError, match="invalid verdict"):
+            service.parse_stage2_response(response)
+
+
+class TestStage2MentoringComparison:
+    """Test stage2_mentoring_comparison method (Task 4.7)."""
+
+    @pytest.mark.live_api
+    def test_stage2_full_flow(self, db_session):
+        """Test complete Stage 2 flow with live GPT-4o API."""
+        from datetime import datetime
+        # Setup: Create test evaluation
+        question = Question(
+            id="q_stage2_test_001",
+            question="What is the capital of Turkey?",
+            category="Geography",
+            difficulty="easy",
+            reference_answer="Ankara",
+            expected_behavior="Model should identify Ankara",
+            rubric_breakdown={"1": "Wrong", "5": "Correct"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Helpfulness"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_stage2_test_001",
+            question_id="q_stage2_test_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="The capital of Turkey is Istanbul.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_stage2_test_001",
+            response_id="resp_stage2_test_001",
+            evaluations={
+                "Truthfulness": {"score": 3, "reasoning": "Wrong answer, should be Ankara"},
+                "Helpfulness": {"score": 4, "reasoning": "Helpful but wrong"},
+                "Safety": {"score": None, "reasoning": "N/A"},
+                "Bias": {"score": None, "reasoning": "N/A"},
+                "Clarity": {"score": 5, "reasoning": "Clear answer"},
+                "Consistency": {"score": None, "reasoning": "N/A"},
+                "Efficiency": {"score": 4, "reasoning": "Concise"},
+                "Robustness": {"score": None, "reasoning": "N/A"}
+            },
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # First run Stage 1 to get independent scores
+        service = JudgeService()
+        stage1_result = service.stage1_independent_evaluation(
+            "eval_stage2_test_001",
+            db_session
+        )
+
+        # Now run Stage 2 with empty ChromaDB context
+        stage2_result = service.stage2_mentoring_comparison(
+            user_eval_id="eval_stage2_test_001",
+            stage1_result=stage1_result,
+            vector_context={"evaluations": []},
+            db=db_session
+        )
+
+        # Verify Stage 2 result structure
+        assert "alignment_analysis" in stage2_result
+        assert "judge_meta_score" in stage2_result
+        assert "overall_feedback" in stage2_result
+        assert "improvement_areas" in stage2_result
+        assert "positive_feedback" in stage2_result
+        assert "primary_metric_gap" in stage2_result
+        assert "weighted_gap" in stage2_result
+
+        # Verify alignment_analysis has all 8 metrics
+        for metric in THE_EIGHT_METRICS:
+            assert metric in stage2_result["alignment_analysis"]
+            metric_data = stage2_result["alignment_analysis"][metric]
+            assert "user_score" in metric_data
+            assert "judge_score" in metric_data
+            assert "gap" in metric_data
+            assert "verdict" in metric_data
+            assert "feedback" in metric_data
+
+        # Verify meta score is valid
+        assert 1 <= stage2_result["judge_meta_score"] <= 5
+
+        # Verify feedback arrays
+        assert isinstance(stage2_result["improvement_areas"], list)
+        assert isinstance(stage2_result["positive_feedback"], list)
+
+        # Print for manual verification
+        print(f"\n=== GPT-4o Stage 2 Evaluation ===")
+        print(f"Meta Score: {stage2_result['judge_meta_score']}/5")
+        print(f"Primary Gap: {stage2_result['primary_metric_gap']}")
+        print(f"Weighted Gap: {stage2_result['weighted_gap']}")
+        print(f"\nOverall Feedback:\n{stage2_result['overall_feedback']}")
+        print(f"\nImprovement Areas:")
+        for area in stage2_result['improvement_areas']:
+            print(f"  - {area}")
+        print(f"\nPositive Feedback:")
+        for positive in stage2_result['positive_feedback']:
+            print(f"  - {positive}")
+
+
+class TestFullJudgeEvaluation:
+    """Test full_judge_evaluation method (Task 4.8)."""
+
+    @pytest.mark.live_api
+    def test_full_judge_evaluation_end_to_end(self, db_session):
+        """Test complete judge evaluation flow (Stage 1 → ChromaDB → Stage 2 → DB)."""
+        from datetime import datetime
+        from backend.models.judge_evaluation import JudgeEvaluation
+
+        # Setup: Create test evaluation
+        question = Question(
+            id="q_full_test_001",
+            question="What is 2+2?",
+            category="Mathematics",
+            difficulty="easy",
+            reference_answer="4",
+            expected_behavior="Model should answer correctly",
+            rubric_breakdown={"1": "Wrong", "5": "Correct"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity", "Helpfulness"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_full_test_001",
+            question_id="q_full_test_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="The answer is 5.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_full_test_001",
+            response_id="resp_full_test_001",
+            evaluations={
+                "Truthfulness": {"score": 2, "reasoning": "Wrong answer"},
+                "Helpfulness": {"score": 3, "reasoning": "Brief but incorrect"},
+                "Safety": {"score": None, "reasoning": "N/A"},
+                "Bias": {"score": None, "reasoning": "N/A"},
+                "Clarity": {"score": 5, "reasoning": "Clear"},
+                "Consistency": {"score": None, "reasoning": "N/A"},
+                "Efficiency": {"score": 4, "reasoning": "Concise"},
+                "Robustness": {"score": None, "reasoning": "N/A"}
+            },
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Execute full flow
+        service = JudgeService()
+        judge_eval_id = service.full_judge_evaluation(
+            user_eval_id="eval_full_test_001",
+            db=db_session
+        )
+
+        # Verify judge_eval_id format
+        assert judge_eval_id.startswith("judge_")
+
+        # Verify JudgeEvaluation record created
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(
+            id=judge_eval_id
+        ).first()
+        assert judge_eval is not None
+        assert judge_eval.user_evaluation_id == "eval_full_test_001"
+        assert judge_eval.primary_metric == "Truthfulness"
+        assert 1 <= judge_eval.judge_meta_score <= 5
+
+        # Verify independent_scores present
+        assert judge_eval.independent_scores is not None
+        assert "Truthfulness" in judge_eval.independent_scores
+
+        # Verify alignment_analysis present
+        assert judge_eval.alignment_analysis is not None
+        assert "Truthfulness" in judge_eval.alignment_analysis
+
+        # Verify UserEvaluation.judged updated
+        updated_user_eval = db_session.query(UserEvaluation).filter_by(
+            id="eval_full_test_001"
+        ).first()
+        assert updated_user_eval.judged is True
+
+        print(f"\n=== Full Judge Evaluation Test ===")
+        print(f"Judge Evaluation ID: {judge_eval_id}")
+        print(f"Meta Score: {judge_eval.judge_meta_score}/5")
+        print(f"Primary Gap: {judge_eval.primary_metric_gap}")
+        print(f"Weighted Gap: {judge_eval.weighted_gap}")
+        print(f"Overall Feedback: {judge_eval.overall_feedback[:100]}...")
+
+    def test_full_judge_evaluation_database_save(self, db_session):
+        """Test that JudgeEvaluation record is saved correctly."""
+        from datetime import datetime
+        from backend.models.judge_evaluation import JudgeEvaluation
+        from unittest.mock import Mock, patch
+
+        # Setup: Create minimal test data
+        question = Question(
+            id="q_db_save_test_001",
+            question="Test question?",
+            category="Testing",
+            difficulty="medium",
+            reference_answer="Test answer",
+            expected_behavior="Test behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_db_save_test_001",
+            question_id="q_db_save_test_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_db_save_test_001",
+            response_id="resp_db_save_test_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock the Stage 1 and Stage 2 API calls to avoid live API
+        service = JudgeService()
+
+        mock_stage1_result = {
+            "independent_scores": {
+                metric: {"score": 3, "rationale": "Mock rationale"}
+                for metric in THE_EIGHT_METRICS
+            }
+        }
+
+        mock_stage2_result = {
+            "alignment_analysis": {
+                metric: {
+                    "user_score": 3,
+                    "judge_score": 3,
+                    "gap": 0,
+                    "verdict": "aligned",
+                    "feedback": "Mock feedback"
+                }
+                for metric in THE_EIGHT_METRICS
+            },
+            "judge_meta_score": 5,
+            "overall_feedback": "Mock overall feedback",
+            "improvement_areas": ["Mock improvement"],
+            "positive_feedback": ["Mock positive"],
+            "primary_metric_gap": 0.0,
+            "weighted_gap": 0.0
+        }
+
+        with patch.object(service, 'stage1_independent_evaluation', return_value=mock_stage1_result):
+            with patch.object(service, 'stage2_mentoring_comparison', return_value=mock_stage2_result):
+                with patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+                    # Mock ChromaDB query to return empty
+                    mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                    # Mock ChromaDB add to succeed
+                    mock_chroma.add_to_memory.return_value = None
+
+                    judge_eval_id = service.full_judge_evaluation(
+                        user_eval_id="eval_db_save_test_001",
+                        db=db_session
+                    )
+
+        # Verify record created in database
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(id=judge_eval_id).first()
+        assert judge_eval is not None
+        assert judge_eval.judge_meta_score == 5
+        assert judge_eval.primary_metric == "Truthfulness"
+
+    def test_full_judge_evaluation_user_eval_update(self, db_session):
+        """Test that UserEvaluation.judged is updated to TRUE."""
+        from datetime import datetime
+        from unittest.mock import patch
+
+        # Setup: Create test data
+        question = Question(
+            id="q_user_update_test_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_user_update_test_001",
+            question_id="q_user_update_test_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Response",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_user_update_test_001",
+            response_id="resp_user_update_test_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock API calls
+        service = JudgeService()
+
+        mock_stage1_result = {
+            "independent_scores": {
+                metric: {"score": 3, "rationale": "Mock"}
+                for metric in THE_EIGHT_METRICS
+            }
+        }
+
+        mock_stage2_result = {
+            "alignment_analysis": {
+                metric: {
+                    "user_score": 3, "judge_score": 3, "gap": 0,
+                    "verdict": "aligned", "feedback": "Mock"
+                }
+                for metric in THE_EIGHT_METRICS
+            },
+            "judge_meta_score": 5,
+            "overall_feedback": "Mock",
+            "improvement_areas": [],
+            "positive_feedback": [],
+            "primary_metric_gap": 0.0,
+            "weighted_gap": 0.0
+        }
+
+        with patch.object(service, 'stage1_independent_evaluation', return_value=mock_stage1_result):
+            with patch.object(service, 'stage2_mentoring_comparison', return_value=mock_stage2_result):
+                with patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+                    mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                    mock_chroma.add_to_memory.return_value = None
+
+                    service.full_judge_evaluation(
+                        user_eval_id="eval_user_update_test_001",
+                        db=db_session
+                    )
+
+        # Verify UserEvaluation.judged updated
+        updated = db_session.query(UserEvaluation).filter_by(
+            id="eval_user_update_test_001"
+        ).first()
+        assert updated.judged is True
