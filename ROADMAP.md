@@ -1551,4 +1551,749 @@ Phase 1 tamamlanmış sayılır eğer:
 
 ---
 
+## 📅 Phase 2: Frontend UI (6 Weeks)
+
+**Tarih:** 24 Şubat - 7 Nisan 2025
+**Hedef:** Next.js 14+ frontend ile kullanıcı dostu arayüz
+
+---
+
+## 🎯 Phase 2 Overview
+
+### Scope
+
+**Dahil:**
+- Next.js 14+ (App Router) frontend
+- shadcn/ui component library
+- TanStack Query + Zustand state management
+- Evaluation flow UI
+- Judge feedback display (polling)
+- Statistics dashboard
+- Responsive design
+- TypeScript
+
+**Hariç:**
+- User authentication (MVP single-user)
+- Real-time features (SSE/WebSocket)
+- PWA support
+- Advanced analytics
+
+### Definition of Done
+
+Phase 2 tamamlandığında:
+- [ ] Next.js proje kurulumu tamamlandı
+- [ ] Tüm sayfalar render ediliyor
+- [ ] Evaluation flow çalışıyor
+- [ ] Judge feedback polling çalışıyor
+- [ ] Statistics dashboard görüntüleniyor
+- [ ] Responsive tasarım (mobile-friendly)
+- [ ] Type-safe kod (TypeScript)
+- [ ] Test suite hazır
+
+---
+
+## 📅 Week 5: Foundation & Setup
+
+**Tarih:** 24 Şubat - 2 Mart 2025
+**Hedef:** Next.js proje kurulumu ve temel yapı
+
+---
+
+### Task 5.1: Project Initialization
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `frontend/` klasörünü oluştur
+- [ ] Next.js 14+ initialize et (`npx create-next-app@latest`)
+- [ ] TypeScript seç
+- [ ] Tailwind CSS seç
+- [ ] App Router seç
+- [ ] `frontend/` klasör yapısını oluştur
+- [ ] `.gitignore` güncelle (frontend-specific)
+
+---
+
+### Task 5.2: shadcn/ui Setup
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] shadcn/ui initialize et (`npx shadcn-ui@latest init`)
+- [ ] Component library kurulumu
+- [ ] Temel component'leri ekle:
+  - [ ] button
+  - [ ] card
+  - [ ] input
+  - [ ] label
+  - [ ] slider
+  - [ ] textarea
+  - [ ] badge
+  - [ ] progress
+  - [ ] skeleton
+  - [ ] alert
+  - [ ] dialog
+- [ ] `components/ui/` klasör yapısını oluştur
+
+---
+
+### Task 5.3: TanStack Query + Zustand Setup
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `@tanstack/react-query` kur
+- [ ] `zustand` kur
+- [ ] `axios` kur
+- [ ] Query client setup (`lib/query/client.ts`)
+- [ ] Query keys tanımla (`lib/query/keys.ts`)
+- [ ] Zustand store'ları oluştur:
+  - [ ] evaluation store
+  - [ ] UI store
+- [ ] Provider setup (`app/providers.tsx`)
+
+---
+
+### Task 5.4: API Client Setup
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] API client oluştur (`lib/api/client.ts`)
+- [ ] Axios instance konfigürasyonu
+- [ ] Error handling middleware
+- [ ] Request/response interceptor'lar
+- [ ] Environment variables setup
+- [ ] API base URL konfigürasyonu
+
+---
+
+### Task 5.5: Routing Structure
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] App Router yapısını oluştur:
+  - [ ] `app/(auth)/` - Auth route group (future)
+  - [ ] `app/dashboard/` - Dashboard
+  - [ ] `app/evaluation/` - Evaluation flow
+  - [ ] `app/statistics/` - Statistics
+- [ ] Layout component'leri oluştur
+- [ ] Navigation component'i oluştur
+- [ ] Route guards ekle (future auth)
+
+---
+
+### Task 5.6: Design System Setup
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Tailwind config güncelle (design tokens)
+- [ ] Color palette ekle (LCH-based)
+- [ ] Type scale ekle (Perfect Fourth)
+- [ ] Spacing system ekle (8-point grid)
+- [ ] Border radius tokens ekle
+- [ ] Shadow system ekle
+- [ ] `globals.css` güncelle
+- [ ] Custom utility classes ekle
+
+---
+
+### ✅ Week 5 Checklist
+
+- [ ] Next.js proje hazır
+- [ ] shadcn/ui component'leri yüklü
+- [ ] TanStack Query + Zustand kurulu
+- [ ] API client hazır
+- [ ] Routing yapısı kuruldu
+- [ ] Design system tanımlandı
+
+---
+
+## 📅 Week 6: Evaluation Flow
+
+**Tarih:** 3 - 9 Mart 2025
+**Hedef:** Değerlendirme akışı UI
+
+---
+
+### Task 6.1: Dashboard Page
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Dashboard page component'i oluştur (`app/dashboard/page.tsx`)
+- [ ] Metric selector card (8 metrik kartları)
+- [ ] "Start Evaluation" butonu
+- [ ] Quick stats display (toplam değerlendirme, ortalama meta score)
+- [ ] Recent evaluations listesi
+- [ ] Responsive layout
+
+---
+
+### Task 6.2: Start Evaluation Page
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Evaluation start page (`app/evaluation/page.tsx`)
+- [ ] Primary metric selection
+- [ ] Use pool toggle (havuzdan seç / yeni üret)
+- [ ] Start button with loading state
+- [ ] Error handling
+- [ ] API integration (`POST /api/questions/generate`)
+
+---
+
+### Task 6.3: Question Card Component
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI`
+
+**Yapılacaklar:**
+- [ ] QuestionCard organism component'i
+- [ ] Question display (formatted text)
+- [ ] Category badge
+- [ ] Model response display
+- [ ] Model name badge
+- [ ] Reference answer (collapsible)
+- [ ] Loading skeleton
+
+---
+
+### Task 6.4: Evaluation Form Component
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] EvaluationForm organism component'i
+- [ ] 8 metric card (accordion-style):
+  - [ ] Metric name + icon
+  - [ ] Score slider (1-5)
+  - [ ] N/A checkbox
+  - [ ] Reasoning textarea
+- [ ] Form validation (tüm metrikler doldurulmalı)
+- [ ] Draft auto-save (localStorage)
+- [ ] Submit button with loading state
+- [ ] Progress indicator (doldurulan metrikler)
+
+---
+
+### Task 6.5: Evaluation Page Integration
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Evaluation page component'i (`app/evaluation/[id]/page.tsx`)
+- [ ] QuestionCard + EvaluationForm entegrasyonu
+- [ ] State management (Zustand)
+- [ ] API integration (`POST /api/evaluations/submit`)
+- [ ] Success state → redirect to feedback
+- [ ] Error handling
+- [ ] Loading states
+
+---
+
+### ✅ Week 6 Checklist
+
+- [ ] Dashboard page hazır
+- [ ] Start evaluation page hazır
+- [ ] Question card component hazır
+- [ ] Evaluation form component hazır
+- [ ] Evaluation page entegrasyonu tamam
+- [ ] API endpoint'leri entegre
+
+---
+
+## 📅 Week 7: Judge Feedback Display
+
+**Tarih:** 10 - 16 Mart 2025
+**Hedef:** Judge feedback polling ve display
+
+---
+
+### Task 7.1: Feedback Polling Hook
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `useJudgeFeedback` hook oluştur
+- [ ] TanStack Query ile polling implement et
+- [ ] 3 saniyede bir poll et
+- [ ] Status check (processing vs completed)
+- [ ] Error handling
+- [ ] Retry mechanism
+
+---
+
+### Task 7.2: Processing State Component
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Processing state component'i
+- [ ] Loading animation (Framer Motion)
+- [ ] Estimated time display
+- [ ] Progress steps (Stage 1 → Stage 2)
+- [ ] Status messages
+
+---
+
+### Task 7.3: Judge Feedback Panel
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] JudgeFeedbackPanel organism component'i
+- [ ] Meta score display (1-5 stars)
+- [ ] Overall feedback section
+- [ ] Alignment analysis (8 metrik için):
+  - [ ] User score vs Judge score
+  - [ ] Gap indicator
+  - [ ] Verdict badge (aligned/over/under)
+  - [ ] Feedback text
+- [ ] Improvement areas list
+- [ ] Positive feedback list
+- [ ] Past patterns section (ChromaDB)
+
+---
+
+### Task 7.4: Feedback Page Integration
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Feedback page component'i (`app/evaluation/[id]/feedback/page.tsx`)
+- [ ] Processing state → Feedback state transition
+- [ ] JudgeFeedbackPanel entegrasyonu
+- [ ] Retry button (failed judge için)
+- [ ] Back to dashboard navigation
+- [ ] Error handling
+
+---
+
+### Task 7.5: Animations (Framer Motion)
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Feedback item stagger animation
+- [ ] Score comparison animation
+- [ ] Progress bar animation
+- [ ] Page transition animations
+- [ ] Micro-interactions (hover, tap)
+
+---
+
+### ✅ Week 7 Checklist
+
+- [ ] Feedback polling hook hazır
+- [ ] Processing state component hazır
+- [ ] Judge feedback panel hazır
+- [ ] Feedback page entegrasyonu tamam
+- [ ] Animalar implement edildi
+
+---
+
+## 📅 Week 8: Statistics Dashboard
+
+**Tarih:** 17 - 23 Mart 2025
+**Hedef:** İstatistik dashboard ve grafikler
+
+---
+
+### Task 8.1: Stats Overview Page
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI`
+
+**Yapılacaklar:**
+- [ ] Stats overview page (`app/statistics/page.tsx`)
+- [ ] Total evaluations counter
+- [ ] Average meta score display
+- [ ] Trend indicator (improving/declining)
+- [ ] Quick stats cards
+- [ ] Responsive layout
+
+---
+
+### Task 8.2: Metric Performance Cards
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] MetricPerformanceCard component'i
+- [ ] 8 metrik için card'lar
+- [ ] Average gap display
+- [ ] Evaluation count
+- [ ] Trend indicator (arrow + color)
+- [ ] Metric-specific color theming
+
+---
+
+### Task 8.3: Chart Library Setup
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Chart library seç (Recharts / Chart.js / Victory)
+- [ ] Library kurulumu
+- [ ] Theme configuration
+- [ ] Responsive wrapper component'i
+- [ ] Custom tooltip component'i
+
+---
+
+### Task 8.4: Line Chart (Improvement Trend)
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] ImprovementTrendChart component'i
+- [ ] Line chart implementation
+- [ ] X-axis: Evaluation number
+- [ ] Y-axis: Meta score
+- [ ] Trend line (moving average)
+- [ ] Hover tooltip
+- [ ] Data fetching (API integration)
+
+---
+
+### Task 8.5: Radar Chart (Metric Comparison)
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] MetricRadarChart component'i
+- [ ] Radar chart implementation
+- [ ] 8 axes (8 metrik)
+- [ ] User scores vs Judge scores comparison
+- [ ] Average gaps visualization
+- [ ] Interactive labels
+
+---
+
+### Task 8.6: Per-Metric Stats Page
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Per-metric stats page (`app/statistics/metrics/[metric]/page.tsx`)
+- [ ] Metric header (icon + name)
+- [ ] Detailed stats display
+- [ ] Historical evaluations listesi
+- [ ] Performance trend chart
+- [ ] Back button
+
+---
+
+### ✅ Week 8 Checklist
+
+- [ ] Stats overview page hazır
+- [ ] Metric performance cards hazır
+- [ ] Chart library kurulu
+- [ ] Line chart hazır
+- [ ] Radar chart hazır
+- [ ] Per-metric stats page hazır
+
+---
+
+## 📅 Week 9: Polish & UX
+
+**Tarih:** 24 - 30 Mart 2025
+**Hedef:** UX iyileştirmeleri ve detaylar
+
+---
+
+### Task 9.1: Responsive Design
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Mobile breakpoint kontrolü (320px+)
+- [ ] Tablet breakpoint kontrolü (768px+)
+- [ ] Desktop breakpoint kontrolü (1024px+)
+- [ ] Component'leri responsive yap
+- [ ] Touch-friendly交互 (min 44x44px)
+
+---
+
+### Task 9.2: Loading States
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Global loading spinner
+- [ ] Skeleton screens (shadcn/ui Skeleton)
+- [ ] Progress indicators
+- [ ] Optimistic UI updates
+- [ ] Loading states for all async operations
+
+---
+
+### Task 9.3: Error Handling
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Error boundary component'i
+- [ ] Error alert component'i (shadcn/ui Alert)
+- [ ] Retry buttons
+- [ ] User-friendly error messages
+- [ ] Fallback UI components
+- [ ] Error logging (Sentry - optional)
+
+---
+
+### Task 9.4: Accessibility
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] ARIA labels ekle
+- [ ] Keyboard navigation (Tab, Enter, Escape)
+- [ ] Focus management
+- [ ] Screen reader testing
+- [ ] Color contrast kontrolü (WCAG AA)
+- [ ] Semantic HTML
+
+---
+
+### Task 9.5: Dark Mode Support
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Dark mode toggle component'i
+- [ ] Theme provider (next-themes)
+- [ ] Dark mode styles (Tailwind dark:)
+- [ ] System preference detection
+- [ ] Theme persistence (localStorage)
+
+---
+
+### ✅ Week 9 Checklist
+
+- [ ] Responsive tasarım tamam
+- [ ] Loading states hazır
+- [ ] Error handling hazır
+- [ ] Accessibility iyileştirmeleri
+- [ ] Dark mode support
+
+---
+
+## 📅 Week 10: Testing & Deployment
+
+**Tarih:** 31 Mart - 6 Nisan 2025
+**Hedef:** Testler ve deployment
+
+---
+
+### Task 10.1: Unit Tests (Vitest)
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Vitest kurulumu
+- [ ] Test utility fonksiyonları
+- [ ] Test custom hooks
+- [ ] Test Zustand store'ları
+- [ ] Test API client fonksiyonları
+- [ ] Coverage report (target: 70%+)
+
+---
+
+### Task 10.2: Integration Tests
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] MSW (Mock Service Worker) kurulumu
+- [ ] API response mock'ları
+- [ ] Component integration tests
+- [ ] Query cache tests
+- [ ] State management tests
+
+---
+
+### Task 10.3: E2E Tests (Playwright)
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Playwright kurulumu
+- [ ] E2E test senaryoları:
+  - [ ] Complete evaluation flow
+  - [ ] Judge feedback polling
+  - [ ] Statistics dashboard
+  - [ ] Responsive testing
+- [ ] Visual regression tests (optional)
+- [ ] CI/CD entegrasyonu
+
+---
+
+### Task 10.4: Performance Optimization
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Bundle analysis
+- [ ] Code splitting (dynamic imports)
+- [ ] Image optimization (Next.js Image)
+- [ ] Font optimization (next/font)
+- [ ] Lazy loading components
+- [ ] Lighthouse score (target: 90+)
+
+---
+
+### Task 10.5: Vercel Deployment
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Vercel proje oluştur
+- [ ] Environment variables ayarla
+- [ ] Deploy (vercel CLI)
+- [ ] Custom domain (optional)
+- [ ] Production build test
+- [ ] Preview deployments
+
+---
+
+### Task 10.6: Documentation
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] FRONTEND.md güncelle
+- [ ] README.md'ye frontend section ekle
+- [ ] Component documentation (Storybook - optional)
+- [ ] API integration docs
+- [ ] Deployment instructions
+
+---
+
+### ✅ Week 10 Checklist
+
+- [ ] Unit tests hazır (70%+ coverage)
+- [ ] Integration tests hazır
+- [ ] E2E tests hazır
+- [ ] Performance optimized
+- [ ] Deployed to Vercel
+- [ ] Documentation güncel
+
+---
+
+## 🎯 Phase 2 Success Metrics
+
+### Technical Metrics
+
+- [ ] **Test Coverage:** 70%+ (frontend)
+- [ ] **Lighthouse Score:** 90+ (Performance, Accessibility, Best Practices)
+- [ ] **Bundle Size:** < 500KB (initial JS)
+- [ ] **TTFB:** < 200ms (Vercel edge)
+- [ ] **FID/INP:** < 100ms (interaction delay)
+
+### Functional Metrics
+
+- [ ] **Evaluation Flow:** End-to-end çalışıyor
+- [ ] **Judge Polling:** Real-time feedback alıyor
+- [ ] **Stats Dashboard:** Tüm grafikler görüntüleniyor
+- [ ] **Responsive:** 320px - 4K çalışıyor
+- [ ] **Type-Safe:** TypeScript hataları yok
+
+### Quality Metrics
+
+- [ ] **Accessibility:** WCAG 2.1 AA uyumlu
+- [ ] **Dark Mode:** Tüm sayfalar destekliyor
+- [ ] **Error Handling:** Tüm hatalar kullanıcı dostu
+- [ ] **Loading States:** Tüm async işlemlerde
+- [ ] **Documentation:** FRONTEND.md güncel
+
+---
+
+## 🎉 Phase 2 Completion
+
+**Phase 2 tamamlandığında elimizde şunlar olacak:**
+
+✅ **Modern Next.js Frontend** (14+ App Router)
+✅ **UI Component Library** (shadcn/ui)
+✅ **State Management** (TanStack Query + Zustand)
+✅ **Evaluation Flow UI**
+✅ **Judge Feedback Display** (Polling)
+✅ **Statistics Dashboard** (Charts)
+✅ **Responsive Design** (Mobile-first)
+✅ **Type-Safe Code** (TypeScript)
+✅ **Comprehensive Tests** (Unit + Integration + E2E)
+✅ **Production Ready** (Vercel deployed)
+
+**Sonraki adım:** Phase 3 - Advanced Features 🚀
+
+---
+
 **Başarılar!** 💪
