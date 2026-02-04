@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { MetricName, MetricEvaluation } from '@/types';
-import { METRIC_COLORS_LIGHT, METRIC_DESCRIPTIONS } from '@/lib/constants';
+import { METRIC_COLORS_LIGHT, METRIC_DESCRIPTIONS, SCORE_COLORS, SCORE_COLORS_BORDER, SCORE_COLORS_LIGHT } from '@/lib/constants';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 interface MetricScoreCardProps {
@@ -14,6 +14,7 @@ interface MetricScoreCardProps {
 
 export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProps) {
   const [isNA, setIsNA] = useState(value.score === null);
+  const localScore = value.score;
   const colorClasses = METRIC_COLORS_LIGHT[metric];
 
   const handleScoreChange = (score: number) => {
@@ -30,6 +31,14 @@ export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProp
   const handleReasoningChange = (reasoning: string) => {
     onChange({ ...value, reasoning });
   };
+
+  const scoreButtons = [
+    { value: 1, color: SCORE_COLORS[1], hover: 'hover:bg-rose-100' },
+    { value: 2, color: SCORE_COLORS[2], hover: 'hover:bg-orange-100' },
+    { value: 3, color: SCORE_COLORS[3], hover: 'hover:bg-amber-100' },
+    { value: 4, color: SCORE_COLORS[4], hover: 'hover:bg-emerald-100' },
+    { value: 5, color: SCORE_COLORS[5], hover: 'hover:bg-green-100' },
+  ];
 
   return (
     <Card className={`${isNA ? 'opacity-60' : ''}`}>
@@ -55,28 +64,41 @@ export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProp
           </button>
         </div>
 
-        {/* Score Selector */}
+        {/* Segmented Control Score Selector */}
         {!isNA && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-slate-500">
-              <span>Very Poor</span>
-              <span>Excellent</span>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs text-slate-500 px-1">
+              <span className="text-rose-600 font-medium">Very Poor</span>
+              <span className="text-green-600 font-medium">Excellent</span>
             </div>
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((score) => (
+            <div className="flex rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-700">
+              {scoreButtons.map(({ value: scoreValue, color, hover }) => (
                 <button
-                  key={score}
-                  onClick={() => handleScoreChange(score)}
-                  className={`flex-1 py-3 rounded-lg font-semibold text-lg transition-all ${
-                    value.score === score
-                      ? `${colorClasses} ring-2 ring-offset-2 ring-current`
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                  key={scoreValue}
+                  type="button"
+                  onClick={() => handleScoreChange(scoreValue)}
+                  className={`
+                    flex-1 py-3 px-2 text-lg font-semibold transition-all duration-200 relative
+                    ${localScore === scoreValue
+                      ? `${color} text-white shadow-lg scale-105`
+                      : `bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ${hover}`
+                    }
+                    ${localScore !== scoreValue ? 'border-r border-slate-200 dark:border-slate-700 last:border-r-0' : ''}
+                  `}
                 >
-                  {score}
+                  {scoreValue}
                 </button>
               ))}
             </div>
+            {/* Score Feedback */}
+            {localScore && (
+              <div className="flex items-center justify-center gap-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className={`w-3 h-3 rounded-full ${SCORE_COLORS[localScore]} animate-pulse`} />
+                <span className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  Puan: {localScore}/5
+                </span>
+              </div>
+            )}
           </div>
         )}
 
@@ -93,7 +115,7 @@ export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProp
                 ? 'Explain why this metric is not applicable...'
                 : 'Explain your score...'
             }
-            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+            className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none dark:bg-slate-800 dark:border-slate-600 dark:text-slate-100"
             rows={2}
           />
         </div>

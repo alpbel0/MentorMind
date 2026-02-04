@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UsePollingOptions<T> {
   fetcher: () => Promise<T>;
@@ -22,7 +22,7 @@ interface UsePollingResult<T> {
 
 export function usePolling<T>({
   fetcher,
-  interval = 2000,
+  interval = 3000,
   shouldStop,
   onSuccess,
   onError,
@@ -32,6 +32,20 @@ export function usePolling<T>({
   const [error, setError] = useState<Error | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isPolling, setIsPolling] = useState(enabled);
+  
+  // Use refs to avoid stale closures in interval
+  const fetcherRef = useRef(fetcher);
+  const shouldStopRef = useRef(shouldStop);
+  const onSuccessRef = useRef(onSuccess);
+  const onErrorRef = useRef(onError);
+  
+  // Update refs when callbacks change
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+    shouldStopRef.current = shouldStop;
+    onSuccessRef.current = onSuccess;
+    onErrorRef.current = onError;
+  }, [fetcher, shouldStop, onSuccess, onError]);
 
   const stop = useCallback(() => {
     setIsPolling(false);
@@ -39,15 +53,15 @@ export function usePolling<T>({
 
   const fetchData = useCallback(async () => {
     try {
-      const result = await fetcher();
+      const result = await fetcherRef.current();
       setData(result);
       setError(null);
       
-      if (onSuccess) {
-        onSuccess(result);
+      if (onSuccessRef.current) {
+        onSuccessRef.current(result);
       }
       
-      if (shouldStop && shouldStop(result)) {
+      if (shouldStopRef.current && shouldStopRef.current(result)) {
         setIsPolling(false);
       }
       
@@ -55,14 +69,14 @@ export function usePolling<T>({
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
       setError(error);
-      if (onError) {
-        onError(error);
+      if (onErrorRef.current) {
+        onErrorRef.current(error);
       }
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [fetcher, shouldStop, onSuccess, onError]);
+  }, []);
 
   const refetch = useCallback(async () => {
     setIsLoading(true);
@@ -78,7 +92,7 @@ export function usePolling<T>({
     // Initial fetch
     fetchData();
 
-    // Set up polling
+    // Set up polling with fixed interval
     const pollInterval = setInterval(() => {
       if (isPolling) {
         fetchData();
@@ -88,7 +102,7 @@ export function usePolling<T>({
     return () => {
       clearInterval(pollInterval);
     };
-  }, [enabled, interval, isPolling, fetchData]);
+  }, [enabled, interval]); // Remove fetchData and isPolling from deps
 
   return {
     data,

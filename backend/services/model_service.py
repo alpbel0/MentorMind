@@ -139,7 +139,10 @@ class ModelService:
         try:
             response = self.client.chat.completions.create(
                 model=model_name,
-                messages=[{"role": "user", "content": question}],
+                messages=[
+                    {"role": "system", "content": "You must respond in Turkish. All answers must be in Turkish language."},
+                    {"role": "user", "content": question}
+                ],
                 timeout=self.timeout,
                 extra_headers={
                     "HTTP-Referer": "https://github.com/yigitalp/MentorMind",

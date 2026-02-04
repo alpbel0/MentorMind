@@ -654,11 +654,14 @@ class JudgeService:
                 bonus_metrics=bonus_metrics
             )
 
-            # 5. Calculate primary metric gap
-            primary_gap = abs(
-                user_scores.get(question.primary_metric, {}).get("score", 0) -
-                judge_scores.get(question.primary_metric, {}).get("score", 0)
-            )
+            # 5. Calculate primary metric gap (handle None scores)
+            user_primary_score = user_scores.get(question.primary_metric, {}).get("score")
+            judge_primary_score = judge_scores.get(question.primary_metric, {}).get("score")
+            
+            if user_primary_score is not None and judge_primary_score is not None:
+                primary_gap = abs(user_primary_score - judge_primary_score)
+            else:
+                primary_gap = 0.0  # If either score is None, gap is 0
 
             # 6. Format past mistakes context
             past_mistakes = self._format_past_mistakes(vector_context)

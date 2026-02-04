@@ -224,12 +224,17 @@ async def get_evaluation_feedback(
     for metric, data in judge_eval.alignment_analysis.items():
         # Handle both dict and potentially already-converted objects
         if isinstance(data, dict):
+            # Safely extract values, handling None explicitly
+            user_score_raw = data.get("user_score")
+            judge_score_raw = data.get("judge_score")
+            gap_raw = data.get("gap")
+            
             alignment_metrics[metric] = AlignmentMetric(
-                user_score=int(data.get("user_score", 0)),
-                judge_score=int(data.get("judge_score", 0)),
-                gap=int(data.get("gap", 0)) if isinstance(data.get("gap"), int) else float(data.get("gap", 0)),
-                verdict=str(data.get("verdict", "")),
-                feedback=str(data.get("feedback", ""))
+                user_score=int(user_score_raw) if user_score_raw is not None else 0,
+                judge_score=int(judge_score_raw) if judge_score_raw is not None else 0,
+                gap=float(gap_raw) if gap_raw is not None else 0.0,
+                verdict=str(data.get("verdict") or ""),
+                feedback=str(data.get("feedback") or "")
             )
         else:
             # Already an AlignmentMetric or similar object
