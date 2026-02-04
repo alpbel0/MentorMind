@@ -15,7 +15,7 @@ from backend.config.logging_config import setup_logging, get_logger
 from backend.config.settings import settings
 from backend.middleware.logging_middleware import RequestLoggingMiddleware
 from backend.models.database import test_database_connection, engine, get_pool_status
-from backend.routers import questions, evaluations
+from backend.routers import questions, evaluations, stats
 from backend.services.chromadb_service import chromadb_service
 
 # =====================================================
@@ -111,6 +111,11 @@ app.include_router(
     evaluations.router,
     prefix="/api/evaluations",
     tags=["evaluations"]
+)
+app.include_router(
+    stats.router,
+    prefix="/api/stats",
+    tags=["stats"]
 )
 
 

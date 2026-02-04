@@ -322,6 +322,38 @@ def cmd_full(args) -> None:
     print("  - (Week 4) judge_evaluations record created")
 
 
+def cmd_stats(args) -> None:
+    """Get and display statistics overview."""
+    print_header("STATISTICS OVERVIEW")
+
+    try:
+        result = api_get("/api/stats/overview")
+
+        print(f"{Colors.BOLD}Total Evaluations:{Colors.ENDC} {result['total_evaluations']}")
+        print(f"{Colors.BOLD}Average Meta Score:{Colors.ENDC} {result['average_meta_score']}/5")
+        print(f"{Colors.BOLD}Improvement Trend:{Colors.ENDC} {result['improvement_trend']}")
+
+        if result['metrics_performance']:
+            print(f"\n{Colors.BOLD}Metrics Performance:{Colors.ENDC}")
+            for metric, data in result['metrics_performance'].items():
+                trend_symbol = "↑" if data['trend'] == "improving" else "↓" if data['trend'] == "declining" else "→"
+                if data['trend'] == "improving":
+                    trend_color = Colors.OKGREEN
+                elif data['trend'] == "declining":
+                    trend_color = Colors.FAIL
+                else:
+                    trend_color = ""
+                print(f"  {metric}:")
+                print(f"    Avg Gap: {data['avg_gap']}, Count: {data['count']}, Trend: {trend_color}{trend_symbol} {data['trend']}{Colors.ENDC}")
+        else:
+            print(f"\n{Colors.WARNING}No metrics performance data available yet.{Colors.ENDC}")
+
+    except requests.exceptions.RequestException as e:
+        print_error(f"API request failed: {e}")
+        if hasattr(e, 'response') and e.response is not None:
+            print_error(f"Response: {e.response.text}")
+
+
 # =====================================================
 # Main
 # =====================================================
@@ -337,6 +369,7 @@ Examples:
   python -m backend.cli generate --metric Safety --pool
   python -m backend.cli evaluate --response-id resp_123
   python -m backend.cli judge --evaluation-id eval_123 --timeout 120
+  python -m backend.cli stats
 
 Metrics:
   Truthfulness, Helpfulness, Safety, Bias, Clarity, Consistency, Efficiency, Robustness
@@ -376,6 +409,9 @@ Metrics:
     full_parser.add_argument('--timeout', type=int, default=60,
                             help='Judge polling timeout in seconds (default: 60)')
 
+    # stats command
+    stats_parser = subparsers.add_parser('stats', help='Get and display statistics overview')
+
     args = parser.parse_args()
 
     if not args.command:
@@ -391,6 +427,8 @@ Metrics:
         cmd_judge(args)
     elif args.command == 'full':
         cmd_full(args)
+    elif args.command == 'stats':
+        cmd_stats(args)
 
 
 if __name__ == '__main__':

@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Focus ring utility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2;
+}
+
+/* Card hover animation */
+.card-hover {
+  @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+}
+
+/* Score indicator colors */
+.score-1 { @apply bg-rose-500; }
+.score-2 { @apply bg-orange-500; }
+.score-3 { @apply bg-amber-500; }
+.score-4 { @apply bg-emerald-500; }
+.score-5 { @apply bg-green-500; }
+
+/* Pulse animation for loading states */
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 2s ease-in-out infinite;
+}
+
+/* Textarea resize */
+textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* Input base styles */
+input[type="text"],
+input[type="number"],
+textarea,
+select {
+  @apply w-full px-4 py-2 text-sm bg-white border border-slate-300 rounded-lg;
+  @apply focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent;
+  @apply placeholder:text-slate-400 transition-all;
+}
+
+/* Range slider custom styles */
+input[type="range"] {
+  @apply w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply appearance-none w-5 h-5 bg-indigo-600 rounded-full cursor-pointer;
+  @apply shadow-md hover:bg-indigo-700 transition-colors;
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply w-5 h-5 bg-indigo-600 rounded-full cursor-pointer border-0;
+  @apply shadow-md hover:bg-indigo-700 transition-colors;
+}
