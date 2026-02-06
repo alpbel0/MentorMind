@@ -203,22 +203,8 @@ function EvaluateContent() {
       {/* Step: Evaluate */}
       {step === 'evaluate' && questionData && (
         <div className="space-y-6">
-          {/* Collapsed Question Reference */}
-          <Card className="bg-slate-50">
-            <div className="flex items-start justify-between">
-              <div className="flex-1 pr-4">
-                <h4 className="font-medium text-slate-900 mb-1">Question</h4>
-                <p className="text-sm text-slate-600 line-clamp-2">{questionData.question}</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setStep('view_question')}
-              >
-                View Full
-              </Button>
-            </div>
-          </Card>
+          {/* Full QuestionDisplay - always visible for reference */}
+          <QuestionDisplay data={questionData} />
 
           {/* Evaluation Form */}
           <Card>
@@ -227,6 +213,7 @@ function EvaluateContent() {
               subtitle="Score each metric and provide your reasoning"
             />
             <EvaluationForm
+              questionData={questionData}
               onSubmit={handleSubmitEvaluation}
               isSubmitting={isLoading}
             />
@@ -238,7 +225,7 @@ function EvaluateContent() {
               onClick={() => setStep('view_question')}
               icon={<ArrowLeft className="w-4 h-4" />}
             >
-              Back to Question
+              Back to Question View
             </Button>
           </div>
         </div>

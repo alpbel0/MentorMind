@@ -228,10 +228,10 @@ async def get_evaluation_feedback(
             user_score_raw = data.get("user_score")
             judge_score_raw = data.get("judge_score")
             gap_raw = data.get("gap")
-            
+
             alignment_metrics[metric] = AlignmentMetric(
-                user_score=int(user_score_raw) if user_score_raw is not None else 0,
-                judge_score=int(judge_score_raw) if judge_score_raw is not None else 0,
+                user_score=int(user_score_raw) if user_score_raw is not None else None,
+                judge_score=int(judge_score_raw) if judge_score_raw is not None else None,
                 gap=float(gap_raw) if gap_raw is not None else 0.0,
                 verdict=str(data.get("verdict") or ""),
                 feedback=str(data.get("feedback") or "")

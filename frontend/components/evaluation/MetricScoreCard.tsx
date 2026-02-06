@@ -1,10 +1,9 @@
 'use client';
 
-import { useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { MetricName, MetricEvaluation } from '@/types';
-import { METRIC_COLORS_LIGHT, METRIC_DESCRIPTIONS, SCORE_COLORS, SCORE_COLORS_BORDER, SCORE_COLORS_LIGHT } from '@/lib/constants';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { METRIC_COLORS_LIGHT, METRIC_DESCRIPTIONS, SCORE_COLORS } from '@/lib/constants';
+import { XCircle } from 'lucide-react';
 
 interface MetricScoreCardProps {
   metric: MetricName;
@@ -13,32 +12,32 @@ interface MetricScoreCardProps {
 }
 
 export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProps) {
-  const [isNA, setIsNA] = useState(value.score === null);
+  // isNA only when N/A button was explicitly clicked (score is null AND user has interacted)
+  // If both score and reasoning are empty, show the score buttons (default state)
+  const isNA = value.score === null && value.reasoning.trim().length > 0;
   const localScore = value.score;
-  const colorClasses = METRIC_COLORS_LIGHT[metric];
 
   const handleScoreChange = (score: number) => {
-    setIsNA(false);
     onChange({ ...value, score });
   };
 
   const handleNAToggle = () => {
-    const newIsNA = !isNA;
-    setIsNA(newIsNA);
-    onChange({ ...value, score: newIsNA ? null : 3 });
+    // Toggle: if currently NA, set to 3; if currently scored, set to NA
+    onChange({ ...value, score: isNA ? 3 : null });
   };
 
   const handleReasoningChange = (reasoning: string) => {
     onChange({ ...value, reasoning });
   };
 
-  const scoreButtons = [
-    { value: 1, color: SCORE_COLORS[1], hover: 'hover:bg-rose-100' },
-    { value: 2, color: SCORE_COLORS[2], hover: 'hover:bg-orange-100' },
-    { value: 3, color: SCORE_COLORS[3], hover: 'hover:bg-amber-100' },
-    { value: 4, color: SCORE_COLORS[4], hover: 'hover:bg-emerald-100' },
-    { value: 5, color: SCORE_COLORS[5], hover: 'hover:bg-green-100' },
-  ];
+  // Score styles
+  const scoreStyles: Record<number, { bg: string; text: string }> = {
+    1: { bg: 'bg-rose-500', text: 'text-white' },
+    2: { bg: 'bg-orange-500', text: 'text-white' },
+    3: { bg: 'bg-amber-500', text: 'text-white' },
+    4: { bg: 'bg-emerald-500', text: 'text-white' },
+    5: { bg: 'bg-green-500', text: 'text-white' },
+  };
 
   return (
     <Card className={`${isNA ? 'opacity-60' : ''}`}>
@@ -72,23 +71,29 @@ export function MetricScoreCard({ metric, value, onChange }: MetricScoreCardProp
               <span className="text-green-600 font-medium">Excellent</span>
             </div>
             <div className="flex rounded-lg overflow-hidden border-2 border-slate-200 dark:border-slate-700">
-              {scoreButtons.map(({ value: scoreValue, color, hover }) => (
-                <button
-                  key={scoreValue}
-                  type="button"
-                  onClick={() => handleScoreChange(scoreValue)}
-                  className={`
-                    flex-1 py-3 px-2 text-lg font-semibold transition-all duration-200 relative
-                    ${localScore === scoreValue
-                      ? `${color} text-white shadow-lg scale-105`
-                      : `bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 ${hover}`
-                    }
-                    ${localScore !== scoreValue ? 'border-r border-slate-200 dark:border-slate-700 last:border-r-0' : ''}
-                  `}
-                >
-                  {scoreValue}
-                </button>
-              ))}
+              {[1, 2, 3, 4, 5].map((scoreValue) => {
+                const isSelected = localScore === scoreValue;
+                const styles = scoreStyles[scoreValue];
+
+                return (
+                  <button
+                    key={scoreValue}
+                    type="button"
+                    onClick={() => handleScoreChange(scoreValue)}
+                    className={`
+                      flex-1 py-3 px-2 text-lg font-semibold transition-all duration-200 relative
+                      ${isSelected
+                        ? `${styles.bg} ${styles.text} shadow-lg scale-105 z-10`
+                        : 'bg-slate-50 text-slate-700 hover:bg-slate-100 dark:bg-slate-700 dark:text-slate-300'
+                      }
+                      ${!isSelected ? 'border-r border-slate-200 dark:border-slate-700 last:border-r-0' : ''}
+                    `}
+                    style={isSelected ? { color: 'white !important' } : undefined}
+                  >
+                    {scoreValue}
+                  </button>
+                );
+              })}
             </div>
             {/* Score Feedback */}
             {localScore && (

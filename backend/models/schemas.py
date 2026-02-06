@@ -295,8 +295,8 @@ class EvaluationSubmitResponse(BaseModel):
 class AlignmentMetric(BaseModel):
     """Per-metric alignment analysis."""
 
-    user_score: int = Field(..., ge=1, le=5, description="User's score")
-    judge_score: int = Field(..., ge=1, le=5, description="Judge's score")
+    user_score: Optional[int] = Field(None, ge=1, le=5, description="User's score (null if N/A)")
+    judge_score: Optional[int] = Field(None, ge=1, le=5, description="Judge's score (null if N/A)")
     gap: int | float = Field(..., description="Score difference")
     verdict: str = Field(..., description="Alignment verdict")
     feedback: str = Field(..., description="Detailed feedback")
