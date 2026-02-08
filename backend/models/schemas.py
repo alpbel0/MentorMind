@@ -10,6 +10,8 @@ from typing import Any, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
+from backend.constants.metrics import ALL_METRIC_SLUGS, is_valid_slug
+
 
 # =====================================================
 # Constants
@@ -383,3 +385,245 @@ class StatsOverview(BaseModel):
         description="Performance per metric"
     )
     improvement_trend: str = Field(..., description="Overall improvement trend")
+
+
+# =====================================================
+# Evidence Schemas (Coach Chat & Evidence)
+# =====================================================
+
+class EvidenceItem(BaseModel):
+    """Single evidence item with text highlight."""
+
+    start: int = Field(..., ge=0, description="Start character position")
+    end: int = Field(..., gt=0, description="End character position")
+    quote: str = Field(..., description="Highlighted text excerpt")
+    why: str = Field(..., description="Why this is evidence")
+    better: Optional[str] = Field(None, description="Better alternative")
+    verified: bool = Field(default=False, description="Whether verified by judge")
+    highlight_available: bool = Field(default=True, description="Whether UI can highlight")
+
+
+class MetricEvidence(BaseModel):
+    """Evidence for a single metric with score comparison."""
+
+    metric_slug: str = Field(..., description="Metric slug (e.g., 'truthfulness')")
+    user_score: Optional[int] = Field(None, ge=1, le=5, description="User's score")
+    judge_score: Optional[int] = Field(None, ge=1, le=5, description="Judge's score")
+    metric_gap: float = Field(..., description="Score difference")
+    user_reason: str = Field(..., description="User's reasoning")
+    judge_reason: str = Field(..., description="Judge's rationale")
+    evidence: list[EvidenceItem] = Field(default_factory=list, description="Evidence items")
+
+
+class EvidenceByMetric(BaseModel):
+    """All evidence grouped by metric slug."""
+
+    evidence_by_metric: dict[str, list[EvidenceItem]] = Field(
+        default_factory=dict,
+        description="Evidence items keyed by metric slug"
+    )
+
+
+# =====================================================
+# Snapshot Schemas (Coach Chat & Evidence)
+# =====================================================
+
+VALID_SNAPSHOT_STATUSES = ["active", "completed", "archived"]
+"""Valid snapshot status values"""
+
+
+class SnapshotBase(BaseModel):
+    """Base fields for Snapshot schemas."""
+
+    question: str = Field(..., description="Question text")
+    model_answer: str = Field(..., description="Model's response")
+    model_name: str = Field(..., description="K model name")
+    judge_model: str = Field(default="gpt-4o", description="Judge model")
+    primary_metric: str = Field(..., description="Primary metric slug")
+    bonus_metrics: list[str] = Field(default_factory=list, description="Bonus metric slugs")
+    category: Optional[str] = Field(None, description="Question category")
+
+
+class SnapshotResponse(SnapshotBase):
+    """Full snapshot response with all fields."""
+
+    id: str = Field(..., description="Snapshot ID")
+    question_id: str = Field(..., description="Original question ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    updated_at: datetime = Field(..., description="Last update timestamp")
+
+    # Scores
+    user_scores_json: dict[str, dict] = Field(..., description="User scores by metric slug")
+    judge_scores_json: dict[str, dict] = Field(..., description="Judge scores by metric slug")
+
+    # Evidence
+    evidence_json: Optional[dict] = Field(None, description="Evidence by metric")
+
+    # Judge summary
+    judge_meta_score: int = Field(..., ge=1, le=5, description="Overall evaluation quality")
+    weighted_gap: float = Field(..., description="Weighted gap score")
+    overall_feedback: Optional[str] = Field(None, description="Judge summary")
+
+    # Source references
+    user_evaluation_id: Optional[str] = Field(None, description="User evaluation ID")
+    judge_evaluation_id: Optional[str] = Field(None, description="Judge evaluation ID")
+
+    # Chat metadata
+    chat_turn_count: int = Field(default=0, description="Number of chat turns")
+    max_chat_turns: int = Field(default=15, description="Maximum chat turns")
+    status: str = Field(..., description="Snapshot status")
+    deleted_at: Optional[datetime] = Field(None, description="Soft delete timestamp")
+
+    # Computed property (added manually when creating response)
+    is_chat_available: bool = Field(..., description="Whether chat is available")
+
+    model_config = {"from_attributes": True}
+
+
+class SnapshotListItem(BaseModel):
+    """Single item in snapshot list (minimal fields)."""
+
+    id: str = Field(..., description="Snapshot ID")
+    created_at: datetime = Field(..., description="Creation timestamp")
+    primary_metric: str = Field(..., description="Primary metric slug")
+    category: Optional[str] = Field(None, description="Question category")
+    judge_meta_score: int = Field(..., ge=1, le=5, description="Overall evaluation quality")
+    status: str = Field(..., description="Snapshot status")
+    chat_turn_count: int = Field(default=0, description="Number of chat turns")
+
+    model_config = {"from_attributes": True}
+
+
+class SnapshotListResponse(BaseModel):
+    """Paginated list of snapshots."""
+
+    items: list[SnapshotListItem] = Field(..., description="Snapshot items")
+    total: int = Field(..., description="Total number of snapshots")
+    page: int = Field(..., ge=1, description="Current page number")
+    per_page: int = Field(..., ge=1, description="Items per page")
+
+
+# =====================================================
+# Chat Schemas (Coach Chat & Evidence)
+# =====================================================
+
+VALID_CHAT_ROLES = ["user", "assistant"]
+"""Valid chat role values"""
+
+
+def validate_metric_slugs(v: list[str]) -> list[str]:
+    """
+    Validate metric slugs list (max 3 items).
+
+    Args:
+        v: List of metric slugs to validate
+
+    Returns:
+        Validated metric slugs list
+
+    Raises:
+        ValueError: If more than 3 items or invalid slug found
+    """
+    if len(v) > 3:
+        raise ValueError("selected_metrics can have at most 3 items")
+    for slug in v:
+        if not is_valid_slug(slug):
+            raise ValueError(
+                f"Invalid metric slug: '{slug}'. Valid slugs: {ALL_METRIC_SLUGS}"
+            )
+    return v
+
+
+def validate_client_message_id(v: str) -> str:
+    """
+    Validate client_message_id is a non-empty string.
+
+    Args:
+        v: Client message ID to validate
+
+    Returns:
+        Validated client message ID
+
+    Raises:
+        ValueError: If empty or whitespace only
+    """
+    if not v or not v.strip():
+        raise ValueError("client_message_id cannot be empty")
+    return v
+
+
+def validate_chat_role(v: str) -> str:
+    """
+    Validate chat role is either 'user' or 'assistant'.
+
+    Args:
+        v: Chat role to validate
+
+    Returns:
+        Validated chat role
+
+    Raises:
+        ValueError: If not a valid role
+    """
+    if v not in VALID_CHAT_ROLES:
+        raise ValueError(f"Invalid role: '{v}'. Valid roles: {VALID_CHAT_ROLES}")
+    return v
+
+
+class ChatMessageBase(BaseModel):
+    """Base fields for ChatMessage schemas."""
+
+    role: str = Field(..., description="Message role: 'user' or 'assistant'")
+    content: str = Field(default="", description="Message content")
+
+    _validate_role = field_validator('role')(validate_chat_role)
+
+
+class ChatMessageCreate(ChatMessageBase):
+    """Schema for creating a new chat message."""
+
+    snapshot_id: str = Field(..., description="Snapshot ID")
+    client_message_id: str = Field(..., description="Client-generated UUID for idempotency")
+    selected_metrics: Optional[list[str]] = Field(None, description="Selected metric slugs (user only)")
+
+    _validate_client_id = field_validator('client_message_id')(validate_client_message_id)
+    _validate_metrics = field_validator('selected_metrics')(validate_metric_slugs)
+
+
+class ChatMessageResponse(ChatMessageBase):
+    """Schema for chat message response."""
+
+    id: str = Field(..., description="Message ID")
+    snapshot_id: str = Field(..., description="Snapshot ID")
+    client_message_id: str = Field(..., description="Shared turn ID")
+    is_complete: bool = Field(default=True, description="Whether message is complete")
+    selected_metrics: Optional[list[str]] = Field(None, description="Selected metric slugs")
+    token_count: int = Field(default=0, description="Token count")
+    created_at: datetime = Field(..., description="Creation timestamp")
+
+    model_config = {"from_attributes": True}
+
+
+class ChatRequest(BaseModel):
+    """Request schema for sending a chat message."""
+
+    message: str = Field(..., min_length=1, description="User message content")
+    client_message_id: str = Field(..., description="Client-generated UUID for idempotency")
+    selected_metrics: list[str] = Field(
+        default_factory=list,
+        description="Selected metric slugs (max 3)"
+    )
+    is_init: bool = Field(default=False, description="Whether this is the first message")
+
+    _validate_client_id = field_validator('client_message_id')(validate_client_message_id)
+    _validate_metrics = field_validator('selected_metrics')(validate_metric_slugs)
+
+
+class ChatHistoryResponse(BaseModel):
+    """Response schema for chat history."""
+
+    messages: list[ChatMessageResponse] = Field(..., description="Chat messages")
+    total: int = Field(..., description="Total message count")
+    snapshot_id: str = Field(..., description="Snapshot ID")
+    is_chat_available: bool = Field(..., description="Whether chat is available")
+    turns_remaining: int = Field(..., description="Remaining chat turns")

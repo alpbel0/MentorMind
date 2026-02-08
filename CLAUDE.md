@@ -1520,8 +1520,22 @@ pip-audit
   - [x] FK constraint to evaluation_snapshots with ON DELETE CASCADE
   - [x] CHECK constraint on role (user/assistant only)
   - [x] JSONB selected_metrics for metric slug arrays
-- [ ] SQLAlchemy Models (Task 11.4)
-- [ ] Pydantic Schemas (Task 11.5)
+- [x] **SQLAlchemy Models (Task 11.4)** (8 Şubat 2026)
+  - [x] `backend/models/evaluation_snapshot.py` created (23 columns)
+  - [x] `backend/models/chat_message.py` created (9 columns)
+  - [x] `backend/models/__init__.py` updated with exports
+  - [x] `snapshot_status` ENUM referenced correctly
+  - [x] Property methods: `is_chat_available`, `is_user_message`, `is_assistant_message`
+  - [x] All columns mapped with correct types
+  - [x] Models verified against database schema
+- [x] **Pydantic Schemas (Task 11.5)** (8 Şubat 2026)
+  - [x] Evidence schemas: `EvidenceItem`, `MetricEvidence`, `EvidenceByMetric`
+  - [x] Snapshot schemas: `SnapshotBase`, `SnapshotResponse`, `SnapshotListItem`, `SnapshotListResponse`
+  - [x] Chat schemas: `ChatMessageBase`, `ChatMessageCreate`, `ChatMessageResponse`, `ChatRequest`, `ChatHistoryResponse`
+  - [x] Validators: `validate_metric_slugs`, `validate_client_message_id`, `validate_chat_role`
+  - [x] Constants: `VALID_SNAPSHOT_STATUSES`, `VALID_CHAT_ROLES`
+  - [x] All schemas match ORM model fields
+  - [x] Import from `backend.constants.metrics` for metric validation
 
 ### Success Criteria
 

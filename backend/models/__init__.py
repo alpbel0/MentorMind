@@ -10,6 +10,8 @@ from backend.models.question import Question
 from backend.models.model_response import ModelResponse, K_MODELS
 from backend.models.user_evaluation import UserEvaluation
 from backend.models.judge_evaluation import JudgeEvaluation
+from backend.models.evaluation_snapshot import EvaluationSnapshot
+from backend.models.chat_message import ChatMessage
 
 __all__ = [
     # Database
@@ -25,4 +27,7 @@ __all__ = [
     "K_MODELS",
     "UserEvaluation",
     "JudgeEvaluation",
+    # Coach Chat Models (Task 11.4)
+    "EvaluationSnapshot",
+    "ChatMessage",
 ]

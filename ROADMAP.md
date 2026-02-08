@@ -2475,26 +2475,31 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-3
 
 **Yapılacaklar:**
-- [ ] `backend/models/evaluation_snapshot.py` oluştur:
-  - [ ] `EvaluationSnapshot` SQLAlchemy model
-  - [ ] Tüm kolonlar (Task 11.2'deki şemaya uygun)
-  - [ ] `__tablename__ = "evaluation_snapshots"`
-  - [ ] `chat_messages` relationship (back_populates)
-  - [ ] `is_chat_available` property (status == 'active' ve chat_turn_count < max_chat_turns)
-- [ ] `backend/models/chat_message.py` oluştur:
-  - [ ] `ChatMessage` SQLAlchemy model
-  - [ ] Tüm kolonlar (Task 11.3'deki şemaya uygun)
-  - [ ] `__tablename__ = "chat_messages"`
-  - [ ] `snapshot` relationship (back_populates)
-- [ ] `backend/models/__init__.py` güncelle:
-  - [ ] `EvaluationSnapshot` export ekle
-  - [ ] `ChatMessage` export ekle
-- [ ] Modellerin database ile senkronize olduğunu test et
+- [x] `backend/models/evaluation_snapshot.py` oluştur:
+  - [x] `EvaluationSnapshot` SQLAlchemy model
+  - [x] Tüm kolonlar (Task 11.2'deki şemaya uygun)
+  - [x] `__tablename__ = "evaluation_snapshots"`
+  - [x] `snapshot_status` ENUM referenced correctly (create_type=False)
+  - [x] `is_chat_available` property (status == 'active' ve chat_turn_count < max_chat_turns)
+  - [x] No relationships (following existing pattern to avoid circular imports)
+- [x] `backend/models/chat_message.py` oluştur:
+  - [x] `ChatMessage` SQLAlchemy model
+  - [x] Tüm kolonlar (Task 11.3'deki şemaya uygun)
+  - [x] `__tablename__ = "chat_messages"`
+  - [x] `is_user_message` ve `is_assistant_message` property'leri
+  - [x] No relationships (following existing pattern)
+- [x] `backend/models/__init__.py` güncelle:
+  - [x] `EvaluationSnapshot` export ekle
+  - [x] `ChatMessage` export ekle
+- [x] Modellerin database ile senkronize olduğunu test et:
+  - [x] 23 columns for EvaluationSnapshot
+  - [x] 9 columns for ChatMessage
+  - [x] All properties working correctly
 
 ---
 
@@ -2502,25 +2507,34 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2.5 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Yapılacaklar:**
-- [ ] `backend/schemas/schemas.py` güncelle (veya yeni dosya oluştur):
-  - [ ] **Evidence Schemas:**
-    - [ ] `EvidenceItem` (start, end, quote, why, better, verified, highlight_available)
-    - [ ] `MetricEvidence` (user_score, judge_score, metric_gap, user_reason, judge_reason, evidence: list[EvidenceItem])
-  - [ ] **Snapshot Schemas:**
-    - [ ] `SnapshotResponse` (tüm snapshot alanları + is_chat_available)
-    - [ ] `SnapshotListResponse` (id, created_at, primary_metric, category, judge_meta_score, status, chat_turn_count)
-    - [ ] `SnapshotListPaginated` (items, total, page, per_page)
-  - [ ] **Chat Schemas:**
-    - [ ] `ChatMessageRequest` (message, client_message_id, selected_metrics, is_init)
-    - [ ] `ChatMessageResponse` (id, role, content, created_at, is_complete)
-    - [ ] `ChatHistoryResponse` (messages: list[ChatMessageResponse], total, snapshot_id)
-  - [ ] **Validation kuralları:**
-    - [ ] `selected_metrics` → slug listesi, max 3 item
-    - [ ] `client_message_id` → NOT NULL, UUID format
-    - [ ] `score` → 1-5 veya null
+- [x] `backend/models/schemas.py` güncelle:
+  - [x] **Evidence Schemas:**
+    - [x] `EvidenceItem` (start, end, quote, why, better, verified, highlight_available)
+    - [x] `MetricEvidence` (user_score, judge_score, metric_gap, user_reason, judge_reason, evidence: list[EvidenceItem])
+    - [x] `EvidenceByMetric` (evidence_by_metric: dict[str, list[EvidenceItem]])
+  - [x] **Snapshot Schemas:**
+    - [x] `SnapshotBase` (question, model_answer, model_name, judge_model, primary_metric, bonus_metrics, category)
+    - [x] `SnapshotResponse` (tüm snapshot alanları + is_chat_available)
+    - [x] `SnapshotListItem` (id, created_at, primary_metric, category, judge_meta_score, status, chat_turn_count)
+    - [x] `SnapshotListResponse` (items, total, page, per_page)
+  - [x] **Chat Schemas:**
+    - [x] `ChatMessageBase` (role, content)
+    - [x] `ChatMessageCreate` (snapshot_id, client_message_id, selected_metrics)
+    - [x] `ChatMessageResponse` (id, role, content, created_at, is_complete, selected_metrics, token_count)
+    - [x] `ChatRequest` (message, client_message_id, selected_metrics, is_init)
+    - [x] `ChatHistoryResponse` (messages, total, snapshot_id, is_chat_available, turns_remaining)
+  - [x] **Validation kuralları:**
+    - [x] `validate_metric_slugs` → max 3 item, valid slug check
+    - [x] `validate_client_message_id` → non-empty string
+    - [x] `validate_chat_role` → user or assistant only
+  - [x] **Constants:**
+    - [x] `VALID_SNAPSHOT_STATUSES = ["active", "completed", "archived"]`
+    - [x] `VALID_CHAT_ROLES = ["user", "assistant"]`
+  - [x] `from_attributes = True` on all response schemas
+  - [x] Import `ALL_METRIC_SLUGS` and `is_valid_slug` from `backend.constants.metrics`
 
 ---
 
@@ -2568,12 +2582,12 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 ### ✅ Week 11 Checklist
 
-- [ ] Metric slug mapping çalışıyor
-- [ ] `evaluation_snapshots` tablosu oluşturuldu
-- [ ] `chat_messages` tablosu oluşturuldu
-- [ ] `UNIQUE(snapshot_id, client_message_id, role)` constraint aktif
-- [ ] SQLAlchemy modelleri hazır
-- [ ] Pydantic şemaları hazır
+- [x] Metric slug mapping çalışıyor
+- [x] `evaluation_snapshots` tablosu oluşturuldu
+- [x] `chat_messages` tablosu oluşturuldu
+- [x] `UNIQUE(snapshot_id, client_message_id, role)` constraint aktif
+- [x] SQLAlchemy modelleri hazır
+- [x] Pydantic şemaları hazır
 - [ ] Yeni config değerleri ayarlandı
 
 ---
