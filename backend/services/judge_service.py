@@ -27,7 +27,11 @@ from backend.prompts.judge_prompts import (
     JUDGE_STAGE1_VERDICTS, WEIGHTED_GAP_WEIGHTS, META_SCORE_THRESHOLDS
 )
 from backend.services.llm_logger import log_llm_call, LLMProvider
-from backend.services.evidence_service import parse_evidence_from_stage1, verify_all_evidence
+from backend.services.evidence_service import (
+    parse_evidence_from_stage1,
+    verify_all_evidence,
+    process_evidence
+)
 from backend.constants.metrics import ALL_METRIC_SLUGS, METRIC_SLUG_MAP
 
 logger = logging.getLogger(__name__)
@@ -1100,21 +1104,33 @@ class JudgeService:
             stage1_result = self.stage1_independent_evaluation(user_eval_id, db)
 
             # 2.5. Verify evidence items using self-healing algorithm (Task 12.3 - AD-2)
+            # Use centralized process_evidence() orchestration (Task 12.4)
             model_response = data["model_response"]
+
+            # Extract all evidence by metric for processing
+            raw_evidence = {}
             for metric_display, metric_data in stage1_result["independent_scores"].items():
                 if "evidence" in metric_data:
-                    original_count = len(metric_data["evidence"])
-                    metric_data["evidence"] = verify_all_evidence(
-                        model_answer=model_response.response_text,
-                        evidence_list=metric_data["evidence"],
-                        anchor_len=settings.evidence_anchor_len,
-                        search_window=settings.evidence_search_window
-                    )
-                    verified_count = sum(1 for e in metric_data["evidence"] if e["verified"])
-                    logger.info(
-                        f"Evidence verification for {metric_display}: "
-                        f"{verified_count}/{original_count} verified"
-                    )
+                    raw_evidence[metric_display] = metric_data["evidence"]
+
+            # Process all evidence through centralized orchestration
+            if raw_evidence:
+                processed_evidence = process_evidence(
+                    model_answer=model_response.response_text,
+                    raw_evidence=raw_evidence,
+                    anchor_len=settings.evidence_anchor_len,
+                    search_window=settings.evidence_search_window
+                )
+
+                # Update stage1_result with processed evidence
+                for metric_display, evidence_list in processed_evidence.items():
+                    if metric_display in stage1_result["independent_scores"]:
+                        stage1_result["independent_scores"][metric_display]["evidence"] = evidence_list
+
+                logger.info(
+                    f"Evidence processing complete for {user_eval_id} "
+                    f"({len(raw_evidence)} metrics with evidence)"
+                )
 
             # 3. Query ChromaDB for past mistakes
             logger.info(f"Querying ChromaDB for {primary_metric} in {category}")

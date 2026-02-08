@@ -444,3 +444,156 @@ def verify_all_evidence(
         verify_evidence_item(model_answer, item, anchor_len, search_window)
         for item in evidence_list
     ]
+
+
+# =====================================================
+# Evidence Processing Orchestration (Task 12.4)
+# =====================================================
+
+def process_evidence(
+    model_answer: str,
+    raw_evidence: dict[str, list],
+    anchor_len: int = 25,
+    search_window: int = 2000
+) -> dict[str, list]:
+    """
+    Orchestrate evidence processing with graceful degradation.
+
+    This is the single entry point for evidence processing that:
+    1. Validates input structure
+    2. Runs self-healing verification on all evidence items
+    3. Returns processed evidence with verified/highlight_available flags
+    4. Logs statistics per evaluation
+    5. Handles graceful degradation on errors
+
+    Args:
+        model_answer: Original model response text for verification
+        raw_evidence: Dict mapping metric display names to evidence lists
+            {"Truthfulness": [{"quote": "...", "start": 0, "end": 10, ...}], ...}
+        anchor_len: From settings.evidence_anchor_len (default: 25)
+        search_window: From settings.evidence_search_window (default: 2000)
+
+    Returns:
+        Dict with same structure as input, containing verified evidence items:
+        {
+            "Truthfulness": [
+                {
+                    "quote": "...",
+                    "start": 0,
+                    "end": 10,
+                    "why": "...",
+                    "better": "...",
+                    "verified": True,
+                    "highlight_available": True
+                },
+                ...
+            ],
+            ...
+        }
+
+    Graceful Degradation:
+    - Empty model_answer → skips verification, returns raw evidence with warnings
+    - Invalid evidence list → treats as empty list, logs warning
+    - Individual item failures don't stop processing of other items
+    """
+    # Initialize statistics
+    total_items = 0
+    total_verified = 0
+    total_failed = 0
+    total_items_with_highlight = 0
+
+    # Validate input structure
+    if not isinstance(raw_evidence, dict):
+        logger.error(f"raw_evidence must be a dict, got {type(raw_evidence)}")
+        return {}
+
+    # Graceful degradation: empty model_answer
+    if not model_answer:
+        logger.warning(
+            "Empty model_answer provided - skipping evidence verification. "
+            "Returning raw evidence with verified=False, highlight_available=False"
+        )
+        # Add flags to all items without verification
+        result = {}
+        for metric_name, evidence_list in raw_evidence.items():
+            if not isinstance(evidence_list, list):
+                logger.warning(f"Evidence for {metric_name} is not a list, using empty array")
+                result[metric_name] = []
+                continue
+
+            processed_list = []
+            for item in evidence_list:
+                if isinstance(item, dict):
+                    processed_list.append({
+                        **item,
+                        "verified": False,
+                        "highlight_available": False
+                    })
+            result[metric_name] = processed_list
+        return result
+
+    # Process each metric's evidence
+    result = {}
+    for metric_name, evidence_list in raw_evidence.items():
+        # Handle missing or invalid evidence lists
+        if not isinstance(evidence_list, list):
+            logger.warning(
+                f"Evidence for {metric_name} is not a list (got {type(evidence_list)}), "
+                f"treating as empty array"
+            )
+            result[metric_name] = []
+            continue
+
+        # Skip empty lists
+        if not evidence_list:
+            result[metric_name] = []
+            continue
+
+        # Verify all evidence items for this metric
+        try:
+            verified_list = verify_all_evidence(
+                model_answer=model_answer,
+                evidence_list=evidence_list,
+                anchor_len=anchor_len,
+                search_window=search_window
+            )
+
+            # Update statistics
+            for item in verified_list:
+                total_items += 1
+                if item.get("verified", False):
+                    total_verified += 1
+                else:
+                    total_failed += 1
+                if item.get("highlight_available", False):
+                    total_items_with_highlight += 1
+
+            result[metric_name] = verified_list
+
+        except Exception as e:
+            logger.error(
+                f"Error verifying evidence for {metric_name}: {e}. "
+                f"Returning unverified evidence."
+            )
+            # Graceful degradation: return items with verified=False
+            fallback_list = []
+            for item in evidence_list:
+                if isinstance(item, dict):
+                    total_items += 1
+                    total_failed += 1
+                    fallback_list.append({
+                        **item,
+                        "verified": False,
+                        "highlight_available": False
+                    })
+            result[metric_name] = fallback_list
+
+    # Log statistics
+    logger.info(
+        f"Evidence processing complete: "
+        f"{total_verified}/{total_items} verified, "
+        f"{total_failed} failed, "
+        f"{total_items_with_highlight} with highlight_available=true"
+    )
+
+    return result

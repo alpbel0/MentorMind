@@ -16,6 +16,7 @@ from backend.services.evidence_service import (
     _validate_evidence_list,
     _is_valid_evidence_item,
     convert_to_evidence_by_metric,
+    process_evidence,
 )
 
 
@@ -379,3 +380,228 @@ class TestConvertToEvidenceByMetric:
         assert len(result) == 2
         assert len(result["truthfulness"]) == 1
         assert len(result["clarity"]) == 1
+
+
+# =====================================================
+# Test process_evidence (Task 12.4)
+# =====================================================
+
+class TestProcessEvidence:
+    """Test process_evidence orchestration function."""
+
+    @pytest.fixture
+    def sample_model_answer(self):
+        """Sample model response for testing."""
+        return "The answer is 42, according to Douglas Adams. This is the meaning of life."
+
+    def test_happy_path_all_verified(self, sample_model_answer):
+        """Valid evidence, all items verified."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "The answer is 42", "start": 0, "end": 16, "why": "Direct answer", "better": "None"}
+            ],
+            "Clarity": [
+                {"quote": "Douglas Adams", "start": 31, "end": 44, "why": "Author reference", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(sample_model_answer, raw_evidence)
+
+        assert len(result) == 2
+        assert "Truthfulness" in result
+        assert "Clarity" in result
+        assert len(result["Truthfulness"]) == 1
+        assert len(result["Clarity"]) == 1
+        # All verified
+        assert result["Truthfulness"][0]["verified"] is True
+        assert result["Truthfulness"][0]["highlight_available"] is True
+        assert result["Clarity"][0]["verified"] is True
+        assert result["Clarity"][0]["highlight_available"] is True
+
+    def test_empty_evidence_list(self, sample_model_answer):
+        """Empty evidence lists should return empty lists."""
+        raw_evidence = {
+            "Truthfulness": [],
+            "Clarity": []
+        }
+
+        result = process_evidence(sample_model_answer, raw_evidence)
+
+        assert result["Truthfulness"] == []
+        assert result["Clarity"] == []
+
+    def test_individual_item_failures_dont_affect_others(self, sample_model_answer):
+        """Some items fail verification, others succeed."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "The answer is 42", "start": 0, "end": 16, "why": "Valid", "better": "None"},
+                {"quote": "nonexistent xyz123", "start": 0, "end": 17, "why": "Invalid", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(sample_model_answer, raw_evidence)
+
+        assert len(result["Truthfulness"]) == 2
+        assert result["Truthfulness"][0]["verified"] is True
+        assert result["Truthfulness"][1]["verified"] is False
+
+    def test_empty_model_answer_graceful_skip(self):
+        """Empty model_answer should skip verification with graceful degradation."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "test quote", "start": 0, "end": 10, "why": "test", "better": "None"}
+            ]
+        }
+
+        result = process_evidence("", raw_evidence)
+
+        assert len(result["Truthfulness"]) == 1
+        assert result["Truthfulness"][0]["verified"] is False
+        assert result["Truthfulness"][0]["highlight_available"] is False
+
+    def test_none_model_answer_graceful_skip(self):
+        """None model_answer should skip verification with graceful degradation."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "test quote", "start": 0, "end": 10, "why": "test", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(None, raw_evidence)
+
+        assert len(result["Truthfulness"]) == 1
+        assert result["Truthfulness"][0]["verified"] is False
+        assert result["Truthfulness"][0]["highlight_available"] is False
+
+    def test_invalid_raw_evidence_type_not_dict(self):
+        """Invalid raw_evidence type should return empty dict."""
+        result = process_evidence("some text", "not a dict")
+        assert result == {}
+
+        result = process_evidence("some text", ["list", "input"])
+        assert result == {}
+
+        result = process_evidence("some text", None)
+        assert result == {}
+
+    def test_evidence_list_not_a_list(self):
+        """Evidence field that's not a list should be treated as empty array."""
+        raw_evidence = {
+            "Truthfulness": "not a list",
+            "Clarity": None
+        }
+
+        result = process_evidence("some text", raw_evidence)
+
+        assert result["Truthfulness"] == []
+        assert result["Clarity"] == []
+
+    def test_missing_evidence_field_in_metric(self):
+        """Metrics without evidence field should not be in result."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "test", "start": 0, "end": 4, "why": "test", "better": "None"}
+            ]
+            # Clarity is missing entirely - should not appear in result
+        }
+
+        result = process_evidence("test", raw_evidence)
+
+        assert "Truthfulness" in result
+        assert "Clarity" not in result
+
+    def test_custom_anchor_len_and_search_window(self):
+        """Custom anchor_len and search_window should be used."""
+        text = "START" + "x" * 100 + "END"
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "START", "start": 0, "end": 5, "why": "test", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(text, raw_evidence, anchor_len=3, search_window=50)
+
+        assert result["Truthfulness"][0]["verified"] is True
+
+    def test_stage4_whitespace_safe_mode(self):
+        """Evidence matching in Stage 4 should have verified=True, highlight_available=False."""
+        text = "The  answer\tis\n42"
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "The answer is 42", "start": 0, "end": 16, "why": "test", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(text, raw_evidence)
+
+        assert result["Truthfulness"][0]["verified"] is True
+        assert result["Truthfulness"][0]["highlight_available"] is False
+
+    def test_stage5_fallback_all_stages_fail(self):
+        """Evidence that fails all stages should have verified=False."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "completely nonexistent text", "start": 0, "end": 25, "why": "test", "better": "None"}
+            ]
+        }
+
+        result = process_evidence("some different text", raw_evidence)
+
+        assert result["Truthfulness"][0]["verified"] is False
+        assert result["Truthfulness"][0]["highlight_available"] is False
+
+    def test_preserves_why_and_better_fields(self):
+        """why and better fields should be preserved."""
+        raw_evidence = {
+            "Truthfulness": [
+                {
+                    "quote": "test",
+                    "start": 0,
+                    "end": 4,
+                    "why": "This is the reason",
+                    "better": "This would be better"
+                }
+            ]
+        }
+
+        result = process_evidence("test", raw_evidence)
+
+        assert result["Truthfulness"][0]["why"] == "This is the reason"
+        assert result["Truthfulness"][0]["better"] == "This would be better"
+
+    def test_multiple_evidence_items_per_metric(self):
+        """Multiple evidence items per metric should all be processed."""
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "The answer", "start": 0, "end": 10, "why": "1", "better": "N"},
+                {"quote": "is 42", "start": 11, "end": 16, "why": "2", "better": "N"},
+                {"quote": "according", "start": 17, "end": 26, "why": "3", "better": "N"},
+            ]
+        }
+
+        model_answer = "The answer is 42 according to Adams"
+        result = process_evidence(model_answer, raw_evidence)
+
+        assert len(result["Truthfulness"]) == 3
+        # All should be verified (quotes exist in model_answer)
+        assert all(item["verified"] for item in result["Truthfulness"])
+
+    def test_position_correction_in_stage2(self):
+        """Stage 2 substring search should correct positions."""
+        model_answer = "The answer is 42 at the end"
+        raw_evidence = {
+            "Truthfulness": [
+                {"quote": "42", "start": 0, "end": 2, "why": "Wrong position", "better": "None"}
+            ]
+        }
+
+        result = process_evidence(model_answer, raw_evidence)
+
+        assert result["Truthfulness"][0]["verified"] is True
+        assert result["Truthfulness"][0]["start"] == 14  # Corrected position (actual position of "42")
+        assert result["Truthfulness"][0]["end"] == 16
+
+    def test_empty_raw_evidence_dict(self):
+        """Empty raw_evidence dict should return empty dict."""
+        result = process_evidence("some text", {})
+        assert result == {}

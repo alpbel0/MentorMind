@@ -1572,6 +1572,15 @@ pip-audit
   - [x] Unit tests created (25 tests passed)
   - [x] All tests pass
   - [x] Graceful error handling (logs warning, continues execution)
+- [x] **Evidence Service Orchestration (Task 12.4)** (9 Şubat 2026)
+  - [x] `process_evidence()` centralized orchestration function created
+  - [x] Validates input structure (raw_evidence dict check)
+  - [x] Runs self-healing verification on all evidence items
+  - [x] Returns processed evidence with verified/highlight_available flags
+  - [x] Logs statistics (total items, verified count, failed count)
+  - [x] Graceful degradation: empty model_answer, invalid evidence lists
+  - [x] judge_service.py updated to use process_evidence()
+  - [x] Unit tests created (18 tests passed)
 
 ### Success Criteria
 

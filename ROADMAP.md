@@ -2765,24 +2765,26 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (9 Şubat 2026)
 
 **Referans:** AD-2, AD-8 (Graceful Degradation)
 
 **Yapılacaklar:**
-- [ ] `process_evidence(model_answer: str, raw_evidence: dict) -> dict` fonksiyonu:
-  - [ ] Her metrik için evidence listesini dolaş
-  - [ ] Her evidence item'a `verify_evidence()` uygula
-  - [ ] `verified` ve `highlight_available` alanlarını set et
-  - [ ] Başarılı/başarısız doğrulama istatistiklerini logla
-- [ ] Graceful degradation (AD-8):
-  - [ ] Parse hatası → `evidence_json = null`, pipeline devam eder
-  - [ ] WARNING log: `"Evidence parse failed for eval {id}, continuing without evidence"`
-  - [ ] Tek bir evidence item hatası diğerlerini etkilemez
-- [ ] `highlight_available` hesaplama mantığı:
-  - [ ] Aşama 1-3'te `true` (indeksler doğru/düzeltildi)
-  - [ ] Aşama 4'te `false` (indeksler güncellenmedi, safe mode)
-  - [ ] Aşama 5'te `false` (doğrulanamadı)
+- [x] `process_evidence(model_answer: str, raw_evidence: dict) -> dict` fonksiyonu:
+  - [x] Her metrik için evidence listesini dolaş
+  - [x] Her evidence item'a `verify_evidence()` uygula
+  - [x] `verified` ve `highlight_available` alanlarını set et
+  - [x] Başarılı/başarısız doğrulama istatistiklerini logla
+- [x] Graceful degradation (AD-8):
+  - [x] Parse hatası → `evidence_json = null`, pipeline devam eder
+  - [x] WARNING log: `"Evidence parse failed for eval {id}, continuing without evidence"`
+  - [x] Tek bir evidence item hatası diğerlerini etkilemez
+- [x] `highlight_available` hesaplama mantığı:
+  - [x] Aşama 1-3'te `true` (indeksler doğru/düzeltildi)
+  - [x] Aşama 4'te `false` (indeksler güncellenmedi, safe mode)
+  - [x] Aşama 5'te `false` (doğrulanamadı)
+- [x] judge_service.py entegrasyonu (process_evidence kullanımı)
+- [x] Unit testler (18 test)
 
 ---
 
