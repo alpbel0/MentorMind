@@ -1507,7 +1507,12 @@ pip-audit
   - [x] Helper functions: display_name_to_slug, slug_to_display_name
   - [x] Validation functions: is_valid_slug, is_valid_display_name
   - [x] 21 unit tests passed, 100% coverage
-- [ ] SQL Schema - evaluation_snapshots (Task 11.2)
+- [x] **SQL Schema - evaluation_snapshots (Task 11.2)** (8 Şubat 2026)
+  - [x] `backend/schemas/00_enums.sql` updated with snapshot_status ENUM
+  - [x] `backend/schemas/08_evaluation_snapshots.sql` created (24 columns)
+  - [x] 6 indexes created (including 2 partial indexes)
+  - [x] Nested JSONB structure for scores validated
+  - [x] Soft delete support with deleted_at index
 - [ ] SQLAlchemy Model - EvaluationSnapshot (Task 11.3)
 - [ ] Pydantic Schemas (Task 11.4)
 

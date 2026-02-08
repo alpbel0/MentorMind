@@ -2402,40 +2402,44 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-3 (New Snapshot Table), AD-13 (Retention Policy)
 
-**Yapılacaklar:**
-- [ ] `backend/schemas/08_evaluation_snapshots.sql` oluştur:
-  - [ ] `id` TEXT PRIMARY KEY (Format: `snap_YYYYMMDD_HHMMSS_randomhex`)
-  - [ ] `created_at` TIMESTAMP DEFAULT NOW()
-  - [ ] `question_id` TEXT (referans, FK değil)
-  - [ ] `question` TEXT NOT NULL (snapshot)
-  - [ ] `model_answer` TEXT NOT NULL (snapshot)
-  - [ ] `model_name` TEXT NOT NULL
-  - [ ] `judge_model` TEXT NOT NULL DEFAULT 'gpt-4o'
-  - [ ] `primary_metric` TEXT NOT NULL
-  - [ ] `bonus_metrics` JSONB
-  - [ ] `category` TEXT
-  - [ ] `user_scores_json` JSONB NOT NULL
-  - [ ] `judge_scores_json` JSONB NOT NULL
-  - [ ] `evidence_json` JSONB
-  - [ ] `judge_meta_score` INTEGER CHECK (1-5)
-  - [ ] `weighted_gap` REAL
-  - [ ] `overall_feedback` TEXT
-  - [ ] `user_evaluation_id` TEXT (referans)
-  - [ ] `judge_evaluation_id` TEXT (referans)
-  - [ ] `chat_turn_count` INTEGER DEFAULT 0
-  - [ ] `max_chat_turns` INTEGER DEFAULT 15
-  - [ ] `status` TEXT DEFAULT 'active' (active, completed, archived)
-  - [ ] `deleted_at` TIMESTAMP (nullable, soft delete altyapısı)
-- [ ] Index'ler oluştur:
-  - [ ] `idx_snapshots_status` (status)
-  - [ ] `idx_snapshots_primary_metric` (primary_metric)
-  - [ ] `idx_snapshots_created_at` (created_at DESC)
-  - [ ] `idx_snapshots_deleted_at` (deleted_at) — soft delete sorguları için
-- [ ] SQL dosyasını Docker container'da çalıştır
+**Yapılanlar:**
+- [x] `backend/schemas/00_enums.sql` güncellendi:
+  - [x] `snapshot_status` ENUM eklendi (active, completed, archived)
+- [x] `backend/schemas/08_evaluation_snapshots.sql` oluşturuldu:
+  - [x] `id` TEXT PRIMARY KEY (Format: `snap_YYYYMMDD_HHMMSS_randomhex`)
+  - [x] `created_at` TIMESTAMP DEFAULT NOW()
+  - [x] `question_id` TEXT (referans, FK değil)
+  - [x] `question` TEXT NOT NULL (snapshot)
+  - [x] `model_answer` TEXT NOT NULL (snapshot)
+  - [x] `model_name` TEXT NOT NULL
+  - [x] `judge_model` TEXT NOT NULL DEFAULT 'gpt-4o'
+  - [x] `primary_metric` TEXT NOT NULL (slug format: truthfulness, helpfulness, etc.)
+  - [x] `bonus_metrics` JSONB
+  - [x] `category` TEXT
+  - [x] `user_scores_json` JSONB NOT NULL (nested structure)
+  - [x] `judge_scores_json` JSONB NOT NULL (nested structure)
+  - [x] `evidence_json` JSONB
+  - [x] `judge_meta_score` INTEGER CHECK (1-5)
+  - [x] `weighted_gap` REAL
+  - [x] `overall_feedback` TEXT
+  - [x] `user_evaluation_id` TEXT (referans)
+  - [x] `judge_evaluation_id` TEXT (referans)
+  - [x] `chat_turn_count` INTEGER DEFAULT 0
+  - [x] `max_chat_turns` INTEGER DEFAULT 15
+  - [x] `status snapshot_status` DEFAULT 'active'
+  - [x] `deleted_at` TIMESTAMP (nullable, soft delete altyapısı)
+- [x] Index'ler oluşturuldu:
+  - [x] `idx_snapshots_status` (status)
+  - [x] `idx_snapshots_primary_metric` (primary_metric)
+  - [x] `idx_snapshots_created_at` (created_at DESC)
+  - [x] `idx_snapshots_deleted_at` (deleted_at) — soft delete sorguları için
+  - [x] `idx_snapshots_active_metric` (partial index, active snapshots için)
+- [x] SQL dosyası Docker container'da çalıştırıldı
+- [x] Test insert başarılı (nested JSONB doğrulandı)
 
 ---
 

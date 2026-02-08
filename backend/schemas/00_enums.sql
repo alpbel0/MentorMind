@@ -32,3 +32,21 @@ CREATE TYPE difficulty_level AS ENUM (
 
 COMMENT ON TYPE difficulty_level IS
     'Difficulty levels for questions: easy, medium, hard';
+
+-- =====================================================
+-- Snapshot Status ENUM (Task 11.2)
+-- =====================================================
+
+DROP TYPE IF EXISTS snapshot_status CASCADE;
+
+CREATE TYPE snapshot_status AS ENUM (
+    'active',
+    'completed',
+    'archived'
+);
+
+COMMENT ON TYPE snapshot_status IS
+    'Evaluation snapshot status for Coach Chat lifecycle:
+    - active: Chat available for conversation
+    - completed: Chat finished by user
+    - archived: Retention policy applied';
