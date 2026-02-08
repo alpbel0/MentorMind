@@ -940,6 +940,8 @@ mentormind/
 │   ├── config/                      # Configuration
 │   │   ├── settings.py              # Environment variables
 │   │   └── logging_config.py        # Logging setup
+│   ├── constants/                   # Constants
+│   │   └── metrics.py               # Metric slug mappings & helpers
 │   ├── middleware/                  # Middleware
 │   │   └── logging_middleware.py    # Request/Response logging
 │   ├── sql_schemas/                 # SQL table definitions
@@ -1390,6 +1392,7 @@ pip-audit
 | `backend/schemas/` | Pydantic validation schemas |
 | `backend/prompts/` | LLM prompt templates |
 | `backend/config/` | Configuration and settings |
+| `backend/constants/` | Metric slug mappings & helpers |
 | `backend/middleware/` | Request/response processing |
 | `backend/scripts/` | Utility and maintenance scripts |
 | `backend/tasks/` | Background job handlers |
@@ -1490,6 +1493,23 @@ pip-audit
 - [x] Documentation update (2 Şubat 2026)
 - [ ] Bug fixes and cleanup
 - [ ] Final verification
+
+---
+
+### Phase 3: Coach Chat & Evidence (8 Weeks)
+**Dates:** February 2026 onwards
+**Status:** In Progress
+
+#### Week 11: Database Schema & Infrastructure (Feb 8 - Feb 14)
+- [x] **Metric Slug Constants & Helpers (Task 11.1)** (8 Şubat 2026)
+  - [x] `backend/constants/` directory created
+  - [x] `backend/constants/metrics.py` with 8 metric slug mappings
+  - [x] Helper functions: display_name_to_slug, slug_to_display_name
+  - [x] Validation functions: is_valid_slug, is_valid_display_name
+  - [x] 21 unit tests passed, 100% coverage
+- [ ] SQL Schema - evaluation_snapshots (Task 11.2)
+- [ ] SQLAlchemy Model - EvaluationSnapshot (Task 11.3)
+- [ ] Pydantic Schemas (Task 11.4)
 
 ### Success Criteria
 

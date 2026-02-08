@@ -2374,22 +2374,22 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-6 (Slug-Based Metric Keys)
 
-**Yapılacaklar:**
-- [ ] `backend/constants/` klasörü oluştur
-- [ ] `backend/constants/__init__.py` oluştur
-- [ ] `backend/constants/metrics.py` oluştur:
-  - [ ] `METRIC_SLUG_MAP` dictionary (8 metrik: "Truthfulness" → "truthfulness", ...)
-  - [ ] `SLUG_DISPLAY_MAP` reverse dictionary (otomatik oluştur)
-  - [ ] `display_name_to_slug(name: str) -> str` helper fonksiyonu
-  - [ ] `slug_to_display_name(slug: str) -> str` helper fonksiyonu
-  - [ ] `ALL_METRIC_SLUGS: list[str]` constant
-  - [ ] `ALL_METRIC_NAMES: list[str]` constant
-- [ ] Bilinmeyen metrik adı/slug için `ValueError` raise et
-- [ ] Unit test yaz (test_metrics.py)
+**Yapılanlar:**
+- [x] `backend/constants/` klasörü oluştur
+- [x] `backend/constants/__init__.py` oluştur
+- [x] `backend/constants/metrics.py` oluştur:
+  - [x] `METRIC_SLUG_MAP` dictionary (8 metrik: "Truthfulness" → "truthfulness", ...)
+  - [x] `SLUG_DISPLAY_MAP` reverse dictionary (otomatik oluştur)
+  - [x] `display_name_to_slug(name: str) -> str` helper fonksiyonu
+  - [x] `slug_to_display_name(slug: str) -> str` helper fonksiyonu
+  - [x] `ALL_METRIC_SLUGS: list[str]` constant
+  - [x] `ALL_METRIC_NAMES: list[str]` constant
+- [x] Bilinmeyen metrik adı/slug için `ValueError` raise et
+- [x] Unit test yaz (test_metrics.py) - **21 test passed, 100% coverage**
 
 **Notlar:**
 - Otomatik `lower()` kullanılmaz, explicit dictionary ile mapping yapılır
