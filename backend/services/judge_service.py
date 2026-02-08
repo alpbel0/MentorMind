@@ -27,15 +27,19 @@ from backend.prompts.judge_prompts import (
     JUDGE_STAGE1_VERDICTS, WEIGHTED_GAP_WEIGHTS, META_SCORE_THRESHOLDS
 )
 from backend.services.llm_logger import log_llm_call, LLMProvider
-from backend.services.evidence_service import parse_evidence_from_stage1
+from backend.services.evidence_service import parse_evidence_from_stage1, verify_all_evidence
+from backend.constants.metrics import ALL_METRIC_SLUGS, METRIC_SLUG_MAP
 
 logger = logging.getLogger(__name__)
 
-# The 8 evaluation metrics (constant)
+# The 8 evaluation metrics (display names)
 THE_EIGHT_METRICS = [
     "Truthfulness", "Helpfulness", "Safety", "Bias",
     "Clarity", "Consistency", "Efficiency", "Robustness"
 ]
+
+# The 8 metric slugs (for Phase 3 conversion)
+THE_EIGHT_METRIC_SLUGS = ALL_METRIC_SLUGS
 
 
 # =====================================================
@@ -223,7 +227,7 @@ class JudgeService:
                 logger.error(f"Response content: {content[:500]}...")
                 raise
 
-            # 5. Validate 8 metrics
+            # 5. Validate 8 metrics (display names preserved after parsing)
             independent_scores = result.get("independent_scores", {})
 
             if not all(metric in independent_scores for metric in THE_EIGHT_METRICS):
@@ -1094,6 +1098,23 @@ class JudgeService:
             # 2. Run Stage 1: Independent Evaluation
             logger.info(f"Starting Stage 1 for {user_eval_id}")
             stage1_result = self.stage1_independent_evaluation(user_eval_id, db)
+
+            # 2.5. Verify evidence items using self-healing algorithm (Task 12.3 - AD-2)
+            model_response = data["model_response"]
+            for metric_display, metric_data in stage1_result["independent_scores"].items():
+                if "evidence" in metric_data:
+                    original_count = len(metric_data["evidence"])
+                    metric_data["evidence"] = verify_all_evidence(
+                        model_answer=model_response.response_text,
+                        evidence_list=metric_data["evidence"],
+                        anchor_len=settings.evidence_anchor_len,
+                        search_window=settings.evidence_search_window
+                    )
+                    verified_count = sum(1 for e in metric_data["evidence"] if e["verified"])
+                    logger.info(
+                        f"Evidence verification for {metric_display}: "
+                        f"{verified_count}/{original_count} verified"
+                    )
 
             # 3. Query ChromaDB for past mistakes
             logger.info(f"Querying ChromaDB for {primary_metric} in {category}")

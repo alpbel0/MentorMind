@@ -2699,17 +2699,22 @@ evaluation_snapshots (1) ──→ (N) chat_messages
   - [x] 25 test oluşturuldu
   - [x] Tüm testler geçti
 - [x] `backend/tests/test_judge_service.py` güncellendi:
-  - [x] `test_parse_direct_json` slug key'lere güncellendi
+  - [x] `test_parse_direct_json` display name preservation ile güncellendi
+- [x] **Display name preservation fix (9 Şubat 2026):**
+  - [x] `parse_evidence_from_stage1()` artık display names koruyor
+  - [x] `convert_to_evidence_by_metric()` slug conversion yapıyor (Phase 3 için)
+  - [x] Backward compatibility sağlandı (mevcut testler korundu)
+  - [x] Invalid metric filtreleme eklendi
 
 **Test Sonuçları:**
 - 25/25 evidence service tests passed
-- 5/5 judge service parse tests passed
-- Slug conversion works end-to-end
+- 38/38 judge service tests passed (including live API)
+- Display name preservation works correctly
 
 **Notlar:**
-- Stage 1 output artık slug key formatında (AD-6 uyumlu)
-- Display name → Slug conversion: `display_name_to_slug()` kullanıyor
-- Graceful error handling: Hatalı metric'ler skip ediliyor, log yazılıyor
+- Display names `parse_evidence_from_stage1()` sonunda korunur (backward compatibility)
+- Slug conversion sadece `convert_to_evidence_by_metric()`'de yapılır (Phase 3 Coach Chat)
+- Invalid metric'ler skip ediliyor, log yazılıyor
 
 ---
 
@@ -2717,36 +2722,42 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (9 Şubat 2026)
 
 **Referans:** AD-2 (5-Stage Self-Healing Verification)
 
 **Yapılacaklar:**
-- [ ] `backend/services/evidence_service.py` içine doğrulama fonksiyonları ekle:
-  - [ ] **Aşama 1 — Exact Slice:**
-    - [ ] `_verify_exact_slice(model_answer: str, quote: str, start: int, end: int) -> bool`
-    - [ ] `model_answer[start:end] == quote` kontrolü
-  - [ ] **Aşama 2 — Substring Search:**
-    - [ ] `_verify_substring(model_answer: str, quote: str) -> tuple[bool, int, int]`
-    - [ ] `model_answer.find(quote)` ile tam alıntı araması
-    - [ ] Bulunursa yeni `start`/`end` dön
-  - [ ] **Aşama 3 — Anchor-Based Search:**
-    - [ ] `_verify_anchor(model_answer: str, quote: str, anchor_len: int, search_window: int) -> tuple[bool, int, int]`
-    - [ ] `head_anchor = quote[:anchor_len]`, `tail_anchor = quote[-anchor_len:]`
-    - [ ] Head bulunursa, `head_idx + len(quote) + search_window` penceresi içinde tail ara
-    - [ ] Her iki anchor bulunursa `start=head_idx`, `end=tail_idx+len(tail_anchor)` dön
-  - [ ] **Aşama 4 — Whitespace-Insensitive Match (Safe Mode):**
-    - [ ] `_verify_whitespace_safe(model_answer: str, quote: str) -> bool`
-    - [ ] `normalize()` fonksiyonu: fazla boşluk/newline temizle
-    - [ ] Normalize edilmiş metinde ara
-    - [ ] Bulunursa `verified: true` ama `start`/`end` **güncellenmez**
-    - [ ] `highlight_available: false` set edilir
-  - [ ] **Aşama 5 — Fallback:**
-    - [ ] Hiçbir aşamada bulunamazsa → `verified: false`, `highlight_available: false`
-- [ ] **Orchestrator fonksiyonu:**
-  - [ ] `verify_evidence(model_answer: str, evidence_item: dict) -> dict`
-  - [ ] 5 aşamayı sırayla çalıştır, ilk başarıda dur
-  - [ ] `verified`, `highlight_available`, güncel `start`/`end` dön
+- [x] `backend/services/evidence_service.py` içine doğrulama fonksiyonları ekle:
+  - [x] **Aşama 1 — Exact Slice:**
+    - [x] `_verify_exact_slice(model_answer: str, quote: str, start: int, end: int) -> bool`
+    - [x] `model_answer[start:end] == quote` kontrolü
+  - [x] **Aşama 2 — Substring Search:**
+    - [x] `_verify_substring_search(model_answer: str, quote: str) -> tuple[bool, int, int]`
+    - [x] `model_answer.find(quote)` ile tam alıntı araması
+    - [x] Bulunursa yeni `start`/`end` dön
+  - [x] **Aşama 3 — Anchor-Based Search:**
+    - [x] `_verify_anchor_based(model_answer: str, quote: str, anchor_len: int, search_window: int) -> tuple[bool, int, int]`
+    - [x] `head_anchor = quote[:anchor_len]`, `tail_anchor = quote[-anchor_len:]`
+    - [x] Head bulunursa, `head_idx + len(quote) + search_window` penceresi içinde tail ara
+    - [x] Her iki anchor bulunursa `start=head_idx`, `end=tail_idx+len(tail_anchor)` dön
+  - [x] **Aşama 4 — Whitespace-Insensitive Match (Safe Mode):**
+    - [x] `_verify_whitespace_safe(model_answer: str, quote: str) -> bool`
+    - [x] `normalize()` fonksiyonu: fazla boşluk/newline temizle
+    - [x] Normalize edilmiş metinde ara
+    - [x] Bulunursa `verified: true` ama `start`/`end` **güncellenmez**
+    - [x] `highlight_available: false` set edilir
+  - [x] **Aşama 5 — Fallback:**
+    - [x] Hiçbir aşamada bulunamazsa → `verified: false`, `highlight_available: false`
+- [x] **Orchestrator fonksiyonu:**
+  - [x] `verify_evidence_item(model_answer: str, evidence_item: dict) -> dict`
+  - [x] 5 aşamayı sırayla çalıştır, ilk başarıda dur
+  - [x] `verified`, `highlight_available`, güncel `start`/`end` dön
+- [x] `verify_all_evidence(model_answer: str, evidence_list: list) -> list` fonksiyonu eklendi
+
+**Notlar:**
+- `verify_evidence_item` ve `verify_all_evidence` fonksiyonları `evidence_service.py`'e eklendi
+- Her aşama başarılı olursa ilgili `verified`, `highlight_available` ve pozisyonlar dönülür
+- Aşama 4 (whitespace safe mode) için `highlight_available: false` set ediliyor
 
 ---
 
@@ -2779,34 +2790,34 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (9 Şubat 2026)
 
 **Yapılacaklar:**
-- [ ] `backend/tests/test_evidence_service.py` oluştur:
-  - [ ] **Aşama 1 testleri:**
-    - [ ] Exact match başarılı
-    - [ ] Exact match başarısız (yanlış indeks)
-  - [ ] **Aşama 2 testleri:**
-    - [ ] Substring bulundu, indeksler düzeltildi
-    - [ ] Substring bulunamadı
-  - [ ] **Aşama 3 testleri:**
-    - [ ] Anchor bulundu (head + tail), indeksler düzeltildi
-    - [ ] Sadece head bulundu, tail bulunamadı
-    - [ ] Search window dışında tail (false positive koruması)
-  - [ ] **Aşama 4 testleri:**
-    - [ ] Whitespace farkı ile bulundu, `highlight_available: false`
-    - [ ] Normalize sonrası da bulunamadı
-  - [ ] **Aşama 5 testleri:**
-    - [ ] Hiçbir aşamada bulunamadı, `verified: false`
-  - [ ] **Orchestration testleri:**
-    - [ ] Tam akış (happy path)
-    - [ ] Graceful degradation (hatalı JSON)
-    - [ ] Boş evidence listesi
-    - [ ] Null score metrikler için boş evidence
-  - [ ] **Edge case'ler:**
-    - [ ] Çok kısa quote (< 25 karakter, anchor mümkün değil)
-    - [ ] Çok uzun model_answer (performance)
-    - [ ] Unicode karakterler
+- [x] `backend/tests/test_evidence_service.py` oluştur:
+  - [x] **Aşama 1 testleri:**
+    - [x] Exact match başarılı
+    - [x] Exact match başarısız (yanlış indeks)
+  - [x] **Aşama 2 testleri:**
+    - [x] Substring bulundu, indeksler düzeltildi
+    - [x] Substring bulunamadı
+  - [x] **Aşama 3 testleri:**
+    - [x] Anchor bulundu (head + tail), indeksler düzeltildi
+    - [x] Sadece head bulundu, tail bulunamadı
+    - [x] Search window dışında tail (false positive koruması)
+  - [x] **Aşama 4 testleri:**
+    - [x] Whitespace farkı ile bulundu, `highlight_available: false`
+    - [x] Normalize sonrası da bulunamadı
+  - [x] **Aşama 5 testleri:**
+    - [x] Hiçbir aşamada bulunamadı, `verified: false`
+  - [x] **Orchestration testleri:**
+    - [x] Tam akış (happy path)
+    - [x] Graceful degradation (hatalı JSON)
+    - [x] Boş evidence listesi
+    - [x] Null score metrikler için boş evidence
+  - [x] **Edge case'ler:**
+    - [x] Çok kısa quote (< 25 karakter, anchor mümkün değil)
+    - [x] Çok uzun model_answer (performance)
+    - [x] Unicode karakterler
     - [ ] Boş model_answer
 
 ---
@@ -2862,12 +2873,14 @@ Aşama 5: Fallback        → verified: false
 
 ### ✅ Week 12 Checklist
 
-- [ ] Stage 1 prompt evidence çıktısı üretiyor
-- [ ] Evidence JSON parse çalışıyor
-- [ ] 5 aşamalı self-healing doğrulama çalışıyor
-- [ ] `highlight_available` doğru hesaplanıyor (3 durum)
-- [ ] Graceful degradation çalışıyor (AD-8)
-- [ ] Evidence unit testleri geçiyor
+- [x] Stage 1 prompt evidence çıktısı üretiyor (Task 12.1)
+- [x] Evidence JSON parse çalışıyor (Task 12.2)
+- [x] 5 aşamalı self-healing doğrulama çalışıyor (Task 12.3)
+- [x] `highlight_available` doğru hesaplanıyor (3 durum)
+- [x] Graceful degradation çalışıyor (AD-8)
+- [x] Evidence unit testleri geçiyor (Task 12.5)
+- [x] Live API testleri geçiyor
+- [x] Display name -> Slug conversion fix (arka uyumluluk)
 
 ---
 

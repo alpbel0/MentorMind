@@ -137,16 +137,16 @@ class TestParseJudgeResponse:
     """Test response parsing."""
 
     def test_parse_direct_json(self):
-        """Test parsing direct JSON with display name to slug conversion."""
+        """Test parsing direct JSON with display names preserved."""
         service = JudgeService()
         response = '{"independent_scores": {"Truthfulness": {"score": 3, "rationale": "Test"}}}'
         result = service.parse_judge_response(response)
         assert "independent_scores" in result
-        # After Task 12.2, keys are converted to slugs
-        assert "truthfulness" in result["independent_scores"]
-        assert result["independent_scores"]["truthfulness"]["score"] == 3
-        # Display name should no longer be present
-        assert "Truthfulness" not in result["independent_scores"]
+        # Display names are now preserved (not converted to slugs)
+        assert "Truthfulness" in result["independent_scores"]
+        assert result["independent_scores"]["Truthfulness"]["score"] == 3
+        # Slug should NOT be present
+        assert "truthfulness" not in result["independent_scores"]
 
     def test_parse_markdown_json(self):
         """Test parsing JSON in markdown code block."""

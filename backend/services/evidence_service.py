@@ -24,15 +24,22 @@ THE_EIGHT_METRICS = [
 
 def parse_evidence_from_stage1(stage1_response: dict) -> dict:
     """
-    Parse Stage 1 evidence response and convert to slug-keyed format.
+    Parse Stage 1 evidence response and validate evidence structure.
+
+    NOTE: As of the fix for missing metrics bug, this function NO LONGER
+    converts display names to slugs. The display names (e.g., "Truthfulness")
+    are preserved for backward compatibility with existing tests and code.
+
+    For Phase 3 (Coach Chat), use convert_to_evidence_by_metric() which
+    handles the slug conversion as part of creating EvidenceByMetric format.
 
     Args:
         stage1_response: Raw GPT-4o response with display name keys
             {"independent_scores": {"Truthfulness": {...}}}
 
     Returns:
-        Response with slug keys
-            {"independent_scores": {"truthfulness": {...}}}
+        Response with display name keys preserved
+            {"independent_scores": {"Truthfulness": {...}}}
 
     Raises:
         ValueError: If response structure is invalid
@@ -44,12 +51,12 @@ def parse_evidence_from_stage1(stage1_response: dict) -> dict:
     if "independent_scores" not in stage1_response:
         raise ValueError("Stage 1 response missing 'independent_scores' key")
 
-    # Convert each metric key from display name to slug
-    slug_scores = {}
+    # Validate evidence items for each metric (keep display name keys)
+    # Build a new dict to filter out invalid metrics
+    validated_scores = {}
     for display_name, metric_data in stage1_response["independent_scores"].items():
-        try:
-            slug = display_name_to_slug(display_name)
-        except ValueError:
+        # Validate display name
+        if not is_valid_display_name(display_name):
             logger.warning(f"Unknown metric display name: {display_name}, skipping")
             continue
 
@@ -59,9 +66,9 @@ def parse_evidence_from_stage1(stage1_response: dict) -> dict:
                 metric_data["evidence"], display_name
             )
 
-        slug_scores[slug] = metric_data
+        validated_scores[display_name] = metric_data
 
-    return {"independent_scores": slug_scores}
+    return {"independent_scores": validated_scores}
 
 
 def _validate_evidence_list(evidence_list: list, metric_name: str) -> list:
@@ -123,24 +130,56 @@ def _is_valid_evidence_item(item: Any) -> bool:
     return True
 
 
-def convert_to_evidence_by_metric(stage1_response: dict) -> dict[str, list[EvidenceItem]]:
+def convert_to_evidence_by_metric(
+    stage1_response: dict,
+    model_answer: str,
+    anchor_len: int = 25,
+    search_window: int = 2000
+) -> dict[str, list[EvidenceItem]]:
     """
     Convert Stage 1 evidence to EvidenceByMetric format (Phase 3 schema).
 
+    Validates evidence items, then verifies using the 5-stage self-healing
+    algorithm before converting to Pydantic models.
+
+    NOTE: This function accepts display name keys and converts them to slugs
+    in the output, as required by Phase 3 Coach Chat schema.
+
     Args:
-        stage1_response: Parsed Stage 1 response (slug-keyed)
+        stage1_response: Parsed Stage 1 response (display name keys)
+        model_answer: Original model response text for verification
+        anchor_len: From settings.evidence_anchor_len (default: 25)
+        search_window: From settings.evidence_search_window (default: 2000)
 
     Returns:
         Dictionary mapping metric slugs to EvidenceItem lists
     """
     result = {}
 
-    for slug, metric_data in stage1_response.get("independent_scores", {}).items():
+    for display_name, metric_data in stage1_response.get("independent_scores", {}).items():
+        # Convert display name to slug for Phase 3 output
+        try:
+            slug = display_name_to_slug(display_name)
+        except ValueError:
+            logger.warning(f"Unknown metric display name: {display_name}, skipping")
+            continue
+
         evidence_list = metric_data.get("evidence", [])
+
+        # First validate evidence structure (filters out invalid items)
+        validated_list = _validate_evidence_list(evidence_list, display_name)
+
+        # Then verify all valid evidence items using self-healing algorithm
+        verified_list = verify_all_evidence(
+            model_answer=model_answer,
+            evidence_list=validated_list,
+            anchor_len=anchor_len,
+            search_window=search_window
+        )
 
         # Convert to EvidenceItem Pydantic models
         evidence_items = []
-        for item in evidence_list:
+        for item in verified_list:
             try:
                 evidence_item = EvidenceItem(
                     quote=item["quote"],
@@ -148,8 +187,8 @@ def convert_to_evidence_by_metric(stage1_response: dict) -> dict[str, list[Evide
                     end=item["end"],
                     why=item["why"],
                     better=item["better"],
-                    verified=False,        # Explicit: not yet verified by self-healing
-                    highlight_available=True  # Explicit: available for highlighting in UI
+                    verified=item["verified"],
+                    highlight_available=item["highlight_available"]
                 )
                 evidence_items.append(evidence_item)
             except Exception as e:
@@ -158,3 +197,250 @@ def convert_to_evidence_by_metric(stage1_response: dict) -> dict[str, list[Evide
         result[slug] = evidence_items
 
     return result
+
+
+# =====================================================
+# Evidence Verification (5-Stage Self-Healing Algorithm)
+# Reference: Task 12.3 - AD-2
+# =====================================================
+
+def _verify_exact_slice(
+    model_answer: str,
+    quote: str,
+    start: int,
+    end: int
+) -> tuple[bool, int, int]:
+    """
+    Stage 1: Exact slice verification (highest confidence).
+
+    Checks if model_answer[start:end] exactly matches the quote.
+
+    Args:
+        model_answer: Original model response text
+        quote: Evidence quote to verify
+        start: Original start position
+        end: Original end position
+
+    Returns:
+        (verified, start, end) - If verified=True, positions unchanged
+    """
+    # Bounds check
+    if start < 0 or end > len(model_answer) or start >= end:
+        return False, start, end
+
+    actual = model_answer[start:end]
+    if actual == quote:
+        return True, start, end
+    return False, start, end
+
+
+def _verify_substring_search(
+    model_answer: str,
+    quote: str
+) -> tuple[bool, int, int]:
+    """
+    Stage 2: Substring search (high confidence).
+
+    Searches for exact quote in model_answer using str.find().
+
+    Args:
+        model_answer: Original model response text
+        quote: Evidence quote to verify
+
+    Returns:
+        (verified, new_start, new_end) - New positions if found
+    """
+    idx = model_answer.find(quote)
+    if idx >= 0:
+        return True, idx, idx + len(quote)
+    return False, 0, 0
+
+
+def _verify_anchor_based(
+    model_answer: str,
+    quote: str,
+    anchor_len: int,
+    search_window: int
+) -> tuple[bool, int, int]:
+    """
+    Stage 3: Anchor-based search (medium-high confidence).
+
+    Searches for head and tail anchors in model_answer.
+    Uses search window to prevent false positives in long texts.
+
+    Args:
+        model_answer: Original model response text
+        quote: Evidence quote to verify
+        anchor_len: Length of anchors (from settings.evidence_anchor_len)
+        search_window: Search tolerance window (from settings.evidence_search_window)
+
+    Returns:
+        (verified, new_start, new_end) if both anchors found
+    """
+    # Quote too short for anchors
+    if len(quote) < anchor_len * 2:
+        return False, 0, 0
+
+    head_anchor = quote[:anchor_len]
+    tail_anchor = quote[-anchor_len:]
+
+    head_idx = model_answer.find(head_anchor)
+    if head_idx < 0:
+        return False, 0, 0
+
+    # Search for tail within window
+    search_end = min(head_idx + len(quote) + search_window, len(model_answer))
+    tail_idx = model_answer.find(tail_anchor, head_idx, search_end)
+
+    if tail_idx >= 0:
+        return True, head_idx, tail_idx + len(tail_anchor)
+
+    return False, 0, 0
+
+
+def _verify_whitespace_safe(
+    model_answer: str,
+    quote: str
+) -> bool:
+    """
+    Stage 4: Whitespace-insensitive match (low confidence, safe mode).
+
+    Normalizes both texts (removes excess whitespace/newlines) and searches.
+    Returns verified=True BUT does NOT update positions (safe mode).
+
+    Safe Mode: Don't update start/end because reverse mapping is error-prone.
+    UI will show quote but disable highlight.
+
+    Args:
+        model_answer: Original model response text
+        quote: Evidence quote to verify
+
+    Returns:
+        verified (bool) - True if found in normalized text
+    """
+    import re
+
+    def normalize(text: str) -> str:
+        """Remove excess whitespace, newlines."""
+        return re.sub(r'\s+', ' ', text).strip()
+
+    normalized_answer = normalize(model_answer)
+    normalized_quote = normalize(quote)
+
+    return normalized_quote in normalized_answer
+
+
+def verify_evidence_item(
+    model_answer: str,
+    evidence_item: dict,
+    anchor_len: int = 25,
+    search_window: int = 2000
+) -> dict:
+    """
+    Run 5-stage verification on a single evidence item.
+
+    Stages run in order, stop at first success.
+
+    Args:
+        model_answer: Original model response text
+        evidence_item: Dict with quote, start, end, why, better
+        anchor_len: From settings.evidence_anchor_len
+        search_window: From settings.evidence_search_window
+
+    Returns:
+        Updated evidence_item dict with verified and highlight_available set
+    """
+    quote = evidence_item["quote"]
+    original_start = evidence_item["start"]
+    original_end = evidence_item["end"]
+
+    # Edge case: empty model_answer or quote
+    if not model_answer or not quote:
+        return {
+            **evidence_item,
+            "verified": False,
+            "highlight_available": False,
+            "start": original_start,
+            "end": original_end
+        }
+
+    # Stage 1: Exact Slice
+    verified, start, end = _verify_exact_slice(
+        model_answer, quote, original_start, original_end
+    )
+    if verified:
+        return {
+            **evidence_item,
+            "verified": True,
+            "highlight_available": True,
+            "start": start,
+            "end": end
+        }
+
+    # Stage 2: Substring Search
+    verified, start, end = _verify_substring_search(model_answer, quote)
+    if verified:
+        return {
+            **evidence_item,
+            "verified": True,
+            "highlight_available": True,
+            "start": start,
+            "end": end
+        }
+
+    # Stage 3: Anchor-Based Search
+    verified, start, end = _verify_anchor_based(
+        model_answer, quote, anchor_len, search_window
+    )
+    if verified:
+        return {
+            **evidence_item,
+            "verified": True,
+            "highlight_available": True,
+            "start": start,
+            "end": end
+        }
+
+    # Stage 4: Whitespace-Insensitive Match (Safe Mode)
+    verified = _verify_whitespace_safe(model_answer, quote)
+    if verified:
+        return {
+            **evidence_item,
+            "verified": True,
+            "highlight_available": False,  # Safe mode: no highlight
+            "start": original_start,       # Keep original for reference
+            "end": original_end
+        }
+
+    # Stage 5: Fallback - Verification failed
+    return {
+        **evidence_item,
+        "verified": False,
+        "highlight_available": False,
+        "start": original_start,
+        "end": original_end
+    }
+
+
+def verify_all_evidence(
+    model_answer: str,
+    evidence_list: list[dict],
+    anchor_len: int = 25,
+    search_window: int = 2000
+) -> list[dict]:
+    """
+    Verify all evidence items in a list.
+
+    Args:
+        model_answer: Original model response text
+        evidence_list: List of evidence item dicts
+        anchor_len: From settings.evidence_anchor_len
+        search_window: From settings.evidence_search_window
+
+    Returns:
+        List of verified evidence items
+    """
+    return [
+        verify_evidence_item(model_answer, item, anchor_len, search_window)
+        for item in evidence_list
+    ]

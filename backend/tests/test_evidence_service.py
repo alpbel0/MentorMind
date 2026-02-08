@@ -2,10 +2,10 @@
 Unit Tests for Evidence Service (Task 12.2)
 
 Tests:
-- Display name to slug key conversion
+- Display name preservation (NOT converted to slugs)
 - Evidence list validation
 - Evidence item validation
-- Pydantic schema conversion
+- Pydantic schema conversion (convert_to_evidence_by_metric does slug conversion)
 - Error handling
 """
 
@@ -26,8 +26,8 @@ from backend.services.evidence_service import (
 class TestParseEvidenceFromStage1:
     """Test parse_evidence_from_stage1 function."""
 
-    def test_converts_display_names_to_slugs(self):
-        """Test that display name keys are converted to slug keys."""
+    def test_preserves_display_names(self):
+        """Test that display name keys are preserved (NOT converted to slugs)."""
         input_data = {
             "independent_scores": {
                 "Truthfulness": {"score": 3, "rationale": "test", "evidence": []},
@@ -36,13 +36,15 @@ class TestParseEvidenceFromStage1:
         }
         result = parse_evidence_from_stage1(input_data)
 
-        assert "truthfulness" in result["independent_scores"]
-        assert "helpfulness" in result["independent_scores"]
-        assert "Truthfulness" not in result["independent_scores"]
-        assert "Helpfulness" not in result["independent_scores"]
+        # Display names should be preserved
+        assert "Truthfulness" in result["independent_scores"]
+        assert "Helpfulness" in result["independent_scores"]
+        # Slugs should NOT be present
+        assert "truthfulness" not in result["independent_scores"]
+        assert "helpfulness" not in result["independent_scores"]
 
-    def test_all_8_metrics_converted(self):
-        """Test all 8 metrics are converted correctly."""
+    def test_all_8_metrics_preserved(self):
+        """Test all 8 metrics are preserved correctly."""
         input_data = {
             "independent_scores": {
                 "Truthfulness": {"score": 3, "rationale": "test"},
@@ -57,12 +59,12 @@ class TestParseEvidenceFromStage1:
         }
         result = parse_evidence_from_stage1(input_data)
 
-        expected_slugs = [
-            "truthfulness", "helpfulness", "safety", "bias",
-            "clarity", "consistency", "efficiency", "robustness"
+        expected_names = [
+            "Truthfulness", "Helpfulness", "Safety", "Bias",
+            "Clarity", "Consistency", "Efficiency", "Robustness"
         ]
-        for slug in expected_slugs:
-            assert slug in result["independent_scores"]
+        for name in expected_names:
+            assert name in result["independent_scores"]
 
     def test_unknown_metric_skipped_with_warning(self):
         """Test unknown metric names are skipped with warning."""
@@ -74,9 +76,9 @@ class TestParseEvidenceFromStage1:
         }
         result = parse_evidence_from_stage1(input_data)
 
-        assert "truthfulness" in result["independent_scores"]
-        assert "invalidmetric" not in result["independent_scores"]
-        # Original invalid key should not be present
+        # Valid metric should be preserved
+        assert "Truthfulness" in result["independent_scores"]
+        # Invalid metric should NOT be present
         assert "InvalidMetric" not in result["independent_scores"]
 
     def test_raises_error_for_non_dict_input(self):
@@ -93,7 +95,7 @@ class TestParseEvidenceFromStage1:
             parse_evidence_from_stage1({"other_key": "value"})
 
     def test_preserves_evidence_field_when_present(self):
-        """Test evidence field is preserved during conversion."""
+        """Test evidence field is preserved during parsing."""
         input_data = {
             "independent_scores": {
                 "Truthfulness": {
@@ -107,9 +109,10 @@ class TestParseEvidenceFromStage1:
         }
         result = parse_evidence_from_stage1(input_data)
 
-        assert "truthfulness" in result["independent_scores"]
-        assert "evidence" in result["independent_scores"]["truthfulness"]
-        assert len(result["independent_scores"]["truthfulness"]["evidence"]) == 1
+        # Display name should be preserved
+        assert "Truthfulness" in result["independent_scores"]
+        assert "evidence" in result["independent_scores"]["Truthfulness"]
+        assert len(result["independent_scores"]["Truthfulness"]["evidence"]) == 1
 
 
 # =====================================================
@@ -277,44 +280,45 @@ class TestConvertToEvidenceByMetric:
 
     def test_converts_to_pydantic_models(self):
         """Test conversion to EvidenceItem Pydantic models."""
+        # Input uses display names (as returned by parse_evidence_from_stage1)
         input_data = {
             "independent_scores": {
-                "truthfulness": {
+                "Truthfulness": {
                     "score": 3,
                     "rationale": "test",
                     "evidence": [
-                        {"quote": "test", "start": 0, "end": 10, "why": "test", "better": "better"}
+                        {"quote": "test", "start": 0, "end": 4, "why": "test", "better": "better"}
                     ]
                 }
             }
         }
-        result = convert_to_evidence_by_metric(input_data)
+        model_answer = "This is a test answer"
+        result = convert_to_evidence_by_metric(input_data, model_answer)
 
+        # Output uses slugs (for Phase 3 Coach Chat schema)
         assert "truthfulness" in result
         assert len(result["truthfulness"]) == 1
         # Should be Pydantic model with all fields
         evidence_item = result["truthfulness"][0]
         assert evidence_item.quote == "test"
-        assert evidence_item.start == 0
-        assert evidence_item.end == 10
         assert evidence_item.why == "test"
         assert evidence_item.better == "better"
-        # Explicit defaults
-        assert evidence_item.verified is False
+        # After verification (quote exists in model_answer)
+        assert evidence_item.verified is True
         assert evidence_item.highlight_available is True
 
     def test_empty_evidence_list(self):
         """Test handling of empty evidence list."""
         input_data = {
             "independent_scores": {
-                "truthfulness": {
+                "Truthfulness": {
                     "score": 3,
                     "rationale": "test",
                     "evidence": []
                 }
             }
         }
-        result = convert_to_evidence_by_metric(input_data)
+        result = convert_to_evidence_by_metric(input_data, "any model answer")
 
         assert result["truthfulness"] == []
 
@@ -322,13 +326,13 @@ class TestConvertToEvidenceByMetric:
         """Test handling of missing evidence field."""
         input_data = {
             "independent_scores": {
-                "truthfulness": {
+                "Truthfulness": {
                     "score": 3,
                     "rationale": "test"
                 }
             }
         }
-        result = convert_to_evidence_by_metric(input_data)
+        result = convert_to_evidence_by_metric(input_data, "any model answer")
 
         assert result["truthfulness"] == []
 
@@ -336,41 +340,42 @@ class TestConvertToEvidenceByMetric:
         """Test invalid evidence items are skipped."""
         input_data = {
             "independent_scores": {
-                "truthfulness": {
+                "Truthfulness": {
                     "score": 3,
                     "rationale": "test",
                     "evidence": [
-                        {"quote": "test", "start": 0, "end": 10, "why": "test", "better": "better"},
+                        {"quote": "test", "start": 0, "end": 4, "why": "test", "better": "better"},
                         {"invalid": "item"}  # Missing required fields
                     ]
                 }
             }
         }
-        result = convert_to_evidence_by_metric(input_data)
+        result = convert_to_evidence_by_metric(input_data, "This is a test")
 
         # Only valid item should be converted
         assert len(result["truthfulness"]) == 1
 
     def test_multiple_metrics(self):
-        """Test conversion with multiple metrics."""
+        """Test conversion with multiple metrics (display names to slugs)."""
         input_data = {
             "independent_scores": {
-                "truthfulness": {
+                "Truthfulness": {
                     "score": 3,
                     "evidence": [
-                        {"quote": "t1", "start": 0, "end": 5, "why": "w1", "better": "b1"}
+                        {"quote": "t1", "start": 0, "end": 2, "why": "w1", "better": "b1"}
                     ]
                 },
-                "clarity": {
+                "Clarity": {
                     "score": 4,
                     "evidence": [
-                        {"quote": "c1", "start": 0, "end": 5, "why": "w2", "better": "b2"}
+                        {"quote": "c1", "start": 0, "end": 2, "why": "w2", "better": "b2"}
                     ]
                 }
             }
         }
-        result = convert_to_evidence_by_metric(input_data)
+        result = convert_to_evidence_by_metric(input_data, "t1 and c1 are here")
 
+        # Output should have slug keys
         assert len(result) == 2
         assert len(result["truthfulness"]) == 1
         assert len(result["clarity"]) == 1
