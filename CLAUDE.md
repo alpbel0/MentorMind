@@ -1561,6 +1561,17 @@ pip-audit
   - [x] `backend/services/judge_service.py` - `_validate_judge_response()` updated
   - [x] Evidence validation logic (5 required fields, start < end check)
   - [x] `backend/tests/test_evidence_validation.py` - 17 tests passed
+- [x] **Evidence JSON Parser (Task 12.2)** (8 Şubat 2026)
+  - [x] `backend/services/evidence_service.py` created with 4 functions
+  - [x] `parse_evidence_from_stage1()` converts display names to slugs
+  - [x] `_validate_evidence_list()` validates evidence structure
+  - [x] `_is_valid_evidence_item()` checks all 5 required fields
+  - [x] `convert_to_evidence_by_metric()` returns Pydantic EvidenceItem list
+  - [x] `verified=False` ve `highlight_available=True` explicit set
+  - [x] `judge_service.py` integrated with evidence parser
+  - [x] Unit tests created (25 tests passed)
+  - [x] All tests pass
+  - [x] Graceful error handling (logs warning, continues execution)
 
 ### Success Criteria
 

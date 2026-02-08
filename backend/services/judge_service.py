@@ -27,6 +27,7 @@ from backend.prompts.judge_prompts import (
     JUDGE_STAGE1_VERDICTS, WEIGHTED_GAP_WEIGHTS, META_SCORE_THRESHOLDS
 )
 from backend.services.llm_logger import log_llm_call, LLMProvider
+from backend.services.evidence_service import parse_evidence_from_stage1
 
 logger = logging.getLogger(__name__)
 
@@ -331,69 +332,82 @@ class JudgeService:
         """
         # Try to extract JSON from response
         json_content = response.strip()
+        parsed = None
 
         # Pattern 1: Try direct JSON parsing first
         try:
             parsed = json.loads(json_content)
-            # If it worked, validate and return
-            if "independent_scores" in parsed:
-                return self._validate_judge_response(parsed)
+            if "independent_scores" not in parsed:
+                # Valid JSON but not the right format, continue to extraction
+                parsed = None
         except json.JSONDecodeError:
             # Not direct JSON, continue to extraction patterns
             pass
 
-        # Pattern 2: Markdown code block with json language tag
-        # ```json\n{...}\n```
-        code_block_pattern = r'```json\s*(.*?)\s*```'
-        match = re.search(code_block_pattern, json_content, re.DOTALL)
-        if match:
-            json_content = match.group(1)
-        else:
-            # Pattern 3: Generic code block
-            # ```\n{...}\n```
-            generic_block_pattern = r'```\s*(.*?)\s*```'
-            match = re.search(generic_block_pattern, json_content, re.DOTALL)
+        # If Pattern 1 didn't work, try extraction patterns
+        if parsed is None:
+            # Pattern 2: Markdown code block with json language tag
+            # ```json\n{...}\n```
+            code_block_pattern = r'```json\s*(.*?)\s*```'
+            match = re.search(code_block_pattern, json_content, re.DOTALL)
             if match:
                 json_content = match.group(1)
             else:
-                # Pattern 4: Find first { ... } block by counting braces
-                # This handles nested braces better than regex
-                start_idx = json_content.find('{')
-                if start_idx != -1:
-                    brace_count = 0
-                    in_string = False
-                    escape_next = False
-                    for i, char in enumerate(json_content[start_idx:], start=start_idx):
-                        if escape_next:
-                            escape_next = False
-                            continue
-                        if char == '\\':
-                            escape_next = True
-                            continue
-                        if char == '"' and not escape_next:
-                            in_string = not in_string
-                            continue
-                        if not in_string:
-                            if char == '{':
-                                brace_count += 1
-                            elif char == '}':
-                                brace_count -= 1
-                                if brace_count == 0:
-                                    json_content = json_content[start_idx:i+1]
-                                    break
-                    else:
-                        # Couldn't find matching braces
-                        raise ValueError("Could not extract JSON from response")
+                # Pattern 3: Generic code block
+                # ```\n{...}\n```
+                generic_block_pattern = r'```\s*(.*?)\s*```'
+                match = re.search(generic_block_pattern, json_content, re.DOTALL)
+                if match:
+                    json_content = match.group(1)
+                else:
+                    # Pattern 4: Find first { ... } block by counting braces
+                    # This handles nested braces better than regex
+                    start_idx = json_content.find('{')
+                    if start_idx != -1:
+                        brace_count = 0
+                        in_string = False
+                        escape_next = False
+                        for i, char in enumerate(json_content[start_idx:], start=start_idx):
+                            if escape_next:
+                                escape_next = False
+                                continue
+                            if char == '\\':
+                                escape_next = True
+                                continue
+                            if char == '"' and not escape_next:
+                                in_string = not in_string
+                                continue
+                            if not in_string:
+                                if char == '{':
+                                    brace_count += 1
+                                elif char == '}':
+                                    brace_count -= 1
+                                    if brace_count == 0:
+                                        json_content = json_content[start_idx:i+1]
+                                        break
+                        else:
+                            # Couldn't find matching braces
+                            raise ValueError("Could not extract JSON from response")
 
-        # Parse JSON
+            # Parse extracted JSON
+            try:
+                parsed = json.loads(json_content)
+            except json.JSONDecodeError as e:
+                logger.error(f"Failed to parse JSON: {e}")
+                logger.error(f"Content: {json_content[:500]}...")
+                raise ValueError(f"Invalid JSON in GPT-4o response: {e}")
+
+        # First validate structure
+        validated = self._validate_judge_response(parsed)
+
+        # Convert display name keys to slug keys (AD-6)
         try:
-            parsed = json.loads(json_content)
-        except json.JSONDecodeError as e:
-            logger.error(f"Failed to parse JSON: {e}")
-            logger.error(f"Content: {json_content[:500]}...")
-            raise ValueError(f"Invalid JSON in GPT-4o response: {e}")
+            validated = parse_evidence_from_stage1(validated)
+        except ValueError as e:
+            logger.error(f"Evidence parsing failed: {e}")
+            # Continue with original validated response (graceful degradation)
 
-        return self._validate_judge_response(parsed)
+        return validated
 
     def _validate_judge_response(self, parsed: dict) -> dict:
         """

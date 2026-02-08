@@ -2669,22 +2669,47 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
-**Yapılacaklar:**
-- [ ] `backend/services/evidence_service.py` oluştur:
-  - [ ] `parse_evidence_from_stage1(stage1_response: dict) -> dict` fonksiyonu:
-    - [ ] Stage 1 JSON çıktısından evidence bölümünü ayıkla
-    - [ ] Her metrik için evidence listesini parse et
-    - [ ] `quote`, `start`, `end`, `why`, `better` alanlarını validate et
-    - [ ] Eksik alanlar için default değerler (why: "", better: "")
-    - [ ] Slug key dönüşümü uygula (AD-6 mapping kullan)
-  - [ ] `validate_evidence_item(item: dict) -> bool` fonksiyonu:
-    - [ ] Zorunlu alanlar (quote, start, end) kontrolü
-    - [ ] `start` < `end` kontrolü
-    - [ ] `quote` boş olmama kontrolü
-- [ ] Hatalı JSON için graceful handling (boş dict dön, log yaz)
-- [ ] Unit test yaz
+**Referans:** AD-6 (Slug-Based Metric Keys)
+
+**Yapılanlar:**
+- [x] `backend/services/evidence_service.py` oluşturuldu:
+  - [x] `parse_evidence_from_stage1(stage1_response: dict) -> dict` fonksiyonu:
+    - [x] Stage 1 JSON çıktısından evidence bölümünü ayıkla
+    - [x] Display name key'lerini slug key'lere dönüştür (örn. "Truthfulness" → "truthfulness")
+    - [x] Her metrik için evidence listesini validate et
+    - [x] `quote`, `start`, `end`, `why`, `better` alanlarını kontrol et
+  - [x] `_validate_evidence_list(evidence_list: list, metric_name: str) -> list` fonksiyonu:
+    - [x] Liste tipi validasyonu
+    - [x] `start < end` kontrolü ve correction (0, 0)
+    - [x] Invalid item'leri filtrele
+  - [x] `_is_valid_evidence_item(item: dict) -> bool` fonksiyonu:
+    - [x] 5 zorunlu alan kontrolü (quote, start, end, why, better)
+    - [x] Tip kontrolü (quote/why/better: str, start/end: int)
+    - [x] Boş quote kontrolü
+  - [x] `convert_to_evidence_by_metric(stage1_response: dict) -> dict[str, list[EvidenceItem]]` fonksiyonu:
+    - [x] Pydantic `EvidenceItem` model'lerine dönüşüm
+    - [x] `verified=False`, `highlight_available=True` explicit set
+- [x] `backend/services/judge_service.py` entegrasyonu:
+  - [x] `parse_judge_response()` method'unda evidence parser çağrısı
+  - [x] Graceful degradation (hata durumunda devam et)
+- [x] `backend/services/__init__.py` export'ları eklendi
+- [x] Unit test yaz (`backend/tests/test_evidence_service.py`):
+  - [x] 25 test oluşturuldu
+  - [x] Tüm testler geçti
+- [x] `backend/tests/test_judge_service.py` güncellendi:
+  - [x] `test_parse_direct_json` slug key'lere güncellendi
+
+**Test Sonuçları:**
+- 25/25 evidence service tests passed
+- 5/5 judge service parse tests passed
+- Slug conversion works end-to-end
+
+**Notlar:**
+- Stage 1 output artık slug key formatında (AD-6 uyumlu)
+- Display name → Slug conversion: `display_name_to_slug()` kullanıyor
+- Graceful error handling: Hatalı metric'ler skip ediliyor, log yazılıyor
 
 ---
 

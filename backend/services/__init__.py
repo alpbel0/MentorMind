@@ -39,6 +39,16 @@ from backend.services.judge_service import JudgeService, judge_service
 # =====================================================
 from backend.services.chromadb_service import ChromaDBService, chromadb_service
 
+# =====================================================
+# Evidence Service (Stage 1 Parser)
+# =====================================================
+from backend.services.evidence_service import (
+    parse_evidence_from_stage1,
+    _validate_evidence_list,
+    _is_valid_evidence_item,
+    convert_to_evidence_by_metric,
+)
+
 __all__ = [
     # Claude Service
     "ClaudeService",
@@ -59,4 +69,9 @@ __all__ = [
     # ChromaDB Service
     "ChromaDBService",
     "chromadb_service",
+    # Evidence Service
+    "parse_evidence_from_stage1",
+    "_validate_evidence_list",
+    "_is_valid_evidence_item",
+    "convert_to_evidence_by_metric",
 ]
