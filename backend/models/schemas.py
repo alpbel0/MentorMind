@@ -7,8 +7,9 @@ Uses Pydantic v2 syntax.
 
 from datetime import datetime
 from typing import Any, Optional
+from uuid import UUID
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from backend.constants.metrics import ALL_METRIC_SLUGS, is_valid_slug
 
@@ -402,6 +403,13 @@ class EvidenceItem(BaseModel):
     verified: bool = Field(default=False, description="Whether verified by judge")
     highlight_available: bool = Field(default=True, description="Whether UI can highlight")
 
+    @model_validator(mode='after')
+    def validate_end_after_start(self) -> 'EvidenceItem':
+        """Validate that end position is after start position."""
+        if self.end <= self.start:
+            raise ValueError(f"end ({self.end}) must be greater than start ({self.start})")
+        return self
+
 
 class MetricEvidence(BaseModel):
     """Evidence for a single metric with score comparison."""
@@ -534,22 +542,34 @@ def validate_metric_slugs(v: list[str]) -> list[str]:
     return v
 
 
-def validate_client_message_id(v: str) -> str:
+def validate_client_message_id(v: str | UUID) -> str:
     """
-    Validate client_message_id is a non-empty string.
+    Validate client_message_id is a valid UUID v4.
 
     Args:
-        v: Client message ID to validate
+        v: Client message ID (str or UUID)
 
     Returns:
-        Validated client message ID
+        Validated UUID as string for JSON serialization
 
     Raises:
-        ValueError: If empty or whitespace only
+        ValueError: If not a valid UUID v4
     """
-    if not v or not v.strip():
-        raise ValueError("client_message_id cannot be empty")
-    return v
+    if isinstance(v, str):
+        try:
+            uuid_obj = UUID(v)
+        except ValueError:
+            raise ValueError(f"client_message_id must be a valid UUID, got: '{v}'")
+        # Check UUID version (v4)
+        if uuid_obj.version != 4:
+            raise ValueError(f"client_message_id must be UUID v4, got UUID v{uuid_obj.version}")
+        return str(uuid_obj)
+    elif isinstance(v, UUID):
+        if v.version != 4:
+            raise ValueError(f"client_message_id must be UUID v4, got UUID v{v.version}")
+        return str(v)
+    else:
+        raise ValueError(f"client_message_id must be a string or UUID, got {type(v).__name__}")
 
 
 def validate_chat_role(v: str) -> str:

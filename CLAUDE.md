@@ -1536,6 +1536,19 @@ pip-audit
   - [x] Constants: `VALID_SNAPSHOT_STATUSES`, `VALID_CHAT_ROLES`
   - [x] All schemas match ORM model fields
   - [x] Import from `backend.constants.metrics` for metric validation
+- [x] **Settings Update - Coach Chat & Evidence (Task 11.6)** (8 Şubat 2026)
+  - [x] `coach_model: str = "openai/gpt-4o-mini"` (OpenRouter via) - AD-5
+  - [x] `max_chat_turns: int = 15` (Maximum user messages per conversation) - AD-9
+  - [x] `chat_history_window: int = 6` (Number of recent messages in LLM context) - AD-4
+  - [x] `evidence_anchor_len: int = 25` (Anchor character length for evidence verification) - AD-2
+  - [x] `evidence_search_window: int = 2000` (Search tolerance window for anchor tail search) - AD-2
+  - [x] `validate_positive_int()` validator added
+  - [x] `.env.example` updated with new Coach Chat & Evidence section
+- [x] **Schema Validation & Test Coverage (Task 11.7)** (8 Şubat 2026)
+  - [x] `EvidenceItem` - `@model_validator(mode='after')` for `end > start` validation
+  - [x] `validate_client_message_id` - UUID v4 strict validation (rejects XSS, SQL injection)
+  - [x] `backend/tests/test_phase3_schemas.py` - 32 tests created
+  - [x] Test coverage: 94% for `backend/models/schemas.py`
 
 ### Success Criteria
 

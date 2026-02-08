@@ -2542,19 +2542,46 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-5 (Coach Model), AD-9 (Turn Limit)
 
 **Yapılacaklar:**
-- [ ] `backend/config/settings.py` güncelle:
-  - [ ] `COACH_MODEL: str = "openai/gpt-4o-mini"` (OpenRouter üzerinden)
-  - [ ] `MAX_CHAT_TURNS: int = 15` (kullanıcı mesaj limiti)
-  - [ ] `CHAT_HISTORY_WINDOW: int = 6` (LLM'e gönderilen son mesaj sayısı)
-  - [ ] `EVIDENCE_ANCHOR_LEN: int = 25` (anchor karakter uzunluğu)
-  - [ ] `EVIDENCE_SEARCH_WINDOW: int = 2000` (anchor search tolerans penceresi)
-- [ ] `.env.example` güncelle (yeni config'ler)
-- [ ] Config'lerin environment variable'dan override edilebilirliğini test et
+- [x] `backend/config/settings.py` güncelle:
+  - [x] `coach_model: str = "openai/gpt-4o-mini"` (OpenRouter üzerinden)
+  - [x] `max_chat_turns: int = 15` (kullanıcı mesaj limiti)
+  - [x] `chat_history_window: int = 6` (LLM'e gönderilen son mesaj sayısı)
+  - [x] `evidence_anchor_len: int = 25` (anchor karakter uzunluğu)
+  - [x] `evidence_search_window: int = 2000` (anchor search tolerans penceresi)
+  - [x] `validate_positive_int()` validator eklendi
+- [x] `.env.example` güncelle (yeni config'ler)
+- [x] Config'lerin environment variable'dan override edilebilirliğini test et
+
+---
+
+### Task 11.7: Schema Validation & Test Coverage
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `backend/models/schemas.py` - EvidenceItem validation:
+  - [x] `@model_validator(mode='after')` ile `end > start` kontrolü
+  - [x] Geçersiz range'leri engelle (end <= start)
+- [x] `backend/models/schemas.py` - UUID v4 validation:
+  - [x] `validate_client_message_id()` fonksiyonunu UUID v4 strict validation ile güncelle
+  - [x] Sadece geçerli UUID v4 formatı kabul et
+  - [x] XSS payload'larını reddet (`<script>`, SQL injection, vs.)
+  - [x] Diğer UUID versiyonlarını reddet (v1, v3, v5)
+- [x] `backend/tests/test_phase3_schemas.py` oluştur:
+  - [x] `TestEvidenceItem` - 8 test (position validation, edge cases)
+  - [x] `TestChatMessageCreate` - 13 test (UUID v4, XSS protection)
+  - [x] `TestChatRequest` - 8 test (UUID v4, metric limits)
+  - [x] `TestSnapshotResponse` - 1 test (ORM config)
+  - [x] `TestMetricEvidence` - 2 test (evidence structure)
+- [x] Tüm testler geçti (32/32)
+- [x] Coverage: `backend/models/schemas.py` = 94%
 
 ---
 
@@ -2588,7 +2615,9 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 - [x] `UNIQUE(snapshot_id, client_message_id, role)` constraint aktif
 - [x] SQLAlchemy modelleri hazır
 - [x] Pydantic şemaları hazır
-- [ ] Yeni config değerleri ayarlandı
+- [x] Yeni config değerleri ayarlandı
+- [x] Schema validation güçlendirmeleri (EvidenceItem, UUID v4)
+- [x] Phase 3 test coverage (32 tests, 94% coverage)
 
 ---
 
