@@ -1,21 +1,41 @@
-# MentorMind - Phase 1 MVP Roadmap
+# MentorMind - Project Roadmap
 
 **Proje:** MentorMind - AI Evaluator Training System  
-**Phase:** 1 - MVP (Minimum Viable Product)  
-**Hedef:** Temel sistemin çalışır hale getirilmesi  
-**Tahmini Süre:** 4 hafta  
-**Başlangıç:** 27 Ocak 2025  
+**Phase 1:** MVP Backend (4 hafta) — 27 Ocak 2025  
+**Phase 2:** Frontend UI (6 hafta) — 24 Şubat 2025  
+**Phase 3:** Coach Chat + Evidence Backend (6 hafta) — 7 Nisan 2025  
 
 ---
 
 ## 📋 İçindekiler
 
+### Phase 1: MVP Backend
 - [Phase 1 Overview](#-phase-1-overview)
 - [Week 1: Database & Infrastructure](#-week-1-database--infrastructure)
 - [Week 2: Question Generation & K Models](#-week-2-question-generation--k-models)
 - [Week 3: User Evaluation & Judge Stage 1](#-week-3-user-evaluation--judge-stage-1)
 - [Week 4: Judge Stage 2 & End-to-End Testing](#-week-4-judge-stage-2--end-to-end-testing)
-- [Success Metrics](#-success-metrics)
+- [Phase 1 Success Metrics](#-success-metrics)
+
+### Phase 2: Frontend UI
+- [Phase 2 Overview](#-phase-2-overview)
+- [Week 5: Foundation & Setup](#-week-5-foundation--setup)
+- [Week 6: Evaluation Flow UI](#-week-6-evaluation-flow-ui)
+- [Week 7: Judge Feedback Display](#-week-7-judge-feedback-display)
+- [Week 8: Statistics Dashboard](#-week-8-statistics-dashboard)
+- [Week 9: Polish & UX](#-week-9-polish--ux)
+- [Week 10: Testing & Deployment](#-week-10-testing--deployment)
+- [Phase 2 Success Metrics](#-phase-2-success-metrics)
+
+### Phase 3: Coach Chat + Evidence (Backend)
+- [Phase 3 Overview](#-phase-3-overview)
+- [Week 11: Database Schema & Infrastructure](#-week-11-database-schema--infrastructure)
+- [Week 12: Evidence Generation & Verification](#-week-12-evidence-generation--verification)
+- [Week 13: Snapshot Service & Judge Integration](#-week-13-snapshot-service--judge-integration)
+- [Week 14: Coach Chat Service](#-week-14-coach-chat-service)
+- [Week 15: Chat Endpoints & Integration](#-week-15-chat-endpoints--integration)
+- [Week 16: End-to-End Testing & Polish](#-week-16-end-to-end-testing--polish)
+- [Phase 3 Success Metrics](#-phase-3-success-metrics)
 
 ---
 
@@ -2292,7 +2312,1308 @@ Phase 2 tamamlandığında:
 ✅ **Comprehensive Tests** (Unit + Integration + E2E)
 ✅ **Production Ready** (Vercel deployed)
 
-**Sonraki adım:** Phase 3 - Advanced Features 🚀
+**Sonraki adım:** Phase 3 - Coach Chat + Evidence (Backend) 🚀
+
+---
+
+## 📅 Phase 3: Coach Chat + Evidence — Backend (6 Weeks)
+
+**Tarih:** 7 Nisan - 18 Mayıs 2025  
+**Hedef:** Evidence (Kanıt) üretimi, 5 aşamalı doğrulama, Snapshot sistemi ve Coach Chat (SSE) backend altyapısı  
+**Referans Döküman:** [NEW_FEATURES.md](NEW_FEATURES.md) (13 Architectural Decision)
+
+---
+
+## 🎯 Phase 3 Overview
+
+### Scope
+
+**Dahil:**
+- Evidence üretimi (Stage 1 entegrasyonu)
+- 5 aşamalı Self-Healing Evidence doğrulama algoritması
+- `evaluation_snapshots` tablosu (denormalize snapshot)
+- `chat_messages` tablosu (sohbet geçmişi)
+- Snapshot CRUD servisi ve endpoint'leri
+- Coach Chat servisi (SSE streaming, GPT-4o-mini)
+- Idempotency, Reconnect, Turn Limit altyapısı
+- Metric slug mapping sistemi
+- Soft delete altyapısı
+
+**Hariç:**
+- Frontend UI (Evidence highlight, Chat UI — ayrı phase)
+- Multi-user authentication
+- Production deployment
+- Advanced analytics dashboard
+
+### Definition of Done
+
+Phase 3 tamamlanmış sayılır eğer:
+- [ ] `evaluation_snapshots` ve `chat_messages` tabloları oluşturuldu
+- [ ] Stage 1 prompt'u evidence çıktısı üretiyor
+- [ ] 5 aşamalı self-healing doğrulama çalışıyor
+- [ ] Judge task sonrası otomatik snapshot oluşturuluyor
+- [ ] Snapshot CRUD endpoint'leri çalışıyor
+- [ ] Coach Chat SSE streaming çalışıyor
+- [ ] Init greeting çalışıyor
+- [ ] Turn limit (15 user mesaj) enforce ediliyor
+- [ ] Idempotency ve reconnect çalışıyor
+- [ ] Token windowing (son 6 mesaj) uygulanıyor
+- [ ] E2E testler geçiyor
+- [ ] Documentation güncel
+
+---
+
+## 📅 Week 11: Database Schema & Infrastructure
+
+**Tarih:** 7 Nisan - 13 Nisan 2025  
+**Hedef:** Yeni tablolar, modeller, şemalar ve konfigürasyon
+
+---
+
+### Task 11.1: Metric Slug Constants & Helpers
+
+**Tahmini Süre:** 1 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-6 (Slug-Based Metric Keys)
+
+**Yapılacaklar:**
+- [ ] `backend/constants/` klasörü oluştur
+- [ ] `backend/constants/__init__.py` oluştur
+- [ ] `backend/constants/metrics.py` oluştur:
+  - [ ] `METRIC_SLUG_MAP` dictionary (8 metrik: "Truthfulness" → "truthfulness", ...)
+  - [ ] `SLUG_DISPLAY_MAP` reverse dictionary (otomatik oluştur)
+  - [ ] `display_name_to_slug(name: str) -> str` helper fonksiyonu
+  - [ ] `slug_to_display_name(slug: str) -> str` helper fonksiyonu
+  - [ ] `ALL_METRIC_SLUGS: list[str]` constant
+  - [ ] `ALL_METRIC_NAMES: list[str]` constant
+- [ ] Bilinmeyen metrik adı/slug için `ValueError` raise et
+- [ ] Unit test yaz (test_metrics.py)
+
+**Notlar:**
+- Otomatik `lower()` kullanılmaz, explicit dictionary ile mapping yapılır
+- Mevcut tablolara dokunulmaz, sadece yeni snapshot tablosu slug kullanır
+- İleride "Safety & Policy" gibi karmaşık isimler gelirse kod kırılmaz
+
+---
+
+### Task 11.2: SQL Schema - evaluation_snapshots
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-3 (New Snapshot Table), AD-13 (Retention Policy)
+
+**Yapılacaklar:**
+- [ ] `backend/schemas/08_evaluation_snapshots.sql` oluştur:
+  - [ ] `id` TEXT PRIMARY KEY (Format: `snap_YYYYMMDD_HHMMSS_randomhex`)
+  - [ ] `created_at` TIMESTAMP DEFAULT NOW()
+  - [ ] `question_id` TEXT (referans, FK değil)
+  - [ ] `question` TEXT NOT NULL (snapshot)
+  - [ ] `model_answer` TEXT NOT NULL (snapshot)
+  - [ ] `model_name` TEXT NOT NULL
+  - [ ] `judge_model` TEXT NOT NULL DEFAULT 'gpt-4o'
+  - [ ] `primary_metric` TEXT NOT NULL
+  - [ ] `bonus_metrics` JSONB
+  - [ ] `category` TEXT
+  - [ ] `user_scores_json` JSONB NOT NULL
+  - [ ] `judge_scores_json` JSONB NOT NULL
+  - [ ] `evidence_json` JSONB
+  - [ ] `judge_meta_score` INTEGER CHECK (1-5)
+  - [ ] `weighted_gap` REAL
+  - [ ] `overall_feedback` TEXT
+  - [ ] `user_evaluation_id` TEXT (referans)
+  - [ ] `judge_evaluation_id` TEXT (referans)
+  - [ ] `chat_turn_count` INTEGER DEFAULT 0
+  - [ ] `max_chat_turns` INTEGER DEFAULT 15
+  - [ ] `status` TEXT DEFAULT 'active' (active, completed, archived)
+  - [ ] `deleted_at` TIMESTAMP (nullable, soft delete altyapısı)
+- [ ] Index'ler oluştur:
+  - [ ] `idx_snapshots_status` (status)
+  - [ ] `idx_snapshots_primary_metric` (primary_metric)
+  - [ ] `idx_snapshots_created_at` (created_at DESC)
+  - [ ] `idx_snapshots_deleted_at` (deleted_at) — soft delete sorguları için
+- [ ] SQL dosyasını Docker container'da çalıştır
+
+---
+
+### Task 11.3: SQL Schema - chat_messages
+
+**Tahmini Süre:** 1.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-3 (New Snapshot Table), AD-4 (SSE + DB Chat)
+
+**Yapılacaklar:**
+- [ ] `backend/schemas/09_chat_messages.sql` oluştur:
+  - [ ] `id` TEXT PRIMARY KEY (Format: `msg_YYYYMMDD_HHMMSS_randomhex`)
+  - [ ] `client_message_id` TEXT NOT NULL (Shared Turn ID)
+  - [ ] `is_complete` BOOLEAN NOT NULL DEFAULT TRUE
+  - [ ] `snapshot_id` TEXT NOT NULL REFERENCES evaluation_snapshots(id)
+  - [ ] `role` TEXT NOT NULL CHECK (role IN ('user', 'assistant'))
+  - [ ] `content` TEXT NOT NULL DEFAULT ''
+  - [ ] `selected_metrics` JSONB
+  - [ ] `token_count` INTEGER DEFAULT 0
+  - [ ] `created_at` TIMESTAMP DEFAULT NOW()
+- [ ] Constraint'ler:
+  - [ ] `UNIQUE (snapshot_id, client_message_id, role)` — idempotency garantisi
+- [ ] Index'ler:
+  - [ ] `idx_chat_snapshot_created` (snapshot_id, created_at) — sohbet geçmişi sorguları
+  - [ ] `idx_chat_client_message` (snapshot_id, client_message_id) — dedup lookup
+- [ ] SQL dosyasını Docker container'da çalıştır
+
+---
+
+### Task 11.4: SQLAlchemy Models
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-3
+
+**Yapılacaklar:**
+- [ ] `backend/models/evaluation_snapshot.py` oluştur:
+  - [ ] `EvaluationSnapshot` SQLAlchemy model
+  - [ ] Tüm kolonlar (Task 11.2'deki şemaya uygun)
+  - [ ] `__tablename__ = "evaluation_snapshots"`
+  - [ ] `chat_messages` relationship (back_populates)
+  - [ ] `is_chat_available` property (status == 'active' ve chat_turn_count < max_chat_turns)
+- [ ] `backend/models/chat_message.py` oluştur:
+  - [ ] `ChatMessage` SQLAlchemy model
+  - [ ] Tüm kolonlar (Task 11.3'deki şemaya uygun)
+  - [ ] `__tablename__ = "chat_messages"`
+  - [ ] `snapshot` relationship (back_populates)
+- [ ] `backend/models/__init__.py` güncelle:
+  - [ ] `EvaluationSnapshot` export ekle
+  - [ ] `ChatMessage` export ekle
+- [ ] Modellerin database ile senkronize olduğunu test et
+
+---
+
+### Task 11.5: Pydantic Schemas
+
+**Tahmini Süre:** 2.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/schemas/schemas.py` güncelle (veya yeni dosya oluştur):
+  - [ ] **Evidence Schemas:**
+    - [ ] `EvidenceItem` (start, end, quote, why, better, verified, highlight_available)
+    - [ ] `MetricEvidence` (user_score, judge_score, metric_gap, user_reason, judge_reason, evidence: list[EvidenceItem])
+  - [ ] **Snapshot Schemas:**
+    - [ ] `SnapshotResponse` (tüm snapshot alanları + is_chat_available)
+    - [ ] `SnapshotListResponse` (id, created_at, primary_metric, category, judge_meta_score, status, chat_turn_count)
+    - [ ] `SnapshotListPaginated` (items, total, page, per_page)
+  - [ ] **Chat Schemas:**
+    - [ ] `ChatMessageRequest` (message, client_message_id, selected_metrics, is_init)
+    - [ ] `ChatMessageResponse` (id, role, content, created_at, is_complete)
+    - [ ] `ChatHistoryResponse` (messages: list[ChatMessageResponse], total, snapshot_id)
+  - [ ] **Validation kuralları:**
+    - [ ] `selected_metrics` → slug listesi, max 3 item
+    - [ ] `client_message_id` → NOT NULL, UUID format
+    - [ ] `score` → 1-5 veya null
+
+---
+
+### Task 11.6: Settings Update
+
+**Tahmini Süre:** 1 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-5 (Coach Model), AD-9 (Turn Limit)
+
+**Yapılacaklar:**
+- [ ] `backend/config/settings.py` güncelle:
+  - [ ] `COACH_MODEL: str = "openai/gpt-4o-mini"` (OpenRouter üzerinden)
+  - [ ] `MAX_CHAT_TURNS: int = 15` (kullanıcı mesaj limiti)
+  - [ ] `CHAT_HISTORY_WINDOW: int = 6` (LLM'e gönderilen son mesaj sayısı)
+  - [ ] `EVIDENCE_ANCHOR_LEN: int = 25` (anchor karakter uzunluğu)
+  - [ ] `EVIDENCE_SEARCH_WINDOW: int = 2000` (anchor search tolerans penceresi)
+- [ ] `.env.example` güncelle (yeni config'ler)
+- [ ] Config'lerin environment variable'dan override edilebilirliğini test et
+
+---
+
+### 📌 Week 11 — Kritik Teknik Notlar
+
+**1. evaluation_snapshots Tablosu (AD-3):**
+- Mevcut 4 tabloya (questions, model_responses, user_evaluations, judge_evaluations) dokunulmaz.
+- Snapshot, tüm aktörlerin (kullanıcı, judge, model) verisini **denormalize** ederek tek satırda tutar.
+- Soft delete altyapısı (`deleted_at`, `status: archived`) baştan yerleştirilir (AD-13).
+
+**2. chat_messages Tablosu (AD-3, AD-4):**
+- **Shared Turn ID modeli:** Aynı konuşma turundaki user ve assistant mesajları aynı `client_message_id`'yi paylaşır.
+- **Deduplication Constraint:** `UNIQUE(snapshot_id, client_message_id, role)` — DB seviyesinde mükerrerlik engeli. Bu constraint olmadan idempotency garantisi verilemez.
+- `is_complete` alanı SSE reconnect stratejisinin temelini oluşturur (yarım kalan cevapları tespit).
+
+**3. Tablo İlişkisi:**
+```
+evaluation_snapshots (1) ──→ (N) chat_messages
+                              │
+                              ├─ role: "user"      (client_message_id: "abc")
+                              └─ role: "assistant"  (client_message_id: "abc")
+```
+
+---
+
+### ✅ Week 11 Checklist
+
+- [ ] Metric slug mapping çalışıyor
+- [ ] `evaluation_snapshots` tablosu oluşturuldu
+- [ ] `chat_messages` tablosu oluşturuldu
+- [ ] `UNIQUE(snapshot_id, client_message_id, role)` constraint aktif
+- [ ] SQLAlchemy modelleri hazır
+- [ ] Pydantic şemaları hazır
+- [ ] Yeni config değerleri ayarlandı
+
+---
+
+## 📅 Week 12: Evidence Generation & Verification
+
+**Tarih:** 14 Nisan - 20 Nisan 2025  
+**Hedef:** Stage 1 evidence çıktısı, 5 aşamalı self-healing doğrulama
+
+---
+
+### Task 12.1: Stage 1 Prompt Update — Evidence Output
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-1 (Evidence Generation in Stage 1)
+
+**Yapılacaklar:**
+- [ ] `backend/prompts/judge_prompts.py` güncelle:
+  - [ ] Stage 1 system prompt'una evidence üretim talimatı ekle
+  - [ ] Evidence formatını tanımla (JSON yapısı):
+    ```
+    Her metrik için: quote, start, end, why, better
+    ```
+  - [ ] `start`/`end` karakter pozisyonlarının zorunlu olduğunu belirt
+  - [ ] Alıntıların `model_answer`'dan **verbatim** alınması gerektiğini vurgula
+  - [ ] Score null olan metrikler için evidence boş array `[]` olabilir kuralını ekle
+  - [ ] Few-shot örneği ekle (evidence içeren)
+- [ ] Stage 1 output JSON şemasını güncelle (mevcut scores + yeni evidence)
+- [ ] Prompt'un token sayısını kontrol et (maliyet)
+
+**Notlar:**
+- Mevcut Stage 1 akışı bozulmamalı — evidence "ek çıktı" olarak eklenir
+- Analoji: "Deliller suç mahallinde (Stage 1) toplanır"
+
+---
+
+### Task 12.2: Evidence JSON Parser
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/services/evidence_service.py` oluştur:
+  - [ ] `parse_evidence_from_stage1(stage1_response: dict) -> dict` fonksiyonu:
+    - [ ] Stage 1 JSON çıktısından evidence bölümünü ayıkla
+    - [ ] Her metrik için evidence listesini parse et
+    - [ ] `quote`, `start`, `end`, `why`, `better` alanlarını validate et
+    - [ ] Eksik alanlar için default değerler (why: "", better: "")
+    - [ ] Slug key dönüşümü uygula (AD-6 mapping kullan)
+  - [ ] `validate_evidence_item(item: dict) -> bool` fonksiyonu:
+    - [ ] Zorunlu alanlar (quote, start, end) kontrolü
+    - [ ] `start` < `end` kontrolü
+    - [ ] `quote` boş olmama kontrolü
+- [ ] Hatalı JSON için graceful handling (boş dict dön, log yaz)
+- [ ] Unit test yaz
+
+---
+
+### Task 12.3: Self-Healing Verification Algorithm
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-2 (5-Stage Self-Healing Verification)
+
+**Yapılacaklar:**
+- [ ] `backend/services/evidence_service.py` içine doğrulama fonksiyonları ekle:
+  - [ ] **Aşama 1 — Exact Slice:**
+    - [ ] `_verify_exact_slice(model_answer: str, quote: str, start: int, end: int) -> bool`
+    - [ ] `model_answer[start:end] == quote` kontrolü
+  - [ ] **Aşama 2 — Substring Search:**
+    - [ ] `_verify_substring(model_answer: str, quote: str) -> tuple[bool, int, int]`
+    - [ ] `model_answer.find(quote)` ile tam alıntı araması
+    - [ ] Bulunursa yeni `start`/`end` dön
+  - [ ] **Aşama 3 — Anchor-Based Search:**
+    - [ ] `_verify_anchor(model_answer: str, quote: str, anchor_len: int, search_window: int) -> tuple[bool, int, int]`
+    - [ ] `head_anchor = quote[:anchor_len]`, `tail_anchor = quote[-anchor_len:]`
+    - [ ] Head bulunursa, `head_idx + len(quote) + search_window` penceresi içinde tail ara
+    - [ ] Her iki anchor bulunursa `start=head_idx`, `end=tail_idx+len(tail_anchor)` dön
+  - [ ] **Aşama 4 — Whitespace-Insensitive Match (Safe Mode):**
+    - [ ] `_verify_whitespace_safe(model_answer: str, quote: str) -> bool`
+    - [ ] `normalize()` fonksiyonu: fazla boşluk/newline temizle
+    - [ ] Normalize edilmiş metinde ara
+    - [ ] Bulunursa `verified: true` ama `start`/`end` **güncellenmez**
+    - [ ] `highlight_available: false` set edilir
+  - [ ] **Aşama 5 — Fallback:**
+    - [ ] Hiçbir aşamada bulunamazsa → `verified: false`, `highlight_available: false`
+- [ ] **Orchestrator fonksiyonu:**
+  - [ ] `verify_evidence(model_answer: str, evidence_item: dict) -> dict`
+  - [ ] 5 aşamayı sırayla çalıştır, ilk başarıda dur
+  - [ ] `verified`, `highlight_available`, güncel `start`/`end` dön
+
+---
+
+### Task 12.4: Evidence Service — Orchestration
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-2, AD-8 (Graceful Degradation)
+
+**Yapılacaklar:**
+- [ ] `process_evidence(model_answer: str, raw_evidence: dict) -> dict` fonksiyonu:
+  - [ ] Her metrik için evidence listesini dolaş
+  - [ ] Her evidence item'a `verify_evidence()` uygula
+  - [ ] `verified` ve `highlight_available` alanlarını set et
+  - [ ] Başarılı/başarısız doğrulama istatistiklerini logla
+- [ ] Graceful degradation (AD-8):
+  - [ ] Parse hatası → `evidence_json = null`, pipeline devam eder
+  - [ ] WARNING log: `"Evidence parse failed for eval {id}, continuing without evidence"`
+  - [ ] Tek bir evidence item hatası diğerlerini etkilemez
+- [ ] `highlight_available` hesaplama mantığı:
+  - [ ] Aşama 1-3'te `true` (indeksler doğru/düzeltildi)
+  - [ ] Aşama 4'te `false` (indeksler güncellenmedi, safe mode)
+  - [ ] Aşama 5'te `false` (doğrulanamadı)
+
+---
+
+### Task 12.5: Evidence Unit Tests
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_evidence_service.py` oluştur:
+  - [ ] **Aşama 1 testleri:**
+    - [ ] Exact match başarılı
+    - [ ] Exact match başarısız (yanlış indeks)
+  - [ ] **Aşama 2 testleri:**
+    - [ ] Substring bulundu, indeksler düzeltildi
+    - [ ] Substring bulunamadı
+  - [ ] **Aşama 3 testleri:**
+    - [ ] Anchor bulundu (head + tail), indeksler düzeltildi
+    - [ ] Sadece head bulundu, tail bulunamadı
+    - [ ] Search window dışında tail (false positive koruması)
+  - [ ] **Aşama 4 testleri:**
+    - [ ] Whitespace farkı ile bulundu, `highlight_available: false`
+    - [ ] Normalize sonrası da bulunamadı
+  - [ ] **Aşama 5 testleri:**
+    - [ ] Hiçbir aşamada bulunamadı, `verified: false`
+  - [ ] **Orchestration testleri:**
+    - [ ] Tam akış (happy path)
+    - [ ] Graceful degradation (hatalı JSON)
+    - [ ] Boş evidence listesi
+    - [ ] Null score metrikler için boş evidence
+  - [ ] **Edge case'ler:**
+    - [ ] Çok kısa quote (< 25 karakter, anchor mümkün değil)
+    - [ ] Çok uzun model_answer (performance)
+    - [ ] Unicode karakterler
+    - [ ] Boş model_answer
+
+---
+
+### Task 12.6: Judge Service Integration — Evidence
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-1
+
+**Yapılacaklar:**
+- [ ] `backend/services/judge_service.py` güncelle:
+  - [ ] `stage1_independent_evaluation()` return değerine `evidence` ekle
+  - [ ] Stage 1 response parse'ını güncelle (scores + evidence)
+  - [ ] `parse_stage1_response()` fonksiyonuna evidence extraction ekle
+  - [ ] Evidence yoksa boş dict dön (graceful)
+- [ ] `_validate_stage1_response()` güncelle:
+  - [ ] Evidence alanının varlığını kontrol et (opsiyonel)
+- [ ] Evidence parse hatası Stage 1'i kırmaz (AD-8)
+- [ ] Test güncelle (mevcut testlere evidence assertion ekle)
+
+---
+
+### 📌 Week 12 — Kritik Teknik Notlar
+
+**1. Stage 1 Prompt Güncellemesi (AD-1):**
+- Mevcut Stage 1 akışı (skor + rationale) korunur, evidence **ek çıktı** olarak eklenir.
+- Judge'a "model_answer'dan verbatim alıntı yap, start/end karakter indeksleri ver" talimatı verilir.
+- Evidence yoksa (score: null) boş array `[]` kabul edilir — pipeline kırılmaz.
+
+**2. 5 Aşamalı Self-Healing Doğrulama (AD-2):**
+```
+Aşama 1: Exact Slice    → model_answer[start:end] == quote?
+Aşama 2: Substring       → model_answer.find(quote) >= 0?
+Aşama 3: Anchor Search   → head(25ch) + tail(25ch) + search_window(+2000ch)
+Aşama 4: Whitespace Safe → normalize() sonrası ara, indeks GÜNCELLENMEZ
+Aşama 5: Fallback        → verified: false
+```
+- Aşamalar **en güvenilirden en düşüğe** sıralıdır. Çoğu case Aşama 1-2'de çözülür.
+- Anchor search'te `search_window` ile false positive koruması sağlanır.
+
+**3. `highlight_available` Flag Mantığı:**
+
+| Doğrulama Aşaması | `verified` | `highlight_available` | UI Davranışı |
+|---|---|---|---|
+| Aşama 1-3 (indeks doğru/düzeltildi) | `true` | `true` | Highlight aktif, metin boyanır |
+| Aşama 4 (whitespace safe mode) | `true` | `false` | Quote gösterilir, highlight kapalı, info label |
+| Aşama 5 (fallback) | `false` | `false` | "Kanıt doğrulanamadı" uyarısı |
+
+---
+
+### ✅ Week 12 Checklist
+
+- [ ] Stage 1 prompt evidence çıktısı üretiyor
+- [ ] Evidence JSON parse çalışıyor
+- [ ] 5 aşamalı self-healing doğrulama çalışıyor
+- [ ] `highlight_available` doğru hesaplanıyor (3 durum)
+- [ ] Graceful degradation çalışıyor (AD-8)
+- [ ] Evidence unit testleri geçiyor
+
+---
+
+## 📅 Week 13: Snapshot Service & Judge Integration
+
+**Tarih:** 21 Nisan - 27 Nisan 2025  
+**Hedef:** Snapshot oluşturma, CRUD endpoint'leri, Judge task entegrasyonu
+
+---
+
+### Task 13.1: Snapshot Service — Create
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-7 (Atomic Write), AD-11 (Otomatik Kayıt)
+
+**Yapılacaklar:**
+- [ ] `backend/services/snapshot_service.py` oluştur:
+  - [ ] `create_evaluation_snapshot(db, stage1_result, stage2_result, user_eval, question, model_response) -> EvaluationSnapshot` fonksiyonu:
+    - [ ] Snapshot ID oluştur (`snap_YYYYMMDD_HHMMSS_randomhex`)
+    - [ ] Slug dönüşümü uygula (user_scores, judge_scores, evidence → slug key'ler)
+    - [ ] Evidence işle: `process_evidence(model_answer, raw_evidence)` çağır
+    - [ ] Tüm alanları birleştir (Stage 1 + Stage 2 + question + response)
+    - [ ] `judge_scores_json` ← Stage 1 `independent_scores` direkt kullanılır
+    - [ ] Tek transaction'da DB'ye yaz (atomik)
+    - [ ] Return: oluşturulan snapshot objesi
+  - [ ] ID generator helper: `generate_snapshot_id() -> str`
+- [ ] Hata durumunda rollback (yarım snapshot oluşmaz)
+- [ ] Başarılı oluşturma log'u: `INFO "Snapshot created: {id}"`
+- [ ] Unit test yaz
+
+---
+
+### Task 13.2: Snapshot Service — CRUD
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-13 (Retention Policy)
+
+**Yapılacaklar:**
+- [ ] `backend/services/snapshot_service.py` içine CRUD fonksiyonları ekle:
+  - [ ] `get_snapshot(db, snapshot_id: str) -> EvaluationSnapshot`:
+    - [ ] `WHERE deleted_at IS NULL` filtresi
+    - [ ] Bulunamazsa `None` dön
+  - [ ] `list_snapshots(db, status: str = None, limit: int = 20, offset: int = 0) -> list`:
+    - [ ] `WHERE deleted_at IS NULL` filtresi
+    - [ ] Opsiyonel status filtresi
+    - [ ] `ORDER BY created_at DESC`
+    - [ ] Pagination (limit/offset)
+  - [ ] `soft_delete_snapshot(db, snapshot_id: str) -> bool`:
+    - [ ] `deleted_at = datetime.utcnow()` set et
+    - [ ] `status = 'archived'` set et
+    - [ ] Return: başarılı/başarısız
+  - [ ] `get_snapshot_count(db, status: str = None) -> int`:
+    - [ ] Total count (pagination için)
+- [ ] Unit test yaz (CRUD testleri)
+
+---
+
+### Task 13.3: Judge Task Update — Otomatik Snapshot
+
+**Tahmini Süre:** 2.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-7 (Atomic Write), AD-8 (Graceful Degradation), AD-11 (Otomatik Kayıt)
+
+**Yapılacaklar:**
+- [ ] `backend/tasks/judge_task.py` güncelle:
+  - [ ] `run_judge_evaluation()` fonksiyonuna snapshot oluşturma adımı ekle:
+    ```python
+    # Mevcut akış
+    stage1_result = judge_service.stage1_independent_evaluation(...)
+    stage2_result = judge_service.stage2_mentoring_comparison(...)
+    
+    # YENİ: Atomik snapshot yazımı
+    snapshot = snapshot_service.create_evaluation_snapshot(
+        db, stage1_result, stage2_result, user_eval, question, model_response
+    )
+    ```
+  - [ ] Stage 1 veya Stage 2 başarısızsa snapshot oluşturma (hata handling)
+  - [ ] Snapshot oluşturma hatası judge akışını kırmamalı (try/except, WARNING log)
+- [ ] Evidence graceful degradation entegrasyonu:
+  - [ ] Evidence parse hatası → snapshot `evidence_json = null` ile oluşturulur
+  - [ ] Skorlar ve feedback yine kaydedilir
+- [ ] Import'ları güncelle (snapshot_service)
+- [ ] Test güncelle (mevcut judge task testlerine snapshot assertion ekle)
+
+---
+
+### Task 13.4: Graceful Degradation — Evidence Parse Failure
+
+**Tahmini Süre:** 1.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-8
+
+**Yapılacaklar:**
+- [ ] Evidence parse hata senaryolarını handle et:
+  - [ ] Stage 1 evidence alanı eksik → `evidence_json = null`
+  - [ ] Stage 1 evidence JSON formatı bozuk → `evidence_json = null`
+  - [ ] Tek bir evidence item geçersiz → o item atlanır, diğerleri korunur
+  - [ ] Tüm evidence item'lar geçersiz → `evidence_json = {}` (boş dict)
+- [ ] Her hata durumunda WARNING seviyesinde log yaz
+- [ ] Chat ve rapor ekranı evidence olmadan da çalışır:
+  - [ ] `evidence_json IS NULL` kontrolü ekle (snapshot service)
+  - [ ] Coach chat evidence yoksa "evidence bulunamadı" mesajı üretir
+- [ ] Test senaryoları yaz (hatalı JSON, eksik alan, boş evidence)
+
+---
+
+### Task 13.5: Snapshot Router & Endpoints
+
+**Tahmini Süre:** 2.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/routers/snapshots.py` oluştur:
+  - [ ] `APIRouter(prefix="/api/snapshots", tags=["snapshots"])` oluştur
+  - [ ] `GET /api/snapshots/` — Snapshot listesi:
+    - [ ] Query params: `status` (optional), `limit` (default: 20), `offset` (default: 0)
+    - [ ] Response: `SnapshotListPaginated`
+    - [ ] `WHERE deleted_at IS NULL` filtresi
+  - [ ] `GET /api/snapshots/{snapshot_id}` — Snapshot detayı:
+    - [ ] Response: `SnapshotResponse` (tam veri + evidence)
+    - [ ] 404 eğer bulunamazsa veya deleted ise
+  - [ ] `DELETE /api/snapshots/{snapshot_id}` — Soft delete:
+    - [ ] `deleted_at` set et, `status = 'archived'`
+    - [ ] 204 No Content response
+- [ ] `backend/main.py` güncelle:
+  - [ ] Snapshot router'ı dahil et
+- [ ] Logger setup
+- [ ] Unit test yaz (endpoint testleri)
+
+---
+
+### Task 13.6: Snapshot Tests
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_snapshot_service.py` oluştur:
+  - [ ] **Create testleri:**
+    - [ ] Başarılı snapshot oluşturma (tüm alanlar doğru)
+    - [ ] Slug dönüşümü doğru çalışıyor
+    - [ ] Evidence ile snapshot
+    - [ ] Evidence olmadan snapshot (null)
+    - [ ] Atomik yazım (ya hepsi ya hiçbiri)
+  - [ ] **CRUD testleri:**
+    - [ ] Get snapshot (var/yok)
+    - [ ] List snapshots (pagination, status filtresi)
+    - [ ] Soft delete (deleted_at set, status archived)
+    - [ ] Deleted snapshot get'te görünmez
+    - [ ] Deleted snapshot list'te görünmez
+- [ ] `backend/tests/test_snapshots_router.py` oluştur:
+  - [ ] GET /api/snapshots/ — 200, pagination
+  - [ ] GET /api/snapshots/{id} — 200, 404
+  - [ ] DELETE /api/snapshots/{id} — 204, 404
+  - [ ] Deleted snapshot'a GET → 404
+
+---
+
+### ✅ Week 13 Checklist
+
+- [ ] Snapshot service create çalışıyor (atomik yazım)
+- [ ] Snapshot CRUD (get, list, soft delete) çalışıyor
+- [ ] Judge task sonrası otomatik snapshot oluşturuluyor
+- [ ] Evidence graceful degradation çalışıyor
+- [ ] Snapshot endpoint'leri çalışıyor
+- [ ] Tüm testler geçiyor
+
+---
+
+## 📅 Week 14: Coach Chat Service
+
+**Tarih:** 28 Nisan - 4 Mayıs 2025  
+**Hedef:** Coach Chat servisinin tüm bileşenleri (SSE, windowing, init, limit, reconnect)
+
+---
+
+### Task 14.1: Coach Prompt Design
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-10 (Strict Evidence Usage)
+
+**Yapılacaklar:**
+- [ ] `backend/prompts/coach_prompts.py` oluştur:
+  - [ ] **System Prompt:**
+    - [ ] Coach rolü tanımı (AI Evaluator Mentor)
+    - [ ] Sadece seçilen metrikler hakkında konuşma kuralı
+    - [ ] **Strict Evidence Usage kuralı (AD-10):**
+      > "You must ONLY reference evidence items provided in the context. Do NOT quote from the model answer directly. If no evidence exists for a topic, say so honestly."
+    - [ ] Seçilmeyen metrikler hakkında konuşmayı reddetme talimatı
+    - [ ] Gap'i açıklama, evidence'a referans verme, iyileştirme önerme akışı
+    - [ ] Türkçe konuşma, teknik terimler İngilizce kalabilir kuralı
+  - [ ] **User Message Template:**
+    - [ ] Snapshot context'i (question, model_answer, selected metrics + scores + evidence)
+    - [ ] Chat history (son 6 mesaj)
+    - [ ] Kullanıcının mesajı
+  - [ ] **Init Greeting Template:**
+    - [ ] Seçilen metriklerdeki gap ve evidence özetleme talimatı
+    - [ ] Samimi ama profesyonel açılış tonu
+    - [ ] Kullanıcıyı soru sormaya teşvik eden kapanış
+- [ ] Prompt token sayısı tahmini (maliyet kontrolü)
+- [ ] Few-shot örneği ekle (opsiyonel)
+
+---
+
+### Task 14.2: Chat Service — SSE Streaming
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-4 (SSE), AD-5 (Coach Model)
+
+**Yapılacaklar:**
+- [ ] `backend/services/chat_service.py` oluştur:
+  - [ ] `stream_coach_response(db, snapshot_id, message, client_message_id, selected_metrics, is_init) -> AsyncGenerator` fonksiyonu:
+    - [ ] Snapshot context'i DB'den çek
+    - [ ] Chat history'yi DB'den çek (son 6 mesaj — AD-4 windowing)
+    - [ ] Coach prompt'u render et
+    - [ ] OpenRouter API'ye streaming request gönder (GPT-4o-mini)
+    - [ ] `yield` ile SSE event'leri dön:
+      - [ ] `event: token`, `data: {"content": "kelime"}`
+      - [ ] `event: done`, `data: {"msg_id": "msg_..."}`
+    - [ ] Streaming bitince DB'deki assistant mesajını güncelle (`is_complete: true`, final content)
+  - [ ] `_build_chat_context(snapshot, selected_metrics, chat_history) -> list[dict]` helper:
+    - [ ] System prompt + snapshot context + son 6 mesaj + user mesajı
+    - [ ] Seçilmeyen metrikleri filtrele
+- [ ] OpenRouter streaming entegrasyonu (SSE from provider)
+- [ ] LLM call logging (provider: openrouter, model: gpt-4o-mini, purpose: coach_chat)
+- [ ] Error handling (timeout, API error)
+
+---
+
+### Task 14.3: Chat Service — Token Windowing
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-4 (Token Windowing)
+
+**Yapılacaklar:**
+- [ ] `get_chat_history_window(db, snapshot_id: str, window_size: int = 6) -> list[dict]` fonksiyonu:
+  - [ ] `chat_messages` tablosundan son `window_size` mesajı çek
+  - [ ] `ORDER BY created_at DESC LIMIT {window_size}` sonra reverse
+  - [ ] `is_complete: true` olan mesajları dahil et (yarım mesajlar hariç)
+  - [ ] Return: `[{"role": "user", "content": "..."}, {"role": "assistant", "content": "..."}, ...]`
+- [ ] Window size configurable (`settings.CHAT_HISTORY_WINDOW`)
+- [ ] Boş geçmiş handling (ilk mesaj)
+- [ ] Unit test yaz (0 mesaj, 3 mesaj, 10 mesaj, yarım mesajlar)
+
+---
+
+### Task 14.4: Chat Service — Init Greeting
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-4 (Init Greeting)
+
+**Yapılacaklar:**
+- [ ] `handle_init_greeting(db, snapshot_id, client_message_id, selected_metrics) -> AsyncGenerator` fonksiyonu:
+  - [ ] `client_message_id = "init_{snapshot_id}"` sabit kimlik
+  - [ ] Idempotent: Zaten init greeting varsa DB'deki cevabı dön (LLM'e gitmez)
+  - [ ] Yoksa:
+    - [ ] Init greeting template'i render et (seçilen metriklerdeki gap + evidence özeti)
+    - [ ] LLM'e gönder, streaming cevap al
+    - [ ] DB'ye yaz (`role: assistant`, `is_complete` akışı)
+  - [ ] `chat_turn_count` **artmaz** (bonus mesaj)
+- [ ] **Shared Turn ID İstisnası:**
+  - [ ] Init greeting'de sadece `role: assistant` mesajı var, eşleşen `role: user` yok
+  - [ ] `UNIQUE (snapshot_id, client_message_id, role)` buna izin verir
+- [ ] `selected_metrics` ilk init mesajıyla birlikte DB'ye kaydedilir (immutable)
+- [ ] Unit test yaz (ilk init, tekrar init, metrics immutability)
+
+---
+
+### Task 14.5: Chat Service — Turn Limit (Atomic SQL)
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-9 (Turn Limit)
+
+**Yapılacaklar:**
+- [ ] `check_and_increment_turn(db, snapshot_id: str) -> bool` fonksiyonu:
+  - [ ] Atomik SQL sorgusu:
+    ```sql
+    UPDATE evaluation_snapshots
+    SET chat_turn_count = chat_turn_count + 1
+    WHERE id = :id AND chat_turn_count < max_chat_turns
+    ```
+  - [ ] `rows_affected == 0` → limit dolmuş, `False` dön
+  - [ ] `rows_affected == 1` → başarılı, `True` dön
+  - [ ] Race condition koruması (concurrent requests)
+- [ ] Limit aşıldığında HTTP 429 response:
+  ```json
+  {"error": "turn_limit_reached", "message": "Bu değerlendirme üzerine yeterince konuştuk..."}
+  ```
+- [ ] `get_remaining_turns(db, snapshot_id) -> int` helper
+- [ ] Unit test yaz (normal artırım, limit dolmuş, concurrent test)
+
+---
+
+### Task 14.6: Chat Service — Idempotency & Reconnect
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Referans:** AD-4 (SSE Reconnect & Idempotency)
+
+**Yapılacaklar:**
+- [ ] **Idempotency (client_message_id):**
+  - [ ] `check_duplicate_message(db, snapshot_id, client_message_id) -> ChatMessage | None` fonksiyonu:
+    - [ ] `(snapshot_id, client_message_id, "user")` DB'de var mı kontrol et
+    - [ ] Varsa mevcut assistant cevabını dön (LLM'e gitmez, sayaç artmaz)
+- [ ] **Reconnect (last_event_id):**
+  - [ ] `handle_reconnect(db, snapshot_id, client_message_id) -> tuple[str, bool]` fonksiyonu:
+    - [ ] `(snapshot_id, client_message_id, "assistant")` kaydını bul
+    - [ ] `is_complete: true` → DB'deki tam cevabı dön
+    - [ ] `is_complete: false` → **Update-In-Place:**
+      - [ ] `content = ""` sıfırla
+      - [ ] `is_complete = false` kalsın
+      - [ ] LLM üretimini baştan başlat, aynı satırın üzerine yaz
+    - [ ] Kayıt yok → Yeni assistant satırı INSERT et
+- [ ] **Turn Counter Sıralaması:**
+  ```
+  1. Dedup kontrol (client_message_id)
+  2. Turn limit kontrol + artırım (atomik)
+  3. User mesajı yaz (is_complete: true)
+  4. Assistant mesajı yaz (is_complete: false, content: "")
+  5. LLM streaming → content güncelle
+  6. is_complete: true güncelle
+  ```
+- [ ] Unit test yaz (duplicate mesaj, reconnect yarım cevap, reconnect tam cevap)
+
+---
+
+### 📌 Week 14 — Kritik Teknik Notlar
+
+**1. SSE (Server-Sent Events) Streaming Altyapısı (AD-4):**
+- FastAPI `StreamingResponse` ile `text/event-stream` content type kullanılır.
+- Event formatı:
+  ```
+  event: token
+  data: {"content": "kelime"}
+
+  event: done
+  data: {"msg_id": "msg_..."}
+  ```
+- OpenRouter API'den gelen streaming chunk'lar doğrudan client'a iletilir.
+- Streaming tamamlandığında DB'deki assistant mesajı `is_complete: true` yapılır.
+
+**2. Rolling Window — Son 6 Mesaj Context Yönetimi (AD-4):**
+- LLM'e gönderilen context: **Snapshot (evidence)** + **Son 6 mesaj** (3 user + 3 assistant).
+- Eski mesajlar DB'de saklanır ama LLM'e gönderilmez → token tasarrufu ~%60.
+- `is_complete: false` olan yarım mesajlar window'a dahil edilmez.
+- Window size configurable: `settings.CHAT_HISTORY_WINDOW = 6`
+
+**3. Update-In-Place — Yarım Kalan Cevapları Güncelleme (AD-4):**
+- SSE bağlantısı koptuğunda assistant cevabı yarım kalabilir (`is_complete: false`).
+- Reconnect geldiğinde:
+  ```
+  (snapshot_id, client_message_id, "assistant") kaydı bulunur
+  ├─ is_complete: true  → DB'deki tam cevap dönülür (LLM çağrılmaz)
+  ├─ is_complete: false → content sıfırlanır, LLM baştan üretir (UPDATE, DELETE değil)
+  └─ Kayıt yok          → Yeni assistant satırı INSERT edilir
+  ```
+- **Neden UPDATE?** (1) UNIQUE constraint ihlal edilmez, (2) `msg_id` değişmez (frontend state bozulmaz), (3) Tek UPDATE, DELETE+INSERT'e göre daha az indeks maliyeti.
+
+---
+
+### ✅ Week 14 Checklist
+
+- [ ] Coach prompt hazır (system + user + init)
+- [ ] SSE streaming çalışıyor (kelime kelime)
+- [ ] Token windowing çalışıyor (son 6 mesaj)
+- [ ] Init greeting çalışıyor (idempotent)
+- [ ] Turn limit enforce ediliyor (atomik SQL)
+- [ ] Idempotency ve reconnect çalışıyor
+- [ ] Update-In-Place stratejisi çalışıyor
+- [ ] Tüm chat service unit testleri geçiyor
+
+---
+
+## 📅 Week 15: Chat Endpoints & Integration
+
+**Tarih:** 5 Mayıs - 11 Mayıs 2025  
+**Hedef:** Chat router, entegrasyon testleri, error handling
+
+---
+
+### Task 15.1: Chat Router — POST /api/snapshots/{id}/chat
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/routers/snapshots.py` içine chat endpoint'i ekle:
+  - [ ] `POST /api/snapshots/{snapshot_id}/chat`:
+    - [ ] Request body: `ChatMessageRequest` (message, client_message_id, selected_metrics, is_init)
+    - [ ] Response: `StreamingResponse` (SSE, `text/event-stream`)
+    - [ ] **Akış sırası:**
+      1. Snapshot var mı kontrol et (404)
+      2. Snapshot status == 'active' mi kontrol et (409 eğer archived)
+      3. `is_init: true` ise → `handle_init_greeting()` çağır
+      4. Dedup kontrol (`check_duplicate_message`)
+      5. Turn limit kontrol (`check_and_increment_turn`) → 429
+      6. User mesajı DB'ye yaz
+      7. Assistant mesajı DB'ye yaz (boş)
+      8. SSE streaming başlat (`stream_coach_response`)
+    - [ ] `selected_metrics` validasyonu:
+      - [ ] Slug formatında mı? (ALL_METRIC_SLUGS'ta var mı?)
+      - [ ] Max 3 metrik
+      - [ ] İlk mesajda zorunlu, sonrasında ignore
+- [ ] SSE response headers:
+  - [ ] `Content-Type: text/event-stream`
+  - [ ] `Cache-Control: no-cache`
+  - [ ] `Connection: keep-alive`
+- [ ] Error response'lar:
+  - [ ] 404: Snapshot bulunamadı
+  - [ ] 409: Snapshot archived
+  - [ ] 429: Turn limit dolmuş
+  - [ ] 422: Validation hatası (eksik client_message_id, geçersiz metrik)
+
+---
+
+### Task 15.2: Chat Router — GET Messages
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/routers/snapshots.py` içine messages endpoint'i ekle:
+  - [ ] `GET /api/snapshots/{snapshot_id}/messages`:
+    - [ ] Query params: `limit` (default: 50), `offset` (default: 0)
+    - [ ] Response: `ChatHistoryResponse` (messages list + total + snapshot_id)
+    - [ ] `ORDER BY created_at ASC` (kronolojik sıra)
+    - [ ] Sadece `is_complete: true` mesajları dön (yarım cevaplar hariç)
+    - [ ] 404 eğer snapshot bulunamazsa
+  - [ ] Sayfa reload'da frontend bu endpoint'i çağırır
+- [ ] Pagination (limit/offset)
+- [ ] Unit test yaz (boş geçmiş, dolu geçmiş, pagination)
+
+---
+
+### Task 15.3: Chat Service Unit Tests
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_chat_service.py` oluştur:
+  - [ ] **Streaming testleri:**
+    - [ ] SSE event formatı doğru (event: token, data: ...)
+    - [ ] Streaming tamamlandığında is_complete güncelleniyor
+    - [ ] DB'deki content streaming sonucu ile aynı
+  - [ ] **Windowing testleri:**
+    - [ ] Boş geçmiş → boş list
+    - [ ] 3 mesaj → 3 mesaj dönüyor
+    - [ ] 10 mesaj → son 6 mesaj dönüyor
+    - [ ] Yarım mesajlar (is_complete: false) dahil edilmiyor
+  - [ ] **Init greeting testleri:**
+    - [ ] İlk init → LLM çağrılır, mesaj oluşturulur
+    - [ ] Tekrar init → DB'deki mevcut greeting dönüyor (idempotent)
+    - [ ] Init turn_count artırmıyor
+    - [ ] selected_metrics DB'ye kaydediliyor
+  - [ ] **Turn limit testleri:**
+    - [ ] Normal artırım çalışıyor
+    - [ ] Limit dolduğunda False dönüyor
+    - [ ] Remaining turns doğru hesaplanıyor
+  - [ ] **Idempotency testleri:**
+    - [ ] Aynı client_message_id → aynı cevap, LLM çağrılmıyor
+    - [ ] Farklı client_message_id → yeni cevap
+
+---
+
+### Task 15.4: Chat Integration Tests
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_chat_integration.py` oluştur:
+  - [ ] **Full flow testi:**
+    1. Snapshot oluştur (mock veya fixture)
+    2. Init greeting gönder → cevap al
+    3. Chat mesajı gönder → SSE cevap al
+    4. 2. mesaj gönder → geçmiş mesajlar context'te
+    5. Messages endpoint → tüm mesajlar dönüyor
+  - [ ] **Turn limit flow:**
+    1. 15 mesaj gönder → tümü başarılı
+    2. 16. mesaj → 429 response
+    3. Messages endpoint → 30+ mesaj (15 user + 15 assistant + init)
+  - [ ] **Reconnect flow:**
+    1. Mesaj gönder, yarım kal (mock)
+    2. Aynı client_message_id ile retry
+    3. Update-in-place çalışıyor
+  - [ ] **Duplicate flow:**
+    1. Mesaj gönder → cevap al
+    2. Aynı client_message_id ile tekrar → aynı cevap, LLM çağrılmıyor
+
+---
+
+### Task 15.5: LLM Call Logging — Coach Chat
+
+**Tahmini Süre:** 1.5 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Coach chat LLM çağrılarını `data/logs/llm_calls.jsonl`'e kaydet:
+  - [ ] `provider`: "openrouter"
+  - [ ] `model`: "openai/gpt-4o-mini"
+  - [ ] `purpose`: "coach_chat" veya "coach_init_greeting"
+  - [ ] `prompt_tokens`: input token sayısı
+  - [ ] `completion_tokens`: output token sayısı
+  - [ ] `total_tokens`: toplam
+  - [ ] `duration_seconds`: istek süresi
+  - [ ] `success`: true/false
+  - [ ] `error`: hata mesajı (varsa)
+  - [ ] `snapshot_id`: ilgili snapshot ID
+- [ ] Mevcut LLM logging altyapısını kullan (logging_config.py)
+- [ ] Token count'u streaming sonrası hesapla
+
+---
+
+### Task 15.6: Error Handling & Edge Cases
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] **LLM API hataları:**
+  - [ ] Timeout handling (configurable timeout)
+  - [ ] Rate limit handling (429 from OpenRouter → retry veya user'a bilgi)
+  - [ ] Connection error handling
+  - [ ] Invalid response handling
+- [ ] **Edge case'ler:**
+  - [ ] Snapshot evidence_json null → Coach "Evidence bulunamadı" der
+  - [ ] Seçilen metrik için evidence yok → Coach bunu belirtir
+  - [ ] Çok uzun kullanıcı mesajı → truncate veya reject
+  - [ ] Boş mesaj (is_init: false) → 422 validation error
+  - [ ] Geçersiz snapshot_id → 404
+  - [ ] Concurrent mesajlar (aynı snapshot, farklı client_message_id) → sırayla işlenir
+- [ ] Error log'ları (ERROR seviyesi)
+- [ ] Test senaryoları yaz
+
+---
+
+### 📌 Week 15 — Kritik Teknik Notlar
+
+**1. Coach-Initiated Opening — Otomatik Selamlama (AD-4):**
+- `POST /api/snapshots/{id}/chat` endpoint'ine `is_init: true` flag'i gönderilir.
+- Coach, seçilen metriklerdeki gap ve evidence verilerini analiz ederek açılış mesajı üretir.
+- `client_message_id: "init_{snapshot_id}"` sabit kimlikle kaydedilir → idempotent (tekrar çağrılırsa aynı greeting döner).
+- `chat_turn_count` **artmaz** (bonus mesaj, kullanıcının 15 hakkından düşmez).
+- **Shared Turn ID İstisnası:** Init greeting'de sadece `role: assistant` mesajı var, eşleşen `role: user` yok.
+
+**2. Snapshot CRUD Endpoint'leri:**
+```
+GET  /api/snapshots/                     → Tüm snapshot listesi (pagination, status filtre)
+GET  /api/snapshots/{snapshot_id}        → Snapshot detayı (evidence dahil)
+GET  /api/snapshots/{snapshot_id}/messages → Chat geçmişi (kronolojik sıra)
+POST /api/snapshots/{snapshot_id}/chat   → Coach Chat (SSE streaming)
+DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
+```
+- Resource = snapshot, URL = `/api/snapshots/` (REST convention — `/api/evaluations/` değil).
+- Tüm GET endpoint'lerinde `WHERE deleted_at IS NULL` filtresi zorunlu.
+
+**3. Endpoint Akış Sırası (POST /chat):**
+```
+1. Snapshot var mı? (404)
+2. Status == 'active'? (409 eğer archived)
+3. is_init: true? → Init greeting akışı
+4. Dedup kontrol (client_message_id) → Varsa mevcut cevap dön
+5. Turn limit (atomik SQL) → 429 eğer dolmuş
+6. User mesajı yaz → Assistant mesajı yaz → SSE streaming başlat
+```
+
+---
+
+### ✅ Week 15 Checklist
+
+- [ ] POST /api/snapshots/{id}/chat çalışıyor (SSE)
+- [ ] GET /api/snapshots/{id}/messages çalışıyor
+- [ ] Init greeting (otomatik selamlama) çalışıyor
+- [ ] Snapshot CRUD endpoint'leri çalışıyor
+- [ ] Chat service unit testleri geçiyor
+- [ ] Chat integration testleri geçiyor
+- [ ] LLM call logging çalışıyor
+- [ ] Error handling ve edge case'ler çözüldü
+
+---
+
+## 📅 Week 16: End-to-End Testing & Polish
+
+**Tarih:** 12 Mayıs - 18 Mayıs 2025  
+**Hedef:** Full flow E2E testleri, manual test, documentation, cleanup
+
+---
+
+### Task 16.1: E2E Test — Evidence Flow
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_e2e_phase3.py` oluştur:
+  - [ ] **Scenario 1: Evidence Generation + Snapshot:**
+    1. POST /api/evaluations/start (soru üret)
+    2. POST /api/evaluations/submit (değerlendirme gönder)
+    3. GET /api/evaluations/{id}/feedback (judge feedback bekle)
+    4. GET /api/snapshots/ (snapshot listesinde yeni kayıt var)
+    5. GET /api/snapshots/{id} (evidence_json dolu)
+    6. Assert: evidence doğrulanmış (`verified: true`)
+    7. Assert: `highlight_available` alanları doğru
+  - [ ] **Scenario 2: Evidence Graceful Degradation:**
+    1. Stage 1'den evidence parse hatası (mock)
+    2. Snapshot yine oluşturulur (`evidence_json: null`)
+    3. Chat yine çalışır (evidence referansı olmadan)
+
+---
+
+### Task 16.2: E2E Test — Chat Flow
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_e2e_phase3.py` içine chat testleri ekle:
+  - [ ] **Scenario 3: Full Chat Flow:**
+    1. Snapshot oluştur (Scenario 1'den devam veya fixture)
+    2. POST /api/snapshots/{id}/chat (is_init: true) → Init greeting
+    3. POST /api/snapshots/{id}/chat (message: "Neden Truthfulness'ta 3 verdin?") → SSE cevap
+    4. POST /api/snapshots/{id}/chat (message: "Peki nasıl düzeltebilirim?") → SSE cevap
+    5. GET /api/snapshots/{id}/messages → Tüm mesajlar (init + 2 user + 2 assistant)
+    6. Assert: chat_turn_count == 2 (init sayılmıyor)
+  - [ ] **Scenario 4: Turn Limit:**
+    1. 15 mesaj gönder
+    2. 16. mesaj → 429 response
+    3. GET /api/snapshots/{id} → chat_turn_count == 15
+    4. Messages endpoint → 30+ mesaj dönüyor
+
+---
+
+### Task 16.3: E2E Test — Reconnect & Idempotency
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `backend/tests/test_e2e_phase3.py` içine reconnect testleri ekle:
+  - [ ] **Scenario 5: Duplicate Message:**
+    1. Mesaj gönder (client_message_id: "abc")
+    2. Aynı mesajı tekrar gönder (client_message_id: "abc")
+    3. Assert: Aynı cevap dönüyor, turn_count artmıyor
+  - [ ] **Scenario 6: Reconnect (yarım cevap):**
+    1. Mesaj gönder, streaming yarıda kes (mock)
+    2. Assert: DB'de `is_complete: false` kayıt var
+    3. Aynı client_message_id ile retry
+    4. Assert: Cevap baştan üretildi, `is_complete: true`
+  - [ ] **Scenario 7: Init Greeting Idempotency:**
+    1. Init greeting gönder → cevap al
+    2. Tekrar init greeting gönder → aynı cevap (DB'den)
+    3. Assert: LLM sadece 1 kere çağrıldı
+
+---
+
+### Task 16.4: Manual Testing Session
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] CLI üzerinden full flow testi:
+  1. [ ] Soru üret (POST /evaluations/start)
+  2. [ ] Değerlendirme yap (POST /evaluations/submit)
+  3. [ ] Judge feedback bekle (GET /evaluations/{id}/feedback)
+  4. [ ] Snapshot kontrol et (GET /snapshots/)
+  5. [ ] Evidence kontrol et (GET /snapshots/{id})
+  6. [ ] Init greeting (POST /snapshots/{id}/chat, is_init: true)
+  7. [ ] Coach sohbeti (3-4 mesaj)
+  8. [ ] Messages kontrol et (GET /snapshots/{id}/messages)
+- [ ] Log'ları incele:
+  - [ ] `mentormind.log` — akış logları
+  - [ ] `errors.log` — hata yok mu?
+  - [ ] `llm_calls.jsonl` — coach_chat kayıtları
+- [ ] Bug'ları tespit et ve fix'le
+- [ ] Latency ölç (chat SSE ilk token süresi)
+
+---
+
+### Task 16.5: Documentation Update
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] `CLAUDE.md` güncelle:
+  - [ ] Phase 3 status ekle (Week 11-16 checklist)
+  - [ ] Yeni tabloları database schema bölümüne ekle
+  - [ ] Yeni endpoint'leri API endpoints bölümüne ekle
+  - [ ] Coach Chat service açıklaması ekle
+  - [ ] Evidence service açıklaması ekle
+  - [ ] Project Structure güncelle (yeni dosyalar)
+- [ ] `README.md` güncelle:
+  - [ ] Coach Chat özelliği ekle
+  - [ ] Yeni API endpoint'leri listele
+- [ ] Inline code comments kontrol et
+
+---
+
+### Task 16.6: Bug Fixes & Final Verification
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ **PLANLANDI**
+
+**Yapılacaklar:**
+- [ ] Tespit edilen bug'ları fix'le
+- [ ] Dead code sil
+- [ ] Unused imports temizle
+- [ ] Code formatting (black)
+- [ ] Linting (flake8)
+- [ ] Type hints ekle (yeni fonksiyonlarda)
+- [ ] Tüm testleri çalıştır: `pytest`
+- [ ] Coverage kontrol et
+- [ ] Docker build test: `docker-compose build`
+- [ ] Docker run test: `docker-compose up -d`
+- [ ] Health check: All services healthy
+
+---
+
+### ✅ Week 16 Checklist
+
+- [ ] E2E Evidence flow testi geçiyor
+- [ ] E2E Chat flow testi geçiyor
+- [ ] E2E Reconnect & idempotency testi geçiyor
+- [ ] Manual test senaryoları başarılı
+- [ ] Documentation güncel (CLAUDE.md, README.md)
+- [ ] Code clean ve formatlanmış
+- [ ] Tüm testler geçiyor
+
+---
+
+## 🎯 Phase 3 Success Metrics
+
+### Technical Metrics
+
+- [ ] **Test Coverage:** 80%+ (Phase 3 yeni kodlar)
+- [ ] **API Response Time:** < 200ms (non-LLM endpoints: snapshots, messages)
+- [ ] **Chat SSE First Token:** < 2 saniye (ilk kelime süresi)
+- [ ] **Evidence Verification:** > 90% doğrulama oranı (Aşama 1-3)
+- [ ] **Snapshot Creation:** < 500ms (atomik yazım)
+- [ ] **Docker Build:** < 5 dakika (mevcut süre korunuyor)
+
+### Functional Metrics
+
+- [ ] **Evidence Generation:** Stage 1 evidence üretiyor (8 metrik)
+- [ ] **Self-Healing:** 5 aşamalı doğrulama çalışıyor
+- [ ] **Highlight Available:** Aşama 1-3 `true`, Aşama 4-5 `false`
+- [ ] **Snapshot CRUD:** Oluşturma, listeleme, detay, soft delete çalışıyor
+- [ ] **Coach Chat:** SSE streaming çalışıyor (GPT-4o-mini)
+- [ ] **Init Greeting:** Otomatik açılış mesajı idempotent
+- [ ] **Turn Limit:** 15 mesaj limiti atomik enforce ediliyor
+- [ ] **Idempotency:** Duplicate mesajlar engelleniyor
+- [ ] **Reconnect:** Yarım kalan cevaplar Update-In-Place ile çözülüyor
+- [ ] **Token Windowing:** Son 6 mesaj LLM'e gönderiliyor
+
+### Quality Metrics
+
+- [ ] **Code Quality:** Linting errors yok (flake8)
+- [ ] **Code Format:** Black formatlanmış
+- [ ] **Type Hints:** Tüm yeni fonksiyonlarda mevcut
+- [ ] **Documentation:** CLAUDE.md + README.md güncel
+- [ ] **Logging:** Coach chat LLM çağrıları `llm_calls.jsonl`'de
+- [ ] **Error Handling:** Graceful degradation, proper HTTP status codes
+- [ ] **Architectural Decisions:** 13 AD tümüyle uygulanmış
+
+---
+
+## 🎉 Phase 3 Completion
+
+**Phase 3 tamamlandığında elimizde şunlar olacak:**
+
+✅ **Evidence Generation** (Stage 1 entegrasyonu)  
+✅ **5-Stage Self-Healing Verification** (Exact → Substring → Anchor → Whitespace → Fallback)  
+✅ **Evaluation Snapshots** (denormalize, atomik yazım)  
+✅ **Snapshot CRUD API** (list, detail, soft delete)  
+✅ **Coach Chat Service** (SSE streaming, GPT-4o-mini)  
+✅ **Init Greeting** (otomatik açılış, idempotent)  
+✅ **Turn Limit** (15 mesaj, atomik SQL)  
+✅ **Idempotency & Reconnect** (Shared Turn ID, Update-In-Place)  
+✅ **Token Windowing** (son 6 mesaj)  
+✅ **Metric Slug System** (explicit mapping)  
+✅ **Soft Delete Infrastructure** (retention policy hazır)  
+✅ **Comprehensive Tests** (Unit + Integration + E2E)  
+
+**Sonraki adım:** Phase 4 - Frontend: Evidence Highlight + Coach Chat UI 🚀
 
 ---
 
