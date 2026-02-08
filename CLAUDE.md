@@ -1550,6 +1550,18 @@ pip-audit
   - [x] `backend/tests/test_phase3_schemas.py` - 32 tests created
   - [x] Test coverage: 94% for `backend/models/schemas.py`
 
+#### Week 12: Evidence Implementation (Feb 8 - Feb 14)
+- [x] **Stage 1 Prompt Update — Evidence Output (Task 12.1)** (8 Şubat 2026)
+  - [x] `backend/prompts/judge_prompts.py` - Evidence Collection section added
+  - [x] 5 required fields: quote, start, end, why, better
+  - [x] Verbatim quote instructions with character position guidance
+  - [x] Stage 1 JSON example updated with evidence structure
+  - [x] Stage 1 user prompt template updated
+  - [x] Token count verified: ~2111 tokens (< 4000 target)
+  - [x] `backend/services/judge_service.py` - `_validate_judge_response()` updated
+  - [x] Evidence validation logic (5 required fields, start < end check)
+  - [x] `backend/tests/test_evidence_validation.py` - 17 tests passed
+
 ### Success Criteria
 
 **Technical Metrics:**

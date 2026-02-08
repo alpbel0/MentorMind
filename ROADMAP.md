@@ -2632,27 +2632,36 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-1 (Evidence Generation in Stage 1)
 
-**Yapılacaklar:**
-- [ ] `backend/prompts/judge_prompts.py` güncelle:
-  - [ ] Stage 1 system prompt'una evidence üretim talimatı ekle
-  - [ ] Evidence formatını tanımla (JSON yapısı):
-    ```
-    Her metrik için: quote, start, end, why, better
-    ```
-  - [ ] `start`/`end` karakter pozisyonlarının zorunlu olduğunu belirt
-  - [ ] Alıntıların `model_answer`'dan **verbatim** alınması gerektiğini vurgula
-  - [ ] Score null olan metrikler için evidence boş array `[]` olabilir kuralını ekle
-  - [ ] Few-shot örneği ekle (evidence içeren)
-- [ ] Stage 1 output JSON şemasını güncelle (mevcut scores + yeni evidence)
-- [ ] Prompt'un token sayısını kontrol et (maliyet)
+**Yapılanlar:**
+- [x] `backend/prompts/judge_prompts.py` güncellendi:
+  - [x] Stage 1 system prompt'una "Evidence Collection" bölümü eklendi
+  - [x] Evidence formatı tanımlandı (5 zorunlu alan): `quote`, `start`, `end`, `why`, `better`
+  - [x] `start`/`end` karakter pozisyonları (0-based, Python slice style) açıklandı
+  - [x] Verbatim (birebir) alıntı kuralı vurgulandı
+  - [x] Score null olan metrikler için `[]` (boş array) kuralı eklendi
+  - [x] Few-shot örneği güncellendi (evidence içeren)
+- [x] Stage 1 output JSON örneği güncellendi (scores + evidence)
+- [x] Stage 1 user prompt template güncellendi (evidence example)
+- [x] Prompt token sayısı kontrol edildi: ~2111 tokens (< 4000 hedefi)
+- [x] `backend/services/judge_service.py` `_validate_judge_response()` güncellendi:
+  - [x] Evidence alanı validasyonu eklendi
+  - [x] 5 zorunlu alan kontrolü
+  - [x] `start < end` validasyonu
+  - [x] Graceful error handling (boş array'a düşürme)
+- [x] `backend/tests/test_evidence_validation.py` oluşturuldu (17 test, tümü geçti)
+
+**Test Sonuçları:**
+- 17/17 tests passed
+- Evidence validation logic çalışıyor
+- Prompt içerdiği doğrulandı
 
 **Notlar:**
-- Mevcut Stage 1 akışı bozulmamalı — evidence "ek çıktı" olarak eklenir
-- Analoji: "Deliller suç mahallinde (Stage 1) toplanır"
+- Mevcut Stage 1 akışı bozulmadı — evidence "ek çıktı" olarak eklendi
+- Metric key formatı: Display Name (örn. "Truthfulness") — slug dönüşümü Task 12.2'de
 
 ---
 

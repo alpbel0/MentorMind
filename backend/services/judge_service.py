@@ -420,6 +420,63 @@ class JudgeService:
         if not isinstance(independent_scores, dict):
             raise ValueError("'independent_scores' must be object")
 
+        # Validate evidence structure for each metric
+        for metric_name, metric_data in independent_scores.items():
+            if not isinstance(metric_data, dict):
+                logger.warning(f"Metric data for {metric_name} is not a dict, skipping evidence validation")
+                continue
+
+            # Ensure evidence field exists
+            if "evidence" not in metric_data:
+                logger.warning(f"Evidence field missing for {metric_name}, adding empty array")
+                metric_data["evidence"] = []
+                continue
+
+            evidence_list = metric_data["evidence"]
+            if not isinstance(evidence_list, list):
+                logger.warning(f"Evidence for {metric_name} is not a list, converting to empty array")
+                metric_data["evidence"] = []
+                continue
+
+            # Validate each evidence item - build new list to avoid iteration issues
+            validated_evidence = []
+            for idx, item in enumerate(evidence_list):
+                # Skip if not a dict
+                if not isinstance(item, dict):
+                    logger.warning(f"Evidence item {idx} for {metric_name} is not a dict, skipping")
+                    continue
+
+                # Required fields (all 5 are mandatory)
+                required_fields = ["quote", "start", "end", "why", "better"]
+                if not all(field in item for field in required_fields):
+                    missing = [f for f in required_fields if f not in item]
+                    logger.warning(f"Evidence item {idx} for {metric_name} missing fields {missing}, skipping")
+                    continue
+
+                # Validate types
+                if not isinstance(item["quote"], str) or not item["quote"].strip():
+                    logger.warning(f"Evidence item {idx} for {metric_name} has invalid quote, skipping")
+                    continue
+
+                if not isinstance(item["start"], int) or not isinstance(item["end"], int):
+                    logger.warning(f"Evidence item {idx} for {metric_name} has invalid start/end, skipping")
+                    continue
+
+                # Validate start < end
+                if item["start"] >= item["end"]:
+                    logger.warning(f"Evidence item {idx} for {metric_name} has start >= end, setting to 0,0")
+                    item["start"] = 0
+                    item["end"] = 0
+
+                # Validate 'better' field (required, must be string)
+                if not isinstance(item["better"], str):
+                    logger.warning(f"Evidence item {idx} for {metric_name} has invalid 'better', converting to empty string")
+                    item["better"] = ""
+
+                validated_evidence.append(item)
+
+            metric_data["evidence"] = validated_evidence
+
         return parsed
 
     # =====================================================
