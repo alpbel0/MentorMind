@@ -2447,27 +2447,27 @@ Phase 3 tamamlanmış sayılır eğer:
 
 **Tahmini Süre:** 1.5 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (8 Şubat 2026)
 
 **Referans:** AD-3 (New Snapshot Table), AD-4 (SSE + DB Chat)
 
 **Yapılacaklar:**
-- [ ] `backend/schemas/09_chat_messages.sql` oluştur:
-  - [ ] `id` TEXT PRIMARY KEY (Format: `msg_YYYYMMDD_HHMMSS_randomhex`)
-  - [ ] `client_message_id` TEXT NOT NULL (Shared Turn ID)
-  - [ ] `is_complete` BOOLEAN NOT NULL DEFAULT TRUE
-  - [ ] `snapshot_id` TEXT NOT NULL REFERENCES evaluation_snapshots(id)
-  - [ ] `role` TEXT NOT NULL CHECK (role IN ('user', 'assistant'))
-  - [ ] `content` TEXT NOT NULL DEFAULT ''
-  - [ ] `selected_metrics` JSONB
-  - [ ] `token_count` INTEGER DEFAULT 0
-  - [ ] `created_at` TIMESTAMP DEFAULT NOW()
-- [ ] Constraint'ler:
-  - [ ] `UNIQUE (snapshot_id, client_message_id, role)` — idempotency garantisi
-- [ ] Index'ler:
-  - [ ] `idx_chat_snapshot_created` (snapshot_id, created_at) — sohbet geçmişi sorguları
-  - [ ] `idx_chat_client_message` (snapshot_id, client_message_id) — dedup lookup
-- [ ] SQL dosyasını Docker container'da çalıştır
+- [x] `backend/schemas/09_chat_messages.sql` oluştur:
+  - [x] `id` TEXT PRIMARY KEY (Format: `msg_YYYYMMDD_HHMMSS_randomhex`)
+  - [x] `client_message_id` TEXT NOT NULL (Shared Turn ID)
+  - [x] `is_complete` BOOLEAN NOT NULL DEFAULT TRUE
+  - [x] `snapshot_id` TEXT NOT NULL REFERENCES evaluation_snapshots(id)
+  - [x] `role` TEXT NOT NULL CHECK (role IN ('user', 'assistant'))
+  - [x] `content` TEXT NOT NULL DEFAULT ''
+  - [x] `selected_metrics` JSONB
+  - [x] `token_count` INTEGER DEFAULT 0
+  - [x] `created_at` TIMESTAMP DEFAULT NOW()
+- [x] Constraint'ler:
+  - [x] `UNIQUE (snapshot_id, client_message_id, role)` — idempotency garantisi
+- [x] Index'ler:
+  - [x] `idx_chat_snapshot_created` (snapshot_id, created_at) — sohbet geçmişi sorguları
+  - [x] `idx_chat_client_message` (snapshot_id, client_message_id) — dedup lookup
+- [x] SQL dosyasını Docker container'da çalıştır
 
 ---
 

@@ -1513,8 +1513,15 @@ pip-audit
   - [x] 6 indexes created (including 2 partial indexes)
   - [x] Nested JSONB structure for scores validated
   - [x] Soft delete support with deleted_at index
-- [ ] SQLAlchemy Model - EvaluationSnapshot (Task 11.3)
-- [ ] Pydantic Schemas (Task 11.4)
+- [x] **SQL Schema - chat_messages (Task 11.3)** (8 Şubat 2026)
+  - [x] `backend/schemas/09_chat_messages.sql` created (8 columns)
+  - [x] Idempotency constraint: UNIQUE (snapshot_id, client_message_id, role)
+  - [x] 3 indexes created (idempotency, history, dedup lookup)
+  - [x] FK constraint to evaluation_snapshots with ON DELETE CASCADE
+  - [x] CHECK constraint on role (user/assistant only)
+  - [x] JSONB selected_metrics for metric slug arrays
+- [ ] SQLAlchemy Models (Task 11.4)
+- [ ] Pydantic Schemas (Task 11.5)
 
 ### Success Criteria
 
