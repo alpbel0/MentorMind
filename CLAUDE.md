@@ -1581,6 +1581,16 @@ pip-audit
   - [x] Graceful degradation: empty model_answer, invalid evidence lists
   - [x] judge_service.py updated to use process_evidence()
   - [x] Unit tests created (18 tests passed)
+- [x] **Judge Service Integration — Evidence (Task 12.6)** (9 Şubat 2026)
+  - [x] `backend/tests/test_judge_service.py` güncellemeleri:
+    - [x] Mevcut Stage 1 testleri güncellendi (test_stage1_wrong_answer, test_stage1_correct_response)
+    - [x] Yeni test class: `TestJudgeServiceEvidenceIntegration` (6 test)
+    - [x] Yeni test class: `TestJudgeServiceEvidenceLiveAPI` (2 test - requires OPENAI_API_KEY)
+  - [x] Test mocking fix: `json.dumps()` kullanımı (valid JSON için)
+  - [x] OpenAI client mocking approach düzeltildi
+  - [x] Test results: 8/8 evidence integration tests passed
+  - [x] Test results: 40/40 judge service tests passed (excluding live API)
+  - [x] Live API tests `@pytest.mark.live_api` ile işaretlendi
 
 ### Success Criteria
 

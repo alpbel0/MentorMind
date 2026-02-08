@@ -76,6 +76,11 @@ def setup_test_schema(test_database_url):
         "04_user_evaluations.sql",
         "05_judge_evaluations.sql",
         "06_triggers.sql",
+        # Hotfix for Task 4.20 - question_type denormalization
+        "07_add_question_type_to_questions.sql",
+        # Phase 3 schemas for Coach Chat & Evidence feature
+        "08_evaluation_snapshots.sql",
+        "09_chat_messages.sql",
     ]
 
     engine = create_engine(test_database_url)

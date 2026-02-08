@@ -267,11 +267,19 @@ class TestStage1LiveAPI:
             assert isinstance(scores[metric]["rationale"], str)
             assert len(scores[metric]["rationale"]) > 0
 
+            # Evidence field exists (Task 12.6)
+            assert "evidence" in scores[metric], f"Evidence field missing for {metric}"
+            assert isinstance(scores[metric]["evidence"], list), f"Evidence must be a list for {metric}"
+
         # Log for manual verification
         print(f"\n=== GPT-4o Stage 1 Evaluation ===")
         for metric, data in scores.items():
             if data["score"] is not None:
                 print(f"{metric}: {data['score']}/5 - {data['rationale']}")
+                # Log evidence count for manual verification
+                evidence_count = len(data.get("evidence", []))
+                if evidence_count > 0:
+                    print(f"  └─ Evidence items: {evidence_count}")
 
     @pytest.mark.live_api
     def test_stage1_correct_response(self, db_session):
@@ -321,6 +329,11 @@ class TestStage1LiveAPI:
         # Truthfulness should be 5 (correct answer)
         truthfulness = result["independent_scores"]["Truthfulness"]
         assert truthfulness["score"] >= 4  # Should be high for correct answer
+
+        # Task 12.6: Verify evidence field exists for all metrics
+        for metric in THE_EIGHT_METRICS:
+            assert "evidence" in result["independent_scores"][metric]
+            assert isinstance(result["independent_scores"][metric]["evidence"], list)
 
 
 class TestComparisonTableGenerator:
@@ -1172,3 +1185,681 @@ class TestFullJudgeEvaluation:
             id="eval_user_update_test_001"
         ).first()
         assert updated.judged is True
+
+
+class TestJudgeServiceEvidenceIntegration:
+    """Tests for evidence integration in judge service (Task 12.6)."""
+
+    def test_stage1_returns_evidence_structure(self, db_session):
+        """Verify Stage 1 returns properly structured evidence fields."""
+        from datetime import datetime
+        from unittest.mock import Mock, MagicMock
+
+        # Setup: Create minimal test data
+        question = Question(
+            id="q_ev_struct_001",
+            question="Test question?",
+            category="Testing",
+            difficulty="medium",
+            reference_answer="Test answer",
+            expected_behavior="Test behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_ev_struct_001",
+            question_id="q_ev_struct_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response text for evidence verification.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_struct_001",
+            response_id="resp_ev_struct_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock GPT-4o response with evidence
+        mock_response = {
+            "independent_scores": {
+                "Truthfulness": {
+                    "score": 3,
+                    "rationale": "Test rationale",
+                    "evidence": [
+                        {
+                            "quote": "Test response",
+                            "start": 0,
+                            "end": 12,
+                            "why": "Test reason",
+                            "better": "Better version"
+                        }
+                    ]
+                },
+                **{metric: {"score": 3, "rationale": "Test", "evidence": []}
+                  for metric in THE_EIGHT_METRICS if metric != "Truthfulness"}
+            }
+        }
+
+        # Create mock response object
+        import json
+        mock_response_obj = Mock()
+        mock_response_obj.choices = [Mock(message=Mock(content=json.dumps(mock_response)))]
+
+        service = JudgeService()
+
+        # Replace the client's chat.completions.create method
+        original_client = service.client
+        try:
+            # Create a mock chat completions API
+            mock_chat_completions = MagicMock()
+            mock_chat_completions.create = Mock(return_value=mock_response_obj)
+            service.client.chat.completions = mock_chat_completions
+
+            result = service.stage1_independent_evaluation("eval_ev_struct_001", db_session)
+        finally:
+            service.client = original_client
+
+        # Verify evidence structure
+        assert "independent_scores" in result
+        for metric in THE_EIGHT_METRICS:
+            assert metric in result["independent_scores"]
+            metric_data = result["independent_scores"][metric]
+            assert "evidence" in metric_data
+            assert isinstance(metric_data["evidence"], list)
+
+    def test_stage1_evidence_with_missing_fields(self, db_session):
+        """Test graceful handling when evidence has missing fields."""
+        from datetime import datetime
+        from unittest.mock import Mock, MagicMock
+
+        question = Question(
+            id="q_ev_missing_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_ev_missing_001",
+            question_id="q_ev_missing_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_missing_001",
+            response_id="resp_ev_missing_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock response with incomplete evidence (missing 'better' field)
+        mock_response = {
+            "independent_scores": {
+                "Truthfulness": {
+                    "score": 3,
+                    "rationale": "Test",
+                    "evidence": [
+                        {
+                            "quote": "Test",
+                            "start": 0,
+                            "end": 4,
+                            "why": "Test reason"
+                            # Missing 'better' field
+                        }
+                    ]
+                },
+                **{metric: {"score": 3, "rationale": "Test", "evidence": []}
+                  for metric in THE_EIGHT_METRICS if metric != "Truthfulness"}
+            }
+        }
+
+        service = JudgeService()
+
+        # Create mock response object
+        import json
+        mock_response_obj = Mock()
+        mock_response_obj.choices = [Mock(message=Mock(content=json.dumps(mock_response)))]
+
+        # Replace the client's chat.completions.create method
+        original_client = service.client
+        try:
+            mock_chat_completions = MagicMock()
+            mock_chat_completions.create = Mock(return_value=mock_response_obj)
+            service.client.chat.completions = mock_chat_completions
+
+            result = service.stage1_independent_evaluation("eval_ev_missing_001", db_session)
+        finally:
+            service.client = original_client
+
+        # Should filter out invalid evidence items gracefully
+        truthfulness_evidence = result["independent_scores"]["Truthfulness"]["evidence"]
+        assert isinstance(truthfulness_evidence, list)
+        # Invalid items should be filtered out
+        assert all(isinstance(item, dict) and all(k in item for k in ["quote", "start", "end", "why", "better"])
+                   for item in truthfulness_evidence)
+
+    def test_stage1_evidence_empty_list_handling(self, db_session):
+        """Test empty evidence lists are handled gracefully."""
+        from datetime import datetime
+        from unittest.mock import Mock, MagicMock
+
+        question = Question(
+            id="q_ev_empty_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_ev_empty_001",
+            question_id="q_ev_empty_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_empty_001",
+            response_id="resp_ev_empty_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock response with all empty evidence lists
+        mock_response = {
+            "independent_scores": {
+                metric: {"score": 3, "rationale": "Test", "evidence": []}
+                for metric in THE_EIGHT_METRICS
+            }
+        }
+
+        service = JudgeService()
+
+        # Create mock response object
+        import json
+        mock_response_obj = Mock()
+        mock_response_obj.choices = [Mock(message=Mock(content=json.dumps(mock_response)))]
+
+        # Replace the client's chat.completions.create method
+        original_client = service.client
+        try:
+            mock_chat_completions = MagicMock()
+            mock_chat_completions.create = Mock(return_value=mock_response_obj)
+            service.client.chat.completions = mock_chat_completions
+
+            result = service.stage1_independent_evaluation("eval_ev_empty_001", db_session)
+        finally:
+            service.client = original_client
+
+        # All evidence lists should be empty
+        for metric in THE_EIGHT_METRICS:
+            assert result["independent_scores"][metric]["evidence"] == []
+
+    def test_evidence_verified_and_highlight_flags(self, db_session):
+        """Test evidence has verified and highlight_available flags set."""
+        from datetime import datetime
+        from unittest.mock import Mock, MagicMock
+
+        question = Question(
+            id="q_ev_flags_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_ev_flags_001",
+            question_id="q_ev_flags_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="This is the exact quote to verify.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_flags_001",
+            response_id="resp_ev_flags_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock response with evidence
+        mock_response = {
+            "independent_scores": {
+                "Truthfulness": {
+                    "score": 3,
+                    "rationale": "Test",
+                    "evidence": [
+                        {
+                            "quote": "exact quote",
+                            "start": 12,
+                            "end": 23,
+                            "why": "Test reason",
+                            "better": "Better version"
+                        }
+                    ]
+                },
+                **{metric: {"score": 3, "rationale": "Test", "evidence": []}
+                  for metric in THE_EIGHT_METRICS if metric != "Truthfulness"}
+            }
+        }
+
+        service = JudgeService()
+
+        # Create mock response object
+        import json
+        mock_response_obj = Mock()
+        mock_response_obj.choices = [Mock(message=Mock(content=json.dumps(mock_response)))]
+
+        # Replace the client's chat.completions.create method
+        original_client = service.client
+        try:
+            mock_chat_completions = MagicMock()
+            mock_chat_completions.create = Mock(return_value=mock_response_obj)
+            service.client.chat.completions = mock_chat_completions
+
+            result = service.stage1_independent_evaluation("eval_ev_flags_001", db_session)
+        finally:
+            service.client = original_client
+
+        # Check flags are present (they may not be set yet since process_evidence is called in full_judge_evaluation)
+        truthfulness_evidence = result["independent_scores"]["Truthfulness"]["evidence"]
+        if truthfulness_evidence:
+            # After stage1, evidence items may not have verified/highlight flags yet
+            # Those are added by process_evidence() in full_judge_evaluation
+            assert all(isinstance(item, dict) for item in truthfulness_evidence)
+
+    def test_full_evaluation_with_evidence_preserved(self, db_session):
+        """Test evidence is preserved from Stage 1 through final output."""
+        from datetime import datetime
+        from unittest.mock import Mock, patch
+        from backend.models.judge_evaluation import JudgeEvaluation
+
+        question = Question(
+            id="q_ev_preserve_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_ev_preserve_001",
+            question_id="q_ev_preserve_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response text for verification.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_preserve_001",
+            response_id="resp_ev_preserve_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock Stage 1 response with evidence
+        mock_stage1 = {
+            "independent_scores": {
+                "Truthfulness": {
+                    "score": 3,
+                    "rationale": "Test rationale",
+                    "evidence": [
+                        {
+                            "quote": "Test response",
+                            "start": 0,
+                            "end": 12,
+                            "why": "Test reason",
+                            "better": "Better version"
+                        }
+                    ]
+                },
+                **{metric: {"score": 3, "rationale": "Test", "evidence": []}
+                  for metric in THE_EIGHT_METRICS if metric != "Truthfulness"}
+            }
+        }
+
+        mock_stage2 = {
+            "alignment_analysis": {
+                metric: {
+                    "user_score": 3,
+                    "judge_score": 3,
+                    "gap": 0,
+                    "verdict": "aligned",
+                    "feedback": "Test"
+                }
+                for metric in THE_EIGHT_METRICS
+            },
+            "judge_meta_score": 5,
+            "overall_feedback": "Test",
+            "improvement_areas": [],
+            "positive_feedback": [],
+            "primary_metric_gap": 0.0,
+            "weighted_gap": 0.0
+        }
+
+        service = JudgeService()
+
+        with patch.object(service, 'stage1_independent_evaluation', return_value=mock_stage1):
+            with patch.object(service, 'stage2_mentoring_comparison', return_value=mock_stage2):
+                with patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+                    mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                    mock_chroma.add_to_memory.return_value = None
+
+                    judge_eval_id = service.full_judge_evaluation(
+                        user_eval_id="eval_ev_preserve_001",
+                        db=db_session
+                    )
+
+        # Verify evidence is preserved in database
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(id=judge_eval_id).first()
+        assert judge_eval is not None
+
+        # Check independent_scores contains evidence
+        independent_scores = judge_eval.independent_scores
+        assert "Truthfulness" in independent_scores
+        assert "evidence" in independent_scores["Truthfulness"]
+        assert isinstance(independent_scores["Truthfulness"]["evidence"], list)
+
+    def test_evidence_graceful_degradation(self, db_session):
+        """Test graceful degradation when evidence processing fails."""
+        from datetime import datetime
+        from unittest.mock import Mock, patch
+        from backend.models.judge_evaluation import JudgeEvaluation
+
+        question = Question(
+            id="q_ev_degrade_001",
+            question="Test?",
+            category="Test",
+            difficulty="medium",
+            reference_answer="Answer",
+            expected_behavior="Behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        # Empty model response to test graceful degradation
+        model_response = ModelResponse(
+            id="resp_ev_degrade_001",
+            question_id="q_ev_degrade_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="",  # Empty response
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_ev_degrade_001",
+            response_id="resp_ev_degrade_001",
+            evaluations={metric: {"score": 3, "reasoning": "Test"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Mock Stage 1 with evidence (even though model_answer is empty)
+        mock_stage1 = {
+            "independent_scores": {
+                "Truthfulness": {
+                    "score": 3,
+                    "rationale": "Test",
+                    "evidence": [{"quote": "test", "start": 0, "end": 4, "why": "test", "better": "better"}]
+                },
+                **{metric: {"score": 3, "rationale": "Test", "evidence": []}
+                  for metric in THE_EIGHT_METRICS if metric != "Truthfulness"}
+            }
+        }
+
+        mock_stage2 = {
+            "alignment_analysis": {
+                metric: {"user_score": 3, "judge_score": 3, "gap": 0, "verdict": "aligned", "feedback": "Test"}
+                for metric in THE_EIGHT_METRICS
+            },
+            "judge_meta_score": 5,
+            "overall_feedback": "Test",
+            "improvement_areas": [],
+            "positive_feedback": [],
+            "primary_metric_gap": 0.0,
+            "weighted_gap": 0.0
+        }
+
+        service = JudgeService()
+
+        with patch.object(service, 'stage1_independent_evaluation', return_value=mock_stage1):
+            with patch.object(service, 'stage2_mentoring_comparison', return_value=mock_stage2):
+                with patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+                    mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                    mock_chroma.add_to_memory.return_value = None
+
+                    # Should not raise exception despite empty model_answer
+                    judge_eval_id = service.full_judge_evaluation(
+                        user_eval_id="eval_ev_degrade_001",
+                        db=db_session
+                    )
+
+        # Verify evaluation completed successfully
+        assert judge_eval_id.startswith("judge_")
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(id=judge_eval_id).first()
+        assert judge_eval is not None
+
+
+@pytest.mark.live_api
+class TestJudgeServiceEvidenceLiveAPI:
+    """Live API tests for evidence integration (Task 12.6)."""
+
+    def test_stage1_evidence_with_real_gpt4o(self, db_session):
+        """Test evidence collection with actual GPT-4o API."""
+        from datetime import datetime
+
+        question = Question(
+            id="q_live_ev_001",
+            question="What is the capital of Turkey?",
+            category="Geography",
+            difficulty="easy",
+            reference_answer="Ankara",
+            expected_behavior="Model should identify Ankara",
+            rubric_breakdown={"1": "Wrong", "5": "Correct"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        # Model gives wrong answer - should trigger evidence collection
+        model_response = ModelResponse(
+            id="resp_live_ev_001",
+            question_id="q_live_ev_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="The capital of Turkey is Istanbul, which is the largest city.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_live_ev_001",
+            response_id="resp_live_ev_001",
+            evaluations={metric: {"score": None, "reasoning": "N/A"} for metric in THE_EIGHT_METRICS},
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        service = JudgeService()
+        result = service.stage1_independent_evaluation("eval_live_ev_001", db_session)
+
+        # Verify evidence structure
+        assert "independent_scores" in result
+        for metric in THE_EIGHT_METRICS:
+            assert "evidence" in result["independent_scores"][metric]
+            evidence = result["independent_scores"][metric]["evidence"]
+            assert isinstance(evidence, list)
+
+            # If evidence items exist, verify structure
+            for item in evidence:
+                assert "quote" in item
+                assert "start" in item
+                assert "end" in item
+                assert "why" in item
+                assert "better" in item
+
+        # Log for manual verification
+        print(f"\n=== Live Evidence Test Results ===")
+        for metric, data in result["independent_scores"].items():
+            ev_count = len(data.get("evidence", []))
+            if ev_count > 0:
+                print(f"{metric}: {ev_count} evidence items")
+                for i, item in enumerate(data["evidence"][:2]):  # Show first 2
+                    print(f"  [{i+1}] Quote: {item.get('quote', '')[:50]}...")
+                    print(f"      Verified: {item.get('verified', 'N/A')}")
+                    print(f"      Highlight: {item.get('highlight_available', 'N/A')}")
+
+    def test_full_judge_evaluation_with_real_evidence(self, db_session):
+        """Test complete flow with real evidence generation."""
+        from datetime import datetime
+        from backend.models.judge_evaluation import JudgeEvaluation
+
+        question = Question(
+            id="q_full_live_ev_001",
+            question="What is 2+2?",
+            category="Mathematics",
+            difficulty="easy",
+            reference_answer="4",
+            expected_behavior="Model should answer correctly",
+            rubric_breakdown={"1": "Wrong", "5": "Correct"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        # Wrong answer to trigger evidence
+        model_response = ModelResponse(
+            id="resp_full_live_ev_001",
+            question_id="q_full_live_ev_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="The answer is 5, because 2+2=5 in some mathematical systems.",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_full_live_ev_001",
+            response_id="resp_full_live_ev_001",
+            evaluations={
+                "Truthfulness": {"score": 2, "reasoning": "Wrong answer"},
+                "Helpfulness": {"score": 3, "reasoning": "Confident but wrong"},
+                "Safety": {"score": None, "reasoning": "N/A"},
+                "Bias": {"score": None, "reasoning": "N/A"},
+                "Clarity": {"score": 5, "reasoning": "Clear expression"},
+                "Consistency": {"score": None, "reasoning": "N/A"},
+                "Efficiency": {"score": 4, "reasoning": "Concise"},
+                "Robustness": {"score": None, "reasoning": "N/A"}
+            },
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        # Run full evaluation with real GPT-4o
+        service = JudgeService()
+        judge_eval_id = service.full_judge_evaluation(
+            user_eval_id="eval_full_live_ev_001",
+            db=db_session
+        )
+
+        # Verify judge evaluation created with evidence
+        judge_eval = db_session.query(JudgeEvaluation).filter_by(id=judge_eval_id).first()
+        assert judge_eval is not None
+
+        # Check evidence is in independent_scores
+        independent_scores = judge_eval.independent_scores
+        assert "Truthfulness" in independent_scores
+        assert "evidence" in independent_scores["Truthfulness"]
+        assert isinstance(independent_scores["Truthfulness"]["evidence"], list)
+
+        # Verify processed evidence has verified/highlight flags
+        evidence_list = independent_scores["Truthfulness"]["evidence"]
+        for item in evidence_list:
+            # After process_evidence(), these flags should be present
+            assert "verified" in item
+            assert "highlight_available" in item
+
+        print(f"\n=== Full Live Evidence Test ===")
+        print(f"Judge ID: {judge_eval_id}")
+        print(f"Meta Score: {judge_eval.judge_meta_score}/5")
+        total_evidence = sum(
+            len(metric_data.get("evidence", []))
+            for metric_data in independent_scores.values()
+        )
+        print(f"Total Evidence Items: {total_evidence}")

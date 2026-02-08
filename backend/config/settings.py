@@ -83,6 +83,20 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:3000,http://localhost:3001,http://localhost:3002,http://localhost:8000"
 
     # =====================================================
+    # Coach Chat & Evidence Configuration
+    # =====================================================
+    # Coach model (via OpenRouter) - AD-5
+    coach_model: str = "openai/gpt-4o-mini"
+    # Maximum user messages per conversation - AD-9
+    max_chat_turns: int = 15
+    # Number of recent messages to include in LLM context - AD-4
+    chat_history_window: int = 6
+    # Anchor character length for evidence verification - AD-2
+    evidence_anchor_len: int = 25
+    # Search tolerance window for anchor tail search - AD-2
+    evidence_search_window: int = 2000
+
+    # =====================================================
     # Monitoring & Analytics
     # =====================================================
     enable_llm_logging: bool = True
@@ -119,6 +133,14 @@ class Settings(BaseSettings):
     @classmethod
     def validate_reload(cls, v: bool) -> bool:
         """Validate reload setting."""
+        return v
+
+    @field_validator("max_chat_turns", "chat_history_window", "evidence_anchor_len", "evidence_search_window")
+    @classmethod
+    def validate_positive_int(cls, v: int) -> int:
+        """Validate integer settings are positive."""
+        if v <= 0:
+            raise ValueError(f"Value must be positive, got {v}")
         return v
 
     # =====================================================

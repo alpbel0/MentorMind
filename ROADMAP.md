@@ -2820,7 +2820,7 @@ evaluation_snapshots (1) ──→ (N) chat_messages
     - [x] Çok kısa quote (< 25 karakter, anchor mümkün değil)
     - [x] Çok uzun model_answer (performance)
     - [x] Unicode karakterler
-    - [ ] Boş model_answer
+    - [x] Boş model_answer
 
 ---
 
@@ -2828,20 +2828,20 @@ evaluation_snapshots (1) ──→ (N) chat_messages
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI (9 Şubat 2026)**
 
-**Referans:** AD-1
+**Referans:** AD-1 (Evidence Integration Test Coverage)
 
 **Yapılacaklar:**
-- [ ] `backend/services/judge_service.py` güncelle:
-  - [ ] `stage1_independent_evaluation()` return değerine `evidence` ekle
-  - [ ] Stage 1 response parse'ını güncelle (scores + evidence)
-  - [ ] `parse_stage1_response()` fonksiyonuna evidence extraction ekle
-  - [ ] Evidence yoksa boş dict dön (graceful)
-- [ ] `_validate_stage1_response()` güncelle:
-  - [ ] Evidence alanının varlığını kontrol et (opsiyonel)
-- [ ] Evidence parse hatası Stage 1'i kırmaz (AD-8)
-- [ ] Test güncelle (mevcut testlere evidence assertion ekle)
+- [x] `backend/services/judge_service.py` güncelle:
+  - [x] `stage1_independent_evaluation()` return değerine `evidence` ekle
+  - [x] Stage 1 response parse'ını güncelle (scores + evidence)
+  - [x] `parse_stage1_response()` fonksiyonuna evidence extraction ekle
+  - [x] Evidence yoksa boş dict dön (graceful)
+- [x] `_validate_stage1_response()` güncelle:
+  - [x] Evidence alanının varlığını kontrol et (opsiyonel)
+- [x] Evidence parse hatası Stage 1'i kırmaz (AD-8)
+- [x] Test güncelle (mevcut testlere evidence assertion ekle)
 
 ---
 
@@ -2883,6 +2883,7 @@ Aşama 5: Fallback        → verified: false
 - [x] Evidence unit testleri geçiyor (Task 12.5)
 - [x] Live API testleri geçiyor
 - [x] Display name -> Slug conversion fix (arka uyumluluk)
+        - [x] Judge Service Integration test coverage (Task 12.6)
 
 ---
 
