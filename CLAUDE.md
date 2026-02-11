@@ -1728,9 +1728,14 @@ This document provides comprehensive context for AI assistants working on the Me
   - [x] `list_snapshots()` - List snapshots with pagination
   - [x] `backend/tests/conftest.py` - Test database URL fix, clean_database_tables fixture
   - [x] `docker-compose.yml` - YAML fix, healthcheck, service reordering
+- [x] **Task 13.2: Snapshot Service — Soft Delete** (11 Şubat 2026)
+  - [x] `soft_delete_snapshot()` - Soft delete with deleted_at timestamp
+  - [x] `SnapshotNotFoundError` exception class
+  - [x] `test_list_snapshots_excludes_soft_deleted` - List filter verification
+  - [x] 7 soft delete tests (all passed)
+  - [x] 26/26 total tests, 100% coverage
 
 **Sıradaki Görevler:**
-- [ ] Task 13.2: Snapshot Service — CRUD (get, list, soft_delete)
 - [ ] Task 13.3: Judge Task Integration — Otomatik Snapshot
 - [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
 - [ ] Task 13.5: Snapshot Router & Endpoints
@@ -1739,5 +1744,5 @@ This document provides comprehensive context for AI assistants working on the Me
 **Notlar:**
 - Phase 3 başladı (Week 11-12 tamamlandı)
 - Snapshot service core fonksiyonları tamamlandı
-- CRUD fonksiyonları Task 13.1'de de implement edildi (get_snapshot, list_snapshots)
+- Soft delete implement edildi, Router endpoint'leri bir sonraki task'ta
 

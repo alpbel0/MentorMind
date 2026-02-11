@@ -2924,31 +2924,32 @@ Aşama 5: Fallback        → verified: false
 
 ---
 
-### Task 13.2: Snapshot Service — CRUD
+### Task 13.2: Snapshot Service — Soft Delete
 
-**Tahmini Süre:** 2 saat
+**Tahmini Süre:** 1 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (11 Şubat 2026)
 
 **Referans:** AD-13 (Retention Policy)
 
-**Yapılacaklar:**
-- [ ] `backend/services/snapshot_service.py` içine CRUD fonksiyonları ekle:
-  - [ ] `get_snapshot(db, snapshot_id: str) -> EvaluationSnapshot`:
-    - [ ] `WHERE deleted_at IS NULL` filtresi
-    - [ ] Bulunamazsa `None` dön
-  - [ ] `list_snapshots(db, status: str = None, limit: int = 20, offset: int = 0) -> list`:
-    - [ ] `WHERE deleted_at IS NULL` filtresi
-    - [ ] Opsiyonel status filtresi
-    - [ ] `ORDER BY created_at DESC`
-    - [ ] Pagination (limit/offset)
-  - [ ] `soft_delete_snapshot(db, snapshot_id: str) -> bool`:
-    - [ ] `deleted_at = datetime.utcnow()` set et
-    - [ ] `status = 'archived'` set et
-    - [ ] Return: başarılı/başarısız
-  - [ ] `get_snapshot_count(db, status: str = None) -> int`:
-    - [ ] Total count (pagination için)
-- [ ] Unit test yaz (CRUD testleri)
+**Yapılanlar:**
+- [x] `backend/services/snapshot_service.py` içine soft delete fonksiyonu eklendi:
+  - [x] `soft_delete_snapshot(db, snapshot_id: str) -> bool`:
+    - [x] `WHERE deleted_at IS NULL` ile sorgula (sadece aktifleri)
+    - [x] `deleted_at = datetime.utcnow()` set et
+    - [x] `status = 'archived'` set et
+    - [x] Return: `True` (başarılı), `False` (bulunamadı)
+  - [x] `SnapshotNotFoundError` exception eklendi (gelecekteki kullanım için)
+- [x] `get_snapshot()` ve `list_snapshots()` soft delete'i zaten filtreliyor (Task 13.1'de tamamlandı)
+- [x] Unit test yaz (7 soft delete testi):
+  - [x] `test_soft_delete_snapshot_success` - Başarılı silme
+  - [x] `test_soft_delete_snapshot_sets_status_to_archived` - Status değişimi
+  - [x] `test_soft_delete_snapshot_sets_deleted_at` - Timestamp ayarı
+  - [x] `test_soft_delete_snapshot_not_found_returns_false` - Bulunamayan durum
+  - [x] `test_soft_delete_already_deleted_returns_false` - Zaten silinmiş
+  - [x] `test_soft_delete_idempotent` - Idempotent davranış
+  - [x] `test_list_snapshots_excludes_soft_deleted` - Listeden hariç tutma
+- [x] **Sonuç:** 26/26 test passed, 100% coverage
 
 ---
 
