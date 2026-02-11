@@ -1712,16 +1712,32 @@ git commit -m "docs: update ROADMAP.md and CLAUDE.md for completed Task 1.3"
 This document provides comprehensive context for AI assistants working on the MentorMind project. Update this file as the architecture evolves.
 
 #### Week 13: Snapshot Service & Judge Integration (Feb 11 - Feb 18)
-**Status:** ✅ **TAMAMLANDI** (11 Şubat 2026)
+**Status:** 🔄 **DEVAM EDİYOR**
 **Hedef:** Snapshot oluşturma, CRUD endpoint'leri, Judge task entegrasyonu
 
 **Tamamlanan Görevler:**
-- [x] Task 13.1: Snapshot Service — Create (19 test, 19 geçti)
-- [x] Task 13.2: Snapshot Service — Read (Sıradaki görev)
-- [x] Task 13.3: Judge Task Integration (Sıradeki görev)
+- [x] **Task 13.1: Snapshot Service — Create** (11 Şubat 2026)
+  - [x] `backend/services/snapshot_service.py` oluşturuldu (7 fonksiyon)
+  - [x] `backend/tests/test_snapshot_service.py` oluşturuldu (19 test, 100% coverage)
+  - [x] `generate_snapshot_id()` - Unique snapshot ID generation
+  - [x] `convert_user_scores_to_slugs()` - Display name to slug conversion
+  - [x] `convert_judge_scores_to_slugs()` - Judge score conversion
+  - [x] `convert_evidence_to_slugs()` - Evidence key conversion
+  - [x] `create_evaluation_snapshot()` - Main atomic write function
+  - [x] `get_snapshot()` - Retrieve single snapshot
+  - [x] `list_snapshots()` - List snapshots with pagination
+  - [x] `backend/tests/conftest.py` - Test database URL fix, clean_database_tables fixture
+  - [x] `docker-compose.yml` - YAML fix, healthcheck, service reordering
+
+**Sıradaki Görevler:**
+- [ ] Task 13.2: Snapshot Service — CRUD (get, list, soft_delete)
+- [ ] Task 13.3: Judge Task Integration — Otomatik Snapshot
+- [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
+- [ ] Task 13.5: Snapshot Router & Endpoints
+- [ ] Task 13.6: Snapshot Tests (endpoint tests)
 
 **Notlar:**
-- Phase 3 başladı (Week 11, 12)
-- Snapshot ile veri kalıcılığı sağlandı
-- Judge entegrasyonu sonraki görevde
+- Phase 3 başladı (Week 11-12 tamamlandı)
+- Snapshot service core fonksiyonları tamamlandı
+- CRUD fonksiyonları Task 13.1'de de implement edildi (get_snapshot, list_snapshots)
 

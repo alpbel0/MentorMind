@@ -2898,24 +2898,29 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (11 Şubat 2026)
 
 **Referans:** AD-7 (Atomic Write), AD-11 (Otomatik Kayıt)
 
-**Yapılacaklar:**
-- [ ] `backend/services/snapshot_service.py` oluştur:
-  - [ ] `create_evaluation_snapshot(db, stage1_result, stage2_result, user_eval, question, model_response) -> EvaluationSnapshot` fonksiyonu:
-    - [ ] Snapshot ID oluştur (`snap_YYYYMMDD_HHMMSS_randomhex`)
-    - [ ] Slug dönüşümü uygula (user_scores, judge_scores, evidence → slug key'ler)
-    - [ ] Evidence işle: `process_evidence(model_answer, raw_evidence)` çağır
-    - [ ] Tüm alanları birleştir (Stage 1 + Stage 2 + question + response)
-    - [ ] `judge_scores_json` ← Stage 1 `independent_scores` direkt kullanılır
-    - [ ] Tek transaction'da DB'ye yaz (atomik)
-    - [ ] Return: oluşturulan snapshot objesi
-  - [ ] ID generator helper: `generate_snapshot_id() -> str`
-- [ ] Hata durumunda rollback (yarım snapshot oluşmaz)
-- [ ] Başarılı oluşturma log'u: `INFO "Snapshot created: {id}"`
-- [ ] Unit test yaz
+**Yapılanlar:**
+- [x] `backend/services/snapshot_service.py` oluşturuldu:
+  - [x] `create_evaluation_snapshot(db, stage1_result, stage2_result, user_eval, question, model_response) -> EvaluationSnapshot` fonksiyonu:
+    - [x] Snapshot ID oluştur (`snap_YYYYMMDD_HHMMSS_randomhex`)
+    - [x] Slug dönüşümü uygula (user_scores, judge_scores, evidence → slug key'ler)
+    - [x] Evidence işle: `process_evidence(model_answer, raw_evidence)` çağır
+    - [x] Tüm alanları birleştir (Stage 1 + Stage 2 + question + response)
+    - [x] `judge_scores_json` ← Stage 1 `independent_scores` direkt kullanılır
+    - [x] Tek transaction'da DB'ye yaz (atomik)
+    - [x] Return: oluşturulan snapshot objesi
+  - [x] ID generator helper: `generate_snapshot_id() -> str`
+  - [x] `get_snapshot(db, snapshot_id) -> EvaluationSnapshot` fonksiyonu
+  - [x] `list_snapshots(db, status, limit, offset) -> tuple[list, int]` fonksiyonu
+  - [x] `convert_user_scores_to_slugs()` helper fonksiyonu
+  - [x] `convert_judge_scores_to_slugs()` helper fonksiyonu
+  - [x] `convert_evidence_to_slugs()` helper fonksiyonu
+- [x] Hata durumunda rollback (yarım snapshot oluşmaz)
+- [x] Başarılı oluşturma log'u: `INFO "Snapshot created: {id}"`
+- [x] Unit test yaz (19 test, 100% coverage)
 
 ---
 
