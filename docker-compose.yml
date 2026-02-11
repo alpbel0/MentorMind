@@ -1,51 +1,4 @@
 services:
-  backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: mentormind_backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    environment:
-      - DATABASE_URL=postgresql://mentormind:mentormind_password@postgres:5432/mentormind
-      - POSTGRES_USER=mentormind
-      - POSTGRES_PASSWORD=mentormind_password
-      - POSTGRES_DB=mentormind
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - CHROMA_HOST=chromadb
-      - CHROMA_PORT=8000
-    volumes:
-      - ./backend:/app/backend
-      - ./data:/app/data
-    depends_on:
-      postgres:
-        condition: service_healthy
-      chromadb:
-        condition: service_started
-    restart: unless-stopped
-    networks:
-      - mentormind_network
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: mentormind_frontend
-    ports:
-      - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000
-      - NEXT_PUBLIC_APP_NAME=MentorMind
-      - NEXT_PUBLIC_APP_URL=http://localhost:3000
-    depends_on:
-      - backend
-    restart: unless-stopped
-    networks:
-      - mentormind_network
-
   postgres:
     image: postgres:16-alpine
     container_name: mentormind_postgres
@@ -53,19 +6,17 @@ services:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
     volumes:
       - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+    networks:
+      - mentormind_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 10s
-    restart: unless-stopped
-    networks:
-      - mentormind_network
 
   chromadb:
     image: chromadb/chroma:latest
@@ -73,7 +24,7 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - ./chroma_data:/chroma/chroma
+      - mentormind_chromadb_data:/chroma/chroma
     environment:
       - CHROMA_SERVER_HOST=0.0.0.0
       - CHROMA_SERVER_HTTP_PORT=8000
@@ -83,9 +34,60 @@ services:
     networks:
       - mentormind_network
 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mentormind_backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    volumes:
+      # Volume mounts for persistence
+      - ./data:/app/data
+      - .:/app
+    environment:
+      - DATABASE_URL=postgresql://mentormind:mentormind_password@postgres:5432
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=mentormind
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - CHROMA_HOST=chromadb
+      - CHROMA_PORT=8000
+      - PERSIST_DIRECTORY=/chroma/chroma
+      - ANONYMIZED_TELEMETRY=False
+    depends_on:
+      postgres:
+        condition: service_healthy
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - mentormind_network
+
+  # frontend:
+  #   build:
+  #     context: ./frontend
+  #     dockerfile: Dockerfile
+  #   container_name: mentormind_frontend
+  #   ports:
+  #     - "3000:3000"
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - NEXT_PUBLIC_API_URL=http://localhost:8000
+  #     - NEXT_PUBLIC_APP_NAME=MentorMind
+  #   depends_on:
+  #     - backend
+  #   restart: unless-stopped
+  #   networks:
+  #     - mentormind_network
+
 volumes:
   postgres_data:
-    driver: local
+  mentormind_chromadb_data:
 
 networks:
   mentormind_network:
