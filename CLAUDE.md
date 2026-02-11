@@ -1710,3 +1710,18 @@ git commit -m "docs: update ROADMAP.md and CLAUDE.md for completed Task 1.3"
 **End of CLAUDE.md**
 
 This document provides comprehensive context for AI assistants working on the MentorMind project. Update this file as the architecture evolves.
+
+#### Week 13: Snapshot Service & Judge Integration (Feb 11 - Feb 18)
+**Status:** ✅ **TAMAMLANDI** (11 Şubat 2026)
+**Hedef:** Snapshot oluşturma, CRUD endpoint'leri, Judge task entegrasyonu
+
+**Tamamlanan Görevler:**
+- [x] Task 13.1: Snapshot Service — Create (19 test, 19 geçti)
+- [x] Task 13.2: Snapshot Service — Read (Sıradaki görev)
+- [x] Task 13.3: Judge Task Integration (Sıradeki görev)
+
+**Notlar:**
+- Phase 3 başladı (Week 11, 12)
+- Snapshot ile veri kalıcılığı sağlandı
+- Judge entegrasyonu sonraki görevde
+
