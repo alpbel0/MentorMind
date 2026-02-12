@@ -2957,30 +2957,20 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2.5 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (12 Şubat 2026)
 
 **Referans:** AD-7 (Atomic Write), AD-8 (Graceful Degradation), AD-11 (Otomatik Kayıt)
 
-**Yapılacaklar:**
-- [ ] `backend/tasks/judge_task.py` güncelle:
-  - [ ] `run_judge_evaluation()` fonksiyonuna snapshot oluşturma adımı ekle:
-    ```python
-    # Mevcut akış
-    stage1_result = judge_service.stage1_independent_evaluation(...)
-    stage2_result = judge_service.stage2_mentoring_comparison(...)
-    
-    # YENİ: Atomik snapshot yazımı
-    snapshot = snapshot_service.create_evaluation_snapshot(
-        db, stage1_result, stage2_result, user_eval, question, model_response
-    )
-    ```
-  - [ ] Stage 1 veya Stage 2 başarısızsa snapshot oluşturma (hata handling)
-  - [ ] Snapshot oluşturma hatası judge akışını kırmamalı (try/except, WARNING log)
-- [ ] Evidence graceful degradation entegrasyonu:
-  - [ ] Evidence parse hatası → snapshot `evidence_json = null` ile oluşturulur
-  - [ ] Skorlar ve feedback yine kaydedilir
-- [ ] Import'ları güncelle (snapshot_service)
-- [ ] Test güncelle (mevcut judge task testlerine snapshot assertion ekle)
+**Yapılanlar:**
+- [x] `backend/services/judge_service.py` güncellemeleri:
+  - [x] `from backend.services.snapshot_service import create_evaluation_snapshot` import eklendi
+  - [x] `full_judge_evaluation()` - `judge_evaluation_id` stage2_result'a eklendi (kurşun geçirmez kontrol)
+  - [x] `full_judge_evaluation()` - Snapshot oluşturma çağrısı eklendi (Graceful degradation ile)
+  - [x] `full_judge_evaluation()` - Docstring güncellendi
+- [x] `backend/tests/test_judge_service.py` - `TestFullJudgeEvaluationSnapshotIntegration` class (2 test)
+- [x] `backend/tests/test_judge_task_snapshot.py` - Yeni test dosyası (2 test)
+- [x] `backend/tests/test_judge_task.py` - Mevcut testler `full_judge_evaluation` için güncellendi
+- [x] 76 tests passed (judge_service + judge_task_snapshot + snapshot_service)
 
 ---
 

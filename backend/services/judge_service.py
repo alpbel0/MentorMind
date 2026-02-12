@@ -32,6 +32,7 @@ from backend.services.evidence_service import (
     verify_all_evidence,
     process_evidence
 )
+from backend.services.snapshot_service import create_evaluation_snapshot
 from backend.constants.metrics import ALL_METRIC_SLUGS, METRIC_SLUG_MAP
 
 logger = logging.getLogger(__name__)
@@ -1073,7 +1074,7 @@ class JudgeService:
         """
         Run complete two-stage judge evaluation workflow.
 
-        Orchestrates: Stage 1 → ChromaDB Query → Stage 2 → Database Save → ChromaDB Add
+        Orchestrates: Stage 1 → ChromaDB Query → Stage 2 → Database Save → Snapshot Create → ChromaDB Add
 
         Args:
             user_eval_id: User evaluation ID (e.g., "eval_20250126_143000_aaa111")
@@ -1159,6 +1160,16 @@ class JudgeService:
             random_hex = secrets.token_hex(6)
             judge_eval_id = f"judge_{timestamp}_{random_hex}"
 
+            # 5.5. Add judge_evaluation_id to stage2_result for snapshot creation (Task 13.3)
+            if isinstance(stage2_result, dict):
+                stage2_result["judge_evaluation_id"] = judge_eval_id
+            else:
+                logger.error(
+                    f"stage2_result is not a dict, cannot add judge_evaluation_id. "
+                    f"Type: {type(stage2_result)}"
+                )
+                raise RuntimeError("stage2_result must be a dictionary for snapshot creation")
+
             # 6. Create JudgeEvaluation record
             judge_eval = JudgeEvaluation(
                 id=judge_eval_id,
@@ -1193,6 +1204,21 @@ class JudgeService:
                 db.rollback()
                 logger.error(f"Failed to save judge evaluation: {e}")
                 raise RuntimeError(f"Database save failed: {e}")
+
+            # 7.5. Create evaluation snapshot (non-fatal - graceful degradation, Task 13.3)
+            try:
+                snapshot = create_evaluation_snapshot(
+                    db=db,
+                    stage1_result=stage1_result,
+                    stage2_result=stage2_result,
+                    user_eval=user_eval,
+                    question=question,
+                    model_response=model_response
+                )
+                logger.info(f"Snapshot created: {snapshot.id} for {user_eval_id}")
+            except Exception as e:
+                # Non-fatal - log warning and continue (snapshot failure doesn't break judge flow)
+                logger.warning(f"Snapshot creation failed (non-fatal): {e}")
 
             # 8. Add to ChromaDB memory (log-only on failure per user preference)
             try:

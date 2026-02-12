@@ -1736,7 +1736,16 @@ This document provides comprehensive context for AI assistants working on the Me
   - [x] 26/26 total tests, 100% coverage
 
 **Sıradaki Görevler:**
-- [ ] Task 13.3: Judge Task Integration — Otomatik Snapshot
+- [x] Task 13.3: Judge Task Integration — Otomatik Snapshot (12 Şubat 2026)
+  - [x] `judge_service.py` - Import `create_evaluation_snapshot`
+  - [x] `full_judge_evaluation()` - Add `judge_evaluation_id` to stage2_result
+  - [x] `full_judge_evaluation()` - Call snapshot creation with graceful degradation
+  - [x] `full_judge_evaluation()` - Update docstring
+  - [x] `test_judge_service.py` - New test class: `TestFullJudgeEvaluationSnapshotIntegration` (2 tests)
+  - [x] `test_judge_task_snapshot.py` - New test file for task integration (2 tests)
+  - [x] `test_judge_task.py` - Update existing tests for `full_judge_evaluation` calls
+  - [x] 76 tests passed (judge_service + judge_task_snapshot + snapshot_service)
+- [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
 - [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
 - [ ] Task 13.5: Snapshot Router & Endpoints
 - [ ] Task 13.6: Snapshot Tests (endpoint tests)

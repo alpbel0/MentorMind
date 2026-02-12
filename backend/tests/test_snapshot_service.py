@@ -20,7 +20,9 @@ from backend.services.snapshot_service import (
     convert_evidence_to_slugs,
     create_evaluation_snapshot,
     get_snapshot,
-    list_snapshots
+    list_snapshots,
+    soft_delete_snapshot,
+    SnapshotNotFoundError
 )
 
 
@@ -588,3 +590,130 @@ class TestGetAndListSnapshots:
         snapshots3, total3 = list_snapshots(db_session, limit=2, offset=4)
         assert total3 == 5
         assert len(snapshots3) == 1
+
+    def test_list_snapshots_excludes_soft_deleted(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test that soft-deleted snapshots are excluded from list."""
+        snap1 = make_snapshot(primary_metric="truthfulness")
+        snap2 = make_snapshot(primary_metric="clarity")
+        snap3 = make_snapshot(primary_metric="helpfulness")
+
+        # Soft delete one snapshot
+        soft_delete_snapshot(db_session, snap2.id)
+
+        snapshots, total = list_snapshots(db_session)
+
+        assert total == 2
+        assert len(snapshots) == 2
+        assert any(s.id == snap1.id for s in snapshots)
+        assert any(s.id == snap3.id for s in snapshots)
+        assert not any(s.id == snap2.id for s in snapshots)
+
+
+# =====================================================
+# Test 9: soft_delete_snapshot()
+# =====================================================
+
+class TestSoftDeleteSnapshot:
+    """Tests for snapshot soft delete functionality."""
+
+    def test_soft_delete_snapshot_success(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test successful soft delete of a snapshot."""
+        snapshot = make_snapshot(status="active")
+
+        result = soft_delete_snapshot(db_session, snapshot.id)
+
+        assert result is True
+
+        # Refresh from database
+        db_session.refresh(snapshot)
+
+        # Verify deleted_at is set
+        assert snapshot.deleted_at is not None
+
+        # Verify status is archived
+        assert snapshot.status == "archived"
+
+    def test_soft_delete_snapshot_sets_status_to_archived(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test that soft delete sets status to 'archived'."""
+        snapshot = make_snapshot(status="active")
+
+        soft_delete_snapshot(db_session, snapshot.id)
+        db_session.refresh(snapshot)
+
+        assert snapshot.status == "archived"
+
+    def test_soft_delete_snapshot_sets_deleted_at(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test that soft delete sets deleted_at timestamp."""
+        snapshot = make_snapshot(status="active")
+
+        before_delete = datetime.now()
+        soft_delete_snapshot(db_session, snapshot.id)
+        after_delete = datetime.now()
+
+        db_session.refresh(snapshot)
+
+        assert snapshot.deleted_at is not None
+        assert before_delete <= snapshot.deleted_at <= after_delete
+
+    def test_soft_delete_snapshot_not_found_returns_false(
+        self,
+        db_session: Session
+    ):
+        """Test soft delete returns False for non-existent snapshot."""
+        result = soft_delete_snapshot(db_session, "snap_nonexistent")
+
+        assert result is False
+
+    def test_soft_delete_already_deleted_returns_false(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test soft delete returns False for already deleted snapshot."""
+        snapshot = make_snapshot(status="active")
+
+        # First delete
+        result1 = soft_delete_snapshot(db_session, snapshot.id)
+        assert result1 is True
+
+        # Second delete attempt
+        result2 = soft_delete_snapshot(db_session, snapshot.id)
+        assert result2 is False
+
+    def test_soft_delete_idempotent(
+        self,
+        db_session: Session,
+        make_snapshot
+    ):
+        """Test that multiple soft delete calls are safe (idempotent)."""
+        snapshot = make_snapshot(status="active")
+
+        # First delete
+        result1 = soft_delete_snapshot(db_session, snapshot.id)
+        db_session.refresh(snapshot)
+        first_deleted_at = snapshot.deleted_at
+
+        # Second delete attempt (should not change deleted_at)
+        result2 = soft_delete_snapshot(db_session, snapshot.id)
+        db_session.refresh(snapshot)
+        second_deleted_at = snapshot.deleted_at
+
+        assert result1 is True
+        assert result2 is False
+        assert first_deleted_at == second_deleted_at

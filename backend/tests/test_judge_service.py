@@ -1863,3 +1863,218 @@ class TestJudgeServiceEvidenceLiveAPI:
             for metric_data in independent_scores.values()
         )
         print(f"Total Evidence Items: {total_evidence}")
+
+
+# =====================================================
+# Task 13.3: Snapshot Integration Tests
+# =====================================================
+
+class TestFullJudgeEvaluationSnapshotIntegration:
+    """Tests for snapshot creation in full_judge_evaluation."""
+
+    def test_snapshot_created_with_correct_arguments(
+        self,
+        db_session,
+    ):
+        """Verify snapshot receives all required arguments."""
+        from unittest.mock import patch, MagicMock
+        from backend.models.evaluation_snapshot import EvaluationSnapshot
+
+        # Create test data inline (no fixture dependency)
+        from datetime import datetime
+        question = Question(
+            id="q_snapshot_001",
+            question="Test question for snapshot?",
+            category="Testing",
+            difficulty="medium",
+            reference_answer="Test answer",
+            expected_behavior="Test behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            bonus_metrics=["Clarity"],
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_snapshot_001",
+            question_id="q_snapshot_001",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response for snapshot",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_snapshot_001",
+            response_id="resp_snapshot_001",
+            evaluations={
+                "Truthfulness": {"score": 4, "reasoning": "Test"},
+                "Helpfulness": {"score": 3, "reasoning": "Test"},
+                "Safety": {"score": 5, "reasoning": "Test"},
+                "Bias": {"score": 5, "reasoning": "Test"},
+                "Clarity": {"score": 4, "reasoning": "Test"},
+                "Consistency": {"score": 3, "reasoning": "Test"},
+                "Efficiency": {"score": 4, "reasoning": "Test"},
+                "Robustness": {"score": 3, "reasoning": "Test"}
+            },
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        with patch('backend.services.judge_service.create_evaluation_snapshot') as mock_snapshot:
+            mock_snapshot.return_value = MagicMock(id="snap_test_snapshot_001")
+
+            # Run full evaluation (with mocked Stage 1/2 to avoid API calls)
+            with patch.object(JudgeService, 'stage1_independent_evaluation') as mock_stage1, \
+                 patch.object(JudgeService, 'stage2_mentoring_comparison') as mock_stage2, \
+                 patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+
+                # Mock Stage 1 return
+                mock_stage1.return_value = {
+                    "independent_scores": {
+                        "Truthfulness": {"score": 5, "rationale": "Judge rationale"},
+                        "Helpfulness": {"score": 4, "rationale": "Test"},
+                        "Safety": {"score": 5, "rationale": "Test"},
+                        "Bias": {"score": 5, "rationale": "Test"},
+                        "Clarity": {"score": 4, "rationale": "Test"},
+                        "Consistency": {"score": 3, "rationale": "Test"},
+                        "Efficiency": {"score": 4, "rationale": "Test"},
+                        "Robustness": {"score": 3, "rationale": "Test"}
+                    }
+                }
+
+                # Mock Stage 2 return
+                mock_stage2.return_value = {
+                    "alignment_analysis": {},
+                    "judge_meta_score": 5,
+                    "weighted_gap": 0.3,
+                    "overall_feedback": "Great evaluation!",
+                    "improvement_areas": [],
+                    "positive_feedback": ["Good work"],
+                    "primary_metric_gap": 0.2
+                }
+
+                # Mock ChromaDB
+                mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                mock_chroma.add_to_memory.return_value = None
+
+                # Run full evaluation
+                service = JudgeService()
+                result = service.full_judge_evaluation(
+                    user_eval_id="eval_snapshot_001",
+                    db=db_session
+                )
+
+                # Verify snapshot was called with correct args
+                mock_snapshot.assert_called_once()
+                call_kwargs = mock_snapshot.call_args.kwargs
+                assert "db" in call_kwargs
+                assert "stage1_result" in call_kwargs
+                assert "stage2_result" in call_kwargs
+                # Verify judge_evaluation_id was added to stage2_result
+                assert "judge_evaluation_id" in call_kwargs["stage2_result"]
+
+    def test_snapshot_failure_logged_as_warning(self, db_session, caplog):
+        """Verify snapshot failure logs WARNING and doesn't raise."""
+        from unittest.mock import patch
+        import logging
+        from backend.models.evaluation_snapshot import EvaluationSnapshot
+
+        # Create test data inline
+        from datetime import datetime
+        question = Question(
+            id="q_snapshot_002",
+            question="Test question 2?",
+            category="Testing",
+            difficulty="medium",
+            reference_answer="Test answer",
+            expected_behavior="Test behavior",
+            rubric_breakdown={"1": "Bad", "5": "Good"},
+            primary_metric="Truthfulness",
+            created_at=datetime.now(),
+            updated_at=datetime.now()
+        )
+        db_session.add(question)
+        db_session.flush()
+
+        model_response = ModelResponse(
+            id="resp_snapshot_002",
+            question_id="q_snapshot_002",
+            model_name="openai/gpt-3.5-turbo",
+            response_text="Test response 2",
+            evaluated=False
+        )
+        db_session.add(model_response)
+        db_session.flush()
+
+        user_eval = UserEvaluation(
+            id="eval_snapshot_002",
+            response_id="resp_snapshot_002",
+            evaluations={
+                "Truthfulness": {"score": 4, "reasoning": "Test"},
+                "Helpfulness": {"score": 3, "reasoning": "Test"},
+                "Safety": {"score": 5, "reasoning": "Test"},
+                "Bias": {"score": 5, "reasoning": "Test"},
+                "Clarity": {"score": 4, "reasoning": "Test"},
+                "Consistency": {"score": 3, "reasoning": "Test"},
+                "Efficiency": {"score": 4, "reasoning": "Test"},
+                "Robustness": {"score": 3, "reasoning": "Test"}
+            },
+            judged=False
+        )
+        db_session.add(user_eval)
+        db_session.commit()
+
+        with patch('backend.services.judge_service.create_evaluation_snapshot') as mock_snapshot:
+            # Mock snapshot to raise exception
+            mock_snapshot.side_effect = Exception("Snapshot DB error")
+
+            # Mock Stage 1/2 and ChromaDB
+            with patch.object(JudgeService, 'stage1_independent_evaluation') as mock_stage1, \
+                 patch.object(JudgeService, 'stage2_mentoring_comparison') as mock_stage2, \
+                 patch('backend.services.chromadb_service.chromadb_service') as mock_chroma:
+
+                mock_stage1.return_value = {
+                    "independent_scores": {
+                        metric: {"score": 4, "rationale": "Test"}
+                        for metric in [
+                            "Truthfulness", "Helpfulness", "Safety", "Bias",
+                            "Clarity", "Consistency", "Efficiency", "Robustness"
+                        ]
+                    }
+                }
+
+                mock_stage2.return_value = {
+                    "alignment_analysis": {},
+                    "judge_meta_score": 4,
+                    "weighted_gap": 0.5,
+                    "overall_feedback": "Good evaluation",
+                    "improvement_areas": [],
+                    "positive_feedback": ["Good"],
+                    "primary_metric_gap": 0.3
+                }
+
+                mock_chroma.query_past_mistakes.return_value = {"evaluations": []}
+                mock_chroma.add_to_memory.return_value = None
+
+                # Capture logs at WARNING level
+                with caplog.at_level(logging.WARNING):
+                    # Run evaluation - should not raise despite snapshot error
+                    service = JudgeService()
+                    result = service.full_judge_evaluation(
+                        user_eval_id="eval_snapshot_002",
+                        db=db_session
+                    )
+
+                    # Should return a judge_eval_id (success)
+                    assert result is not None
+                    assert result.startswith("judge_")
+
+                # Verify WARNING log contains expected messages
+                assert any("Snapshot creation failed" in record.message for record in caplog.records)
+                assert any("non-fatal" in record.message for record in caplog.records)
