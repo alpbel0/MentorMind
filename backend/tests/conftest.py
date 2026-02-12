@@ -23,6 +23,23 @@ from backend.models.database import get_db
 
 
 # =====================================================
+# Pytest Configuration
+# =====================================================
+
+def pytest_configure(config):
+    """
+    Register custom pytest markers.
+
+    Markers:
+        live_api: Tests requiring live API calls (e.g., OpenAI, Anthropic)
+    """
+    config.addinivalue_line(
+        "markers",
+        "live_api: mark test as requiring live API calls (e.g., OPENAI_API_KEY required)"
+    )
+
+
+# =====================================================
 # Setup Logging for Tests
 # =====================================================
 
@@ -106,6 +123,7 @@ def setup_test_schema(test_database_url):
     with engine.begin() as conn:
         conn.execute(text("DROP TYPE IF EXISTS metric_type CASCADE"))
         conn.execute(text("DROP TYPE IF EXISTS difficulty_level CASCADE"))
+        conn.execute(text("DROP TYPE IF EXISTS snapshot_status CASCADE"))
 
     engine.dispose()
 

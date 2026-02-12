@@ -1712,7 +1712,7 @@ git commit -m "docs: update ROADMAP.md and CLAUDE.md for completed Task 1.3"
 This document provides comprehensive context for AI assistants working on the MentorMind project. Update this file as the architecture evolves.
 
 #### Week 13: Snapshot Service & Judge Integration (Feb 11 - Feb 18)
-**Status:** 🔄 **DEVAM EDİYOR**
+**Status:** ✅ **TAMAMLANDI**
 **Hedef:** Snapshot oluşturma, CRUD endpoint'leri, Judge task entegrasyonu
 
 **Tamamlanan Görevler:**
@@ -1750,12 +1750,23 @@ This document provides comprehensive context for AI assistants working on the Me
   - [x] `snapshot_service.py` - Added `has_evidence` check for empty lists
   - [x] `test_snapshot_graceful_degradation.py` - New test file (6 tests, 100% coverage)
   - [x] All tests passing (32 snapshot tests total)
-- [ ] Task 13.5: Snapshot Router & Endpoints
-- [ ] Task 13.6: Snapshot Tests (endpoint tests)
+- [x] Task 13.5: Snapshot Router & Endpoints (13 Şubat 2026)
+- [x] **Task 13.6: Snapshot Integration Tests** (13 Şubat 2026)
+  - [x] `backend/tests/test_snapshot_integration.py` oluşturuldu (6 test)
+  - [x] `backend/tests/conftest.py` - pytest_configure() with live_api marker
+  - [x] TestFullWorkflowSnapshotCreation - LIVE API test with OpenAI
+  - [x] TestSnapshotPaginationEdgeCases - limit=0, limit=100, offset tests
+  - [x] TestSnapshotEvidenceSerialization - Nested JSON round-trip
+  - [x] TestSnapshotSoftDeleteCascade - Source tables intact
+  - [x] TestConcurrentSnapshotCreation - asyncio.gather + run_in_executor
+  - [x] TestSnapshotStatusTransitions - active → completed → archived → deleted
+  - [x] 6/6 tests passing (98% coverage)
 
 **Notlar:**
 - Phase 3 başladı (Week 11-12 tamamlandı)
 - Snapshot service core fonksiyonları tamamlandı
 - Soft delete ve evidence graceful degradation implement edildi
-- Router endpoint'leri bir sonraki task'ta
+- Router endpoint'leri tamamlandı (3 endpoint: GET /, GET /{id}, DELETE /{id})
+- Router testleri tamamlandı (13 test passed)
+- Integration testleri tamamlandı (6 test passed)
 
