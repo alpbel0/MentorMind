@@ -24,6 +24,15 @@ logger = logging.getLogger(__name__)
 
 
 # =====================================================
+# Exceptions
+# =====================================================
+
+class SnapshotNotFoundError(Exception):
+    """Snapshot bulunamadığında fırlatılır."""
+    pass
+
+
+# =====================================================
 # ID Generation
 # =====================================================
 
@@ -300,3 +309,34 @@ def list_snapshots(
     ).limit(limit).offset(offset).all()
 
     return snapshots, total
+
+
+# =====================================================
+# Soft Delete
+# =====================================================
+
+def soft_delete_snapshot(db: Session, snapshot_id: str) -> bool:
+    """
+    Snapshot'ı soft delete yapar (deleted_at ve status günceller).
+
+    Args:
+        db: Database session
+        snapshot_id: Silinecek snapshot ID
+
+    Returns:
+        True bulundu ve silindi, False bulunamadı
+    """
+    snapshot = db.query(EvaluationSnapshot).filter(
+        EvaluationSnapshot.id == snapshot_id,
+        EvaluationSnapshot.deleted_at.is_(None)
+    ).first()
+
+    if not snapshot:
+        return False
+
+    snapshot.deleted_at = datetime.utcnow()
+    snapshot.status = "archived"
+    db.commit()
+
+    logger.info(f"Snapshot soft deleted: {snapshot_id}")
+    return True
