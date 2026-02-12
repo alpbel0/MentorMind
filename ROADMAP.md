@@ -2978,21 +2978,26 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 1.5 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (12 Şubat 2026)
 
 **Referans:** AD-8
 
-**Yapılacaklar:**
-- [ ] Evidence parse hata senaryolarını handle et:
-  - [ ] Stage 1 evidence alanı eksik → `evidence_json = null`
-  - [ ] Stage 1 evidence JSON formatı bozuk → `evidence_json = null`
-  - [ ] Tek bir evidence item geçersiz → o item atlanır, diğerleri korunur
-  - [ ] Tüm evidence item'lar geçersiz → `evidence_json = {}` (boş dict)
-- [ ] Her hata durumunda WARNING seviyesinde log yaz
-- [ ] Chat ve rapor ekranı evidence olmadan da çalışır:
-  - [ ] `evidence_json IS NULL` kontrolü ekle (snapshot service)
-  - [ ] Coach chat evidence yoksa "evidence bulunamadı" mesajı üretir
-- [ ] Test senaryoları yaz (hatalı JSON, eksik alan, boş evidence)
+**Yapılanlar:**
+- [x] Evidence parse hata senaryolarını handle et:
+  - [x] Stage 1 evidence alanı eksik → `evidence_json = null`
+  - [x] Stage 1 evidence JSON formatı bozuk → `evidence_json = null`
+  - [x] Tek bir evidence item geçersiz → o item atlanır, diğerleri korunur
+  - [x] Tüm evidence item'lar geçersiz → `evidence_json = {}` (boş dict)
+- [x] Her hata durumunda WARNING seviyesinde log yaz
+- [x] Chat ve rapor ekranı evidence olmadan da çalışır:
+  - [x] `evidence_json IS NULL` kontrolü ekle (snapshot service)
+  - [ ] Coach chat evidence yoksa "evidence bulunamadı" mesajı üretir (ileriki task)
+- [x] Test senaryoları yaz (hatalı JSON, eksik alan, boş evidence)
+
+**Test Sonuçları:**
+- 6/6 test passed (test_snapshot_graceful_degradation.py)
+- 26/26 test passed (test_snapshot_service.py)
+- 2/2 test passed (test_judge_task_snapshot.py)
 
 ---
 

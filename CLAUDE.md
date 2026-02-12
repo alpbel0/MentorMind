@@ -1745,13 +1745,17 @@ This document provides comprehensive context for AI assistants working on the Me
   - [x] `test_judge_task_snapshot.py` - New test file for task integration (2 tests)
   - [x] `test_judge_task.py` - Update existing tests for `full_judge_evaluation` calls
   - [x] 76 tests passed (judge_service + judge_task_snapshot + snapshot_service)
-- [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
-- [ ] Task 13.4: Graceful Degradation — Evidence Parse Failure
+- [x] **Task 13.4: Graceful Degradation — Evidence Parse Failure** (12 Şubat 2026)
+  - [x] `snapshot_service.py` - Added try/except wrapper around evidence processing (AD-8)
+  - [x] `snapshot_service.py` - Added `has_evidence` check for empty lists
+  - [x] `test_snapshot_graceful_degradation.py` - New test file (6 tests, 100% coverage)
+  - [x] All tests passing (32 snapshot tests total)
 - [ ] Task 13.5: Snapshot Router & Endpoints
 - [ ] Task 13.6: Snapshot Tests (endpoint tests)
 
 **Notlar:**
 - Phase 3 başladı (Week 11-12 tamamlandı)
 - Snapshot service core fonksiyonları tamamlandı
-- Soft delete implement edildi, Router endpoint'leri bir sonraki task'ta
+- Soft delete ve evidence graceful degradation implement edildi
+- Router endpoint'leri bir sonraki task'ta
 

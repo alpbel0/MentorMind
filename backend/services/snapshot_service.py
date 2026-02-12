@@ -175,22 +175,46 @@ def create_evaluation_snapshot(
         judge_scores_display = stage1_result.get("independent_scores", {})
         judge_scores_json = convert_judge_scores_to_slugs(judge_scores_display)
 
-        # 4. Process evidence (convert display names to slugs)
-        raw_evidence = {}
-        for metric_display, metric_data in judge_scores_display.items():
-            if "evidence" in metric_data:
-                raw_evidence[metric_display] = metric_data["evidence"]
+        # 4. Process evidence (convert display names to slugs) - with graceful degradation (AD-8)
+        evidence_json = None  # Default to None
 
-        # Process through self-healing verification
-        processed_evidence = process_evidence(
-            model_answer=model_response.response_text,
-            raw_evidence=raw_evidence,
-            anchor_len=settings.evidence_anchor_len,
-            search_window=settings.evidence_search_window
-        )
+        try:
+            # Extract raw evidence from Stage 1 result
+            raw_evidence = {}
+            for metric_display, metric_data in judge_scores_display.items():
+                if "evidence" in metric_data:
+                    raw_evidence[metric_display] = metric_data["evidence"]
 
-        # 5. Convert evidence to slugs and format for JSON
-        evidence_json = convert_evidence_to_slugs(processed_evidence) if processed_evidence else None
+            # Skip processing if no evidence found (graceful)
+            if not raw_evidence:
+                logger.info(f"No evidence found in Stage 1 result for user_eval {user_eval.id}")
+            else:
+                # Process through self-healing verification
+                processed_evidence = process_evidence(
+                    model_answer=model_response.response_text,
+                    raw_evidence=raw_evidence,
+                    anchor_len=settings.evidence_anchor_len,
+                    search_window=settings.evidence_search_window
+                )
+
+                # Convert to slugs only if we have actual evidence items
+                # (not just empty lists from graceful degradation)
+                has_evidence = any(
+                    isinstance(items, list) and items
+                    for items in processed_evidence.values()
+                )
+                if has_evidence:
+                    evidence_json = convert_evidence_to_slugs(processed_evidence)
+
+        except Exception as e:
+            # Graceful degradation (AD-8): Evidence parse failure is non-fatal
+            logger.warning(
+                f"Evidence parse failed for user_eval {user_eval.id}, "
+                f"continuing without evidence. Error: {e}"
+            )
+            evidence_json = None
+
+        # 5. Convert primary_metric and bonus_metrics to slugs
 
         # 6. Convert primary_metric and bonus_metrics to slugs
         primary_metric_slug = display_name_to_slug(question.primary_metric)
