@@ -3275,7 +3275,10 @@ Aşama 5: Fallback        → verified: false
 - [x] Turn limit enforce ediliyor (atomik SQL)
 - [x] Idempotency ve reconnect çalışıyor
 - [x] Update-In-Place stratejisi çalışıyor
-- [x] Tüm chat service unit testleri geçiyor
+- [x] Tüm chat service unit testleri geçiyor (28 test)
+- [x] Task 14.3: Coach Router & Endpoints (21 test passed)
+- [x] Task 14.4: Coach Integration Tests (3 test passed)
+- [x] Task 14.5: Git commit & documentation update
 
 ---
 
