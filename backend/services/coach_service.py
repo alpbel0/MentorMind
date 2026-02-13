@@ -212,27 +212,66 @@ class CoachService:
         self,
         db: Session,
         snapshot_id: str
-    ) -> EvaluationSnapshot:
+    ) -> bool:
         """
-        Increment chat turn count for a snapshot.
+        Increment chat turn count atomically.
+
+        Uses atomic SQL UPDATE with WHERE clause to prevent race conditions
+        and enforce turn limit at the database level (AD-9).
 
         Args:
             db: Database session
             snapshot_id: Snapshot ID
 
         Returns:
-            Updated snapshot object
+            True if incremented successfully, False if limit reached or not found
         """
-        snapshot = get_snapshot(db, snapshot_id)
-        if not snapshot:
-            raise SnapshotNotFoundError(f"Snapshot not found: {snapshot_id}")
+        from sqlalchemy import update
 
-        snapshot.chat_turn_count += 1
+        # Atomic update with turn limit check
+        stmt = (
+            update(EvaluationSnapshot)
+            .where(EvaluationSnapshot.id == snapshot_id)
+            .where(EvaluationSnapshot.deleted_at.is_(None))
+            .where(EvaluationSnapshot.chat_turn_count < EvaluationSnapshot.max_chat_turns)
+            .values(chat_turn_count=EvaluationSnapshot.chat_turn_count + 1)
+        )
+
+        result = db.execute(stmt)
         db.commit()
-        db.refresh(snapshot)
 
-        logger.info(f"Chat turn count incremented to {snapshot.chat_turn_count} for {snapshot_id}")
-        return snapshot
+        success = result.rowcount > 0
+        if success:
+            logger.info(f"Chat turn count incremented atomically for {snapshot_id}")
+        else:
+            logger.warning(f"Failed to increment turn count for {snapshot_id} (limit reached or not found)")
+
+        return success
+
+    def get_existing_assistant_message(
+        self,
+        db: Session,
+        snapshot_id: str,
+        client_message_id: str
+    ) -> ChatMessage | None:
+        """
+        Check if an assistant message already exists for this turn.
+
+        Used for idempotency and reconnection (AD-4).
+
+        Args:
+            db: Database session
+            snapshot_id: Snapshot ID
+            client_message_id: Shared Turn ID
+
+        Returns:
+            ChatMessage object if found, else None
+        """
+        return db.query(ChatMessage).filter(
+            ChatMessage.snapshot_id == snapshot_id,
+            ChatMessage.client_message_id == client_message_id,
+            ChatMessage.role == "assistant"
+        ).first()
 
     # =====================================================
     # Message Persistence
@@ -288,79 +327,108 @@ class CoachService:
         is_complete: bool = True
     ) -> ChatMessage:
         """
-        Save an assistant message to database.
+        Save or update an assistant message (Update-In-Place for AD-4).
+
+        If a partial message exists for this client_message_id, it updates
+        the existing record. Otherwise, it creates a new one.
 
         Args:
             db: Database session
             snapshot_id: Snapshot ID
             content: Message content
-            client_message_id: Shared Turn ID (same as user message)
+            client_message_id: Shared Turn ID
             is_complete: True if fully delivered, False if streaming
 
         Returns:
-            Created ChatMessage object
+            Created or updated ChatMessage object
         """
-        message_id = generate_message_id()
+        # Check for existing partial message (Update-In-Place)
+        existing = self.get_existing_assistant_message(db, snapshot_id, client_message_id)
 
-        message = ChatMessage(
-            id=message_id,
-            client_message_id=client_message_id,  # Shared Turn ID
-            snapshot_id=snapshot_id,
-            role="assistant",
-            content=content,
-            selected_metrics=None,
-            is_complete=is_complete,
-            token_count=0  # TODO: Calculate actual token count
-        )
+        if existing:
+            existing.content = content
+            existing.is_complete = is_complete
+            existing.updated_at = datetime.now()
+            message = existing
+            logger.debug(f"Assistant message updated (Update-In-Place): {message.id}")
+        else:
+            # Create new message
+            message_id = generate_message_id()
+            message = ChatMessage(
+                id=message_id,
+                client_message_id=client_message_id,
+                snapshot_id=snapshot_id,
+                role="assistant",
+                content=content,
+                selected_metrics=None,
+                is_complete=is_complete,
+                token_count=0
+            )
+            db.add(message)
+            logger.debug(f"New assistant message saved: {message_id}")
 
-        db.add(message)
         db.commit()
         db.refresh(message)
-
-        logger.debug(f"Assistant message saved: {message_id} for snapshot {snapshot_id}")
         return message
 
-    # =====================================================
-    # Init Greeting (Idempotent)
-    # =====================================================
-
-    def generate_init_greeting(
+    def get_remaining_turns(
         self,
         db: Session,
-        snapshot_id: str,
-        selected_metrics: list[str]
-    ) -> str:
+        snapshot_id: str
+    ) -> int:
         """
-        Generate idempotent init greeting for conversation start.
-
-        The greeting is deterministic based on snapshot content and
-        selected metrics - same inputs always produce same greeting.
+        Get remaining chat turns for a snapshot.
 
         Args:
             db: Database session
             snapshot_id: Snapshot ID
-            selected_metrics: List of metric slugs user wants to discuss
 
         Returns:
-            Greeting message string in Turkish
-
-        Raises:
-            SnapshotNotFoundError: If snapshot not found
-            InvalidSelectedMetricsError: If selected metrics are invalid
+            Number of turns remaining
         """
+        snapshot = get_snapshot(db, snapshot_id)
+        if not snapshot:
+            return 0
+        
+        remaining = snapshot.max_chat_turns - snapshot.chat_turn_count
+        return max(0, remaining)
+
+    # =====================================================
+    # Init Greeting (Idempotent & Streaming)
+    # =====================================================
+
+    async def handle_init_greeting(
+        self,
+        db: Session,
+        snapshot_id: str,
+        selected_metrics: list[str]
+    ) -> AsyncGenerator[str, None]:
+        """
+        Handle initial greeting with idempotency and streaming (AD-4).
+
+        1. Check if init greeting already exists in DB.
+        2. If exists: Stream the cached response.
+        3. If not: Generate via LLM (streaming), save to DB.
+        4. Does NOT increment chat turn count (bonus message).
+        """
+        client_message_id = f"init_{snapshot_id}"
+        
+        # 1. Check for existing cached greeting
+        existing = self.get_existing_assistant_message(db, snapshot_id, client_message_id)
+        
+        if existing and existing.is_complete:
+            logger.info(f"Returning cached init greeting for snapshot {snapshot_id}")
+            sse_chunk = json.dumps({"content": existing.content})
+            yield f"data: {sse_chunk}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # 2. Get snapshot context
         snapshot = self.get_snapshot_context(db, snapshot_id)
 
-        # Validate selected metrics
-        for metric in selected_metrics:
-            # Check if metric slug is valid (basic check)
-            if not isinstance(metric, str) or metric not in [
-                "truthfulness", "helpfulness", "safety", "bias",
-                "clarity", "consistency", "efficiency", "robustness"
-            ]:
-                raise InvalidSelectedMetricsError(f"Invalid metric slug: {metric}")
-
-        # Render greeting using coach prompts
-        greeting = render_coach_init_greeting(
+        # 3. Build Prompt Context
+        # Note: Init greeting uses render_coach_init_greeting template
+        prompt_content = render_coach_init_greeting(
             question=snapshot.question,
             model_answer=snapshot.model_answer,
             user_scores=snapshot.user_scores_json,
@@ -369,8 +437,61 @@ class CoachService:
             selected_metrics=selected_metrics
         )
 
-        logger.info(f"Init greeting generated for snapshot {snapshot_id}")
-        return greeting
+        messages = [
+            {"role": "system", "content": COACH_SYSTEM_PROMPT},
+            {"role": "user", "content": prompt_content}
+        ]
+
+        full_response = ""
+        start_time = time.time()
+
+        try:
+            # Initialize partial record if not exists
+            if not existing:
+                self.save_assistant_message(
+                    db=db,
+                    snapshot_id=snapshot_id,
+                    content="",
+                    client_message_id=client_message_id,
+                    is_complete=False
+                )
+
+            # 4. Stream from LLM
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                stream=True,
+                timeout=self.timeout
+            )
+
+            for chunk in response:
+                if chunk.choices and chunk.choices[0].delta.content:
+                    content = chunk.choices[0].delta.content
+                    full_response += content
+                    yield f"data: {json.dumps({'content': content})}\n\n"
+
+            yield "data: [DONE]\n\n"
+
+            # 5. Final Save (Complete)
+            self.save_assistant_message(
+                db=db,
+                snapshot_id=snapshot_id,
+                content=full_response,
+                client_message_id=client_message_id,
+                is_complete=True
+            )
+
+            log_llm_call(
+                provider="openai",
+                model=self.model,
+                purpose="coach_init_greeting",
+                duration_seconds=time.time() - start_time,
+                success=True
+            )
+
+        except Exception as e:
+            logger.error(f"Coach Init API call failed: {e}")
+            raise ValueError(f"Coach Init API call failed: {e}") from e
 
     # =====================================================
     # Chat Turn Streaming
@@ -385,43 +506,36 @@ class CoachService:
         client_message_id: str
     ) -> AsyncGenerator[str, None]:
         """
-        Stream coach response using SSE format.
+        Stream coach response using SSE format with full logic (AD-4, AD-9).
 
-        Process:
-        1. Get snapshot and validate chat availability
-        2. Get chat history (last N messages)
-        3. Save user message to database
-        4. Build chat context for LLM
-        5. Call OpenRouter API with streaming=True
-        6. Yield SSE-formatted chunks
-        7. Save complete assistant message
-        8. Increment chat turn count
-
-        Args:
-            db: Database session
-            snapshot_id: Snapshot ID
-            user_message: User's message text
-            selected_metrics: List of metric slugs user selected
-            client_message_id: Client UUID for idempotency
-
-        Yields:
-            SSE-formatted response chunks (strings starting with "data: ")
-
-        Raises:
-            SnapshotNotFoundError: If snapshot not found
-            ChatNotAvailableError: If chat not available
-            MaxTurnsExceededError: If max turns exceeded
-            InvalidSelectedMetricsError: If metrics invalid
-            ValueError: If API call fails
+        1. Idempotency Check: If complete assistant message exists for this ID, return it.
+        2. Reconnect Logic: If partial assistant message exists, restart and update.
+        3. Turn Limit: Atomically increment turn count.
+        4. LLM Generation: Stream from OpenRouter.
+        5. Persistence: Update-In-Place DB record.
         """
-        # 1. Get and validate snapshot
+        # 1. & 2. Idempotency and Reconnect Logic
+        existing_assistant = self.get_existing_assistant_message(db, snapshot_id, client_message_id)
+        
+        if existing_assistant and existing_assistant.is_complete:
+            logger.info(f"Duplicate request detected for {client_message_id}, returning existing response.")
+            sse_chunk = json.dumps({"content": existing_assistant.content})
+            yield f"data: {sse_chunk}\n\n"
+            yield "data: [DONE]\n\n"
+            return
+
+        # 3. Get and validate snapshot
         snapshot = self.get_snapshot_context(db, snapshot_id)
 
-        # 2. Get chat history
-        history_limit = min(settings.chat_history_window, snapshot.chat_turn_count + 1)
-        chat_history = self.get_chat_history(db, snapshot_id, limit=history_limit)
+        # 4. Atomic Turn Increment (only for new messages, not for reconnects)
+        if not existing_assistant:
+            success = self.increment_chat_turn(db, snapshot_id)
+            if not success:
+                # This should have been caught by get_snapshot_context, 
+                # but atomic check is the final authority.
+                raise MaxTurnsExceededError(f"Turn limit reached for snapshot {snapshot_id}")
 
-        # 3. Save user message
+        # 5. Save/Verify User Message
         try:
             self.save_user_message(
                 db=db,
@@ -430,13 +544,15 @@ class CoachService:
                 selected_metrics=selected_metrics,
                 client_message_id=client_message_id
             )
-        except Exception as e:
-            logger.warning(f"Failed to save user message (may be duplicate): {e}")
-            # Continue - idempotency handles duplicates
+        except Exception:
+            # UNIQUE index prevents duplicates, we can safely continue
+            pass
 
-        # 4. Build chat context
+        # 6. Build LLM Context
+        history_limit = min(settings.chat_history_window, snapshot.chat_turn_count + 1)
+        chat_history = self.get_chat_history(db, snapshot_id, limit=history_limit)
+        
         system_prompt = COACH_SYSTEM_PROMPT
-
         user_prompt = render_coach_user_prompt(
             question=snapshot.question,
             model_answer=snapshot.model_answer,
@@ -449,7 +565,7 @@ class CoachService:
             history_window=settings.chat_history_window
         )
 
-        # 5. Call OpenRouter API with streaming
+        # 7. Call OpenRouter API with streaming
         messages = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt}
@@ -459,7 +575,16 @@ class CoachService:
         start_time = time.time()
 
         try:
-            # Make streaming API call
+            # Initialize record as incomplete if it doesn't exist
+            if not existing_assistant:
+                self.save_assistant_message(
+                    db=db,
+                    snapshot_id=snapshot_id,
+                    content="",
+                    client_message_id=client_message_id,
+                    is_complete=False
+                )
+
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -471,31 +596,15 @@ class CoachService:
                 }
             )
 
-            # Stream response chunks
             for chunk in response:
                 if chunk.choices and chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     full_response += content
+                    yield f"data: {json.dumps({'content': content})}\n\n"
 
-                    # Yield SSE formatted chunk
-                    sse_chunk = json.dumps({"content": content})
-                    yield f"data: {sse_chunk}\n\n"
-
-            # Send final done message
             yield "data: [DONE]\n\n"
 
-            duration = time.time() - start_time
-
-            # Log successful LLM call
-            log_llm_call(
-                provider="openai",  # Using OpenAI client for OpenRouter
-                model=self.model,
-                purpose="coach_chat",
-                duration_seconds=duration,
-                success=True
-            )
-
-            # 6. Save assistant message
+            # 8. Final Save (Complete)
             self.save_assistant_message(
                 db=db,
                 snapshot_id=snapshot_id,
@@ -504,29 +613,24 @@ class CoachService:
                 is_complete=True
             )
 
-            # 7. Increment chat turn count
-            self.increment_chat_turn(db, snapshot_id)
-
-            logger.info(
-                f"Coach response streamed for snapshot {snapshot_id}, "
-                f"turn_count={snapshot.chat_turn_count + 1}, "
-                f"duration={duration:.2f}s"
-            )
-
-        except Exception as e:
-            duration = time.time() - start_time
-
-            # Log failed LLM call
             log_llm_call(
                 provider="openai",
                 model=self.model,
                 purpose="coach_chat",
-                duration_seconds=duration,
+                duration_seconds=time.time() - start_time,
+                success=True
+            )
+
+        except Exception as e:
+            logger.error(f"Coach API call failed: {e}")
+            log_llm_call(
+                provider="openai",
+                model=self.model,
+                purpose="coach_chat",
+                duration_seconds=time.time() - start_time,
                 success=False,
                 error=str(e)
             )
-
-            logger.error(f"Coach API call failed: {e}")
             raise ValueError(f"Coach API call failed: {e}") from e
 
 
@@ -577,20 +681,55 @@ def get_chat_history(
     return coach_service.get_chat_history(db, snapshot_id, limit)
 
 
-def generate_init_greeting(
+def increment_chat_turn(
+    db: Session,
+    snapshot_id: str
+) -> bool:
+    """
+    Increment chat turn count using global service instance.
+
+    Args:
+        db: Database session
+        snapshot_id: Snapshot ID
+
+    Returns:
+        True if incremented, False otherwise
+    """
+    return coach_service.increment_chat_turn(db, snapshot_id)
+
+
+def get_remaining_turns(
+    db: Session,
+    snapshot_id: str
+) -> int:
+    """
+    Get remaining turns using global service instance.
+
+    Args:
+        db: Database session
+        snapshot_id: Snapshot ID
+
+    Returns:
+        Number of turns remaining
+    """
+    return coach_service.get_remaining_turns(db, snapshot_id)
+
+
+async def handle_init_greeting(
     db: Session,
     snapshot_id: str,
     selected_metrics: list[str]
-) -> str:
+) -> AsyncGenerator[str, None]:
     """
-    Generate init greeting using global service instance.
+    Handle init greeting using global service instance.
 
     Args:
         db: Database session
         snapshot_id: Snapshot ID
         selected_metrics: List of metric slugs
 
-    Returns:
-        Greeting message string
+    Yields:
+        SSE response chunks
     """
-    return coach_service.generate_init_greeting(db, snapshot_id, selected_metrics)
+    async for chunk in coach_service.handle_init_greeting(db, snapshot_id, selected_metrics):
+        yield chunk

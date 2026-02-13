@@ -12,6 +12,7 @@ import asyncio
 import json
 import uuid
 import pytest
+import pytest_asyncio
 import httpx
 from fastapi import FastAPI
 from sqlalchemy.orm import Session
@@ -25,7 +26,7 @@ from backend.models.database import get_db
 pytestmark = [pytest.mark.live_api, pytest.mark.asyncio]
 
 
-@pytest.fixture(scope="function")
+@pytest_asyncio.fixture(scope="function")
 async def async_client(db_session: Session):
     """Create an async httpx client for testing SSE endpoints."""
     app = FastAPI()
@@ -69,18 +70,31 @@ class TestFullCoachWorkflow:
         """
         snapshot_id = integration_snapshot.id
         
-        # 1. Init Greeting
+        # 1. Init Greeting (Streaming)
         # -------------------------------------------------
-        greeting_response = await async_client.post(
+        greeting_content = ""
+        async with async_client.stream(
+            "POST",
             f"/api/snapshots/{snapshot_id}/chat/init",
             json={"selected_metrics": ["truthfulness"]}
-        )
+        ) as greeting_response:
+            assert greeting_response.status_code == 200
+            assert "text/event-stream" in greeting_response.headers["content-type"]
+            
+            async for line in greeting_response.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        if "content" in chunk:
+                            greeting_content += chunk["content"]
+                    except json.JSONDecodeError:
+                        continue
         
-        assert greeting_response.status_code == 200
-        data = greeting_response.json()
-        assert "greeting" in data
-        assert len(data["greeting"]) > 10
-        print(f"\n[INIT GREETING]: {data['greeting'][:50]}...")
+        assert len(greeting_content) > 10
+        print(f"\n[INIT GREETING]: {greeting_content[:50]}...")
 
         # 2. Chat Turn (Streaming)
         # -------------------------------------------------
@@ -131,9 +145,15 @@ class TestFullCoachWorkflow:
         assert history_response.status_code == 200
         history_data = history_response.json()
         
-        # Should have 2 messages: user + assistant
+        # Should have 3 messages: init greeting + user + assistant
         messages = history_data["messages"]
-        assert len(messages) == 2
+        assert len(messages) == 3
+        
+        # Verify init greeting (first assistant message)
+        init_msg = messages[0]
+        assert init_msg["role"] == "assistant"
+        assert init_msg["client_message_id"] == f"init_{snapshot_id}"
+        assert len(init_msg["content"]) > 0
         
         # Verify user message
         user_msg = next((m for m in messages if m["role"] == "user"), None)
@@ -141,15 +161,25 @@ class TestFullCoachWorkflow:
         assert user_msg["content"] == chat_request["message"]
         assert user_msg["client_message_id"] == client_msg_id
 
-        # Verify assistant message
-        assistant_msg = next((m for m in messages if m["role"] == "assistant"), None)
+        # Verify assistant message (NOT init greeting - filter by client_message_id)
+        assistant_msg = next(
+            (m for m in messages 
+             if m["role"] == "assistant" 
+             and m["client_message_id"] != f"init_{snapshot_id}"), 
+            None
+        )
         assert assistant_msg is not None
+        assert assistant_msg["client_message_id"] == client_msg_id
         assert len(assistant_msg["content"]) > 0
         assert assistant_msg["is_complete"] is True
-        assert assistant_msg["client_message_id"] == client_msg_id
         
         # Verify turn count incremented (via snapshot info in history)
-        assert history_data["total"] == 2
+        assert history_data["total"] == 3
+        
+        # Verify first message is init greeting
+        init_greeting = messages[0]
+        assert init_greeting["role"] == "assistant"
+        assert init_greeting["client_message_id"] == f"init_{snapshot_id}"
 
 
 class TestCoachChatRules:
@@ -186,23 +216,51 @@ class TestCoachChatRules:
         async_client: httpx.AsyncClient, 
         integration_snapshot: EvaluationSnapshot
     ):
-        """Verify that multiple init calls for same metrics return same greeting."""
+        """Verify that multiple init calls for same metrics return same greeting (via SSE)."""
         payload = {"selected_metrics": ["truthfulness", "clarity"]}
         
-        # First call
-        resp1 = await async_client.post(
+        # First call (streaming)
+        greeting1 = ""
+        async with async_client.stream(
+            "POST",
             f"/api/snapshots/{integration_snapshot.id}/chat/init",
             json=payload
-        )
-        greeting1 = resp1.json()["greeting"]
+        ) as resp1:
+            assert resp1.status_code == 200
+            assert "text/event-stream" in resp1.headers["content-type"]
+            
+            async for line in resp1.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        if "content" in chunk:
+                            greeting1 += chunk["content"]
+                    except json.JSONDecodeError:
+                        continue
         
-        # Second call
-        resp2 = await async_client.post(
+        # Second call (should return cached, streaming)
+        greeting2 = ""
+        async with async_client.stream(
+            "POST",
             f"/api/snapshots/{integration_snapshot.id}/chat/init",
             json=payload
-        )
-        greeting2 = resp2.json()["greeting"]
+        ) as resp2:
+            assert resp2.status_code == 200
+            
+            async for line in resp2.aiter_lines():
+                if line.startswith("data: "):
+                    data_str = line[6:]
+                    if data_str == "[DONE]":
+                        break
+                    try:
+                        chunk = json.loads(data_str)
+                        if "content" in chunk:
+                            greeting2 += chunk["content"]
+                    except json.JSONDecodeError:
+                        continue
         
-        assert greeting1 == greeting2
-        assert resp1.status_code == 200
-        assert resp2.status_code == 200
+        assert len(greeting1) > 0
+        assert greeting1 == greeting2  # Idempotent

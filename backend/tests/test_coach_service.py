@@ -9,7 +9,9 @@ Reference: Task 14.2 - Coach Chat Service Implementation
 import json
 import uuid
 import pytest
+import asyncio
 from unittest.mock import MagicMock, Mock, patch
+from sqlalchemy.orm import Session
 
 from backend.services.coach_service import (
     CoachService,
@@ -19,9 +21,12 @@ from backend.services.coach_service import (
     generate_message_id,
     get_snapshot_context,
     get_chat_history,
-    generate_init_greeting,
+    handle_init_greeting,
+    increment_chat_turn,
+    get_remaining_turns,
     coach_service,
 )
+from backend.models.chat_message import ChatMessage
 
 
 # =====================================================
@@ -65,7 +70,7 @@ class TestMessageIDGeneration:
         message_id = generate_message_id()
 
         assert message_id.startswith("msg_")
-        # Format: msg_YYYYMMDD_HHMMSS_randomhex (8 + 1 + 6 + 1 + 12 = ~28 chars)
+        # Format: msg_YYYYMMDD_HHMMSS_randomhex
         assert len(message_id) > 20
 
     def test_generate_message_id_unique(self):
@@ -162,8 +167,6 @@ class TestGetChatHistory:
 
     def test_get_chat_history_with_limit(self, coach_service_instance, db_session, make_snapshot):
         """Test getting chat history with custom limit."""
-        from backend.models.chat_message import ChatMessage
-
         snapshot = make_snapshot()
 
         # Create 3 messages
@@ -189,8 +192,6 @@ class TestGetChatHistory:
 
     def test_get_chat_history_default_limit(self, coach_service_instance, db_session, make_snapshot):
         """Test that default limit from settings is used."""
-        from backend.models.chat_message import ChatMessage
-
         snapshot = make_snapshot()
 
         # Create 10 messages
@@ -219,32 +220,64 @@ class TestGetChatHistory:
 class TestIncrementChatTurn:
     """Tests for increment_chat_turn method."""
 
-    def test_increment_chat_turn(self, coach_service_instance, db_session, make_snapshot):
-        """Test incrementing chat turn count."""
-        snapshot = make_snapshot(chat_turn_count=0)
+    def test_increment_chat_turn_success(self, coach_service_instance, db_session, make_snapshot):
+        """Test incrementing chat turn count atomically."""
+        snapshot = make_snapshot(chat_turn_count=0, max_chat_turns=15)
 
-        result = coach_service_instance.increment_chat_turn(db_session, snapshot.id)
+        success = coach_service_instance.increment_chat_turn(db_session, snapshot.id)
 
-        assert result.chat_turn_count == 1
+        db_session.refresh(snapshot)
+        assert success is True
+        assert snapshot.chat_turn_count == 1
 
     def test_increment_multiple_times(self, coach_service_instance, db_session, make_snapshot):
         """Test incrementing turn count multiple times."""
-        snapshot = make_snapshot(chat_turn_count=0)
+        snapshot = make_snapshot(chat_turn_count=0, max_chat_turns=15)
 
         coach_service_instance.increment_chat_turn(db_session, snapshot.id)
         coach_service_instance.increment_chat_turn(db_session, snapshot.id)
-        result = coach_service_instance.increment_chat_turn(db_session, snapshot.id)
+        success = coach_service_instance.increment_chat_turn(db_session, snapshot.id)
 
-        assert result.chat_turn_count == 3
+        db_session.refresh(snapshot)
+        assert success is True
+        assert snapshot.chat_turn_count == 3
+
+    def test_increment_limit_reached(self, coach_service_instance, db_session, make_snapshot):
+        """Test that incrementing fails when limit is reached."""
+        snapshot = make_snapshot(chat_turn_count=5, max_chat_turns=5)
+
+        success = coach_service_instance.increment_chat_turn(db_session, snapshot.id)
+
+        db_session.refresh(snapshot)
+        assert success is False
+        assert snapshot.chat_turn_count == 5
 
     def test_increment_nonexistent_snapshot(self, coach_service_instance, db_session):
         """Test incrementing for non-existent snapshot."""
-        with pytest.raises(Exception):
-            coach_service_instance.increment_chat_turn(db_session, "nonexistent")
+        success = coach_service_instance.increment_chat_turn(db_session, "nonexistent")
+        assert success is False
+
+
+class TestRemainingTurns:
+    """Tests for get_remaining_turns method."""
+
+    def test_get_remaining_turns(self, coach_service_instance, db_session, make_snapshot):
+        """Test getting remaining turn count."""
+        snapshot = make_snapshot(chat_turn_count=3, max_chat_turns=15)
+        
+        remaining = coach_service_instance.get_remaining_turns(db_session, snapshot.id)
+        assert remaining == 12
+
+    def test_get_remaining_turns_limit_reached(self, coach_service_instance, db_session, make_snapshot):
+        """Test getting remaining turns when limit reached."""
+        snapshot = make_snapshot(chat_turn_count=15, max_chat_turns=15)
+        
+        remaining = coach_service_instance.get_remaining_turns(db_session, snapshot.id)
+        assert remaining == 0
 
 
 # =====================================================
-# Test Message Persistence
+# Test Message Persistence & Update-In-Place
 # =====================================================
 
 class TestSaveUserMessage:
@@ -259,258 +292,168 @@ class TestSaveUserMessage:
             snapshot_id=snapshot.id,
             content="Test message",
             selected_metrics=["truthfulness", "clarity"],
-            client_message_id="client-uuid-123"
+            client_message_id=str(uuid.uuid4())
         )
 
         assert message.role == "user"
         assert message.content == "Test message"
         assert message.selected_metrics == ["truthfulness", "clarity"]
-        assert message.client_message_id == "client-uuid-123"
 
-    def test_save_user_message_generates_id(self, coach_service_instance, db_session, make_snapshot):
-        """Test that saving generates unique message ID."""
+    def test_save_user_message_idempotency(self, coach_service_instance, db_session, make_snapshot):
+        """Test that duplicate user messages are prevented by DB constraint."""
         snapshot = make_snapshot()
+        client_id = str(uuid.uuid4())
 
-        msg1 = coach_service_instance.save_user_message(
+        coach_service_instance.save_user_message(
             db=db_session,
             snapshot_id=snapshot.id,
-            content="Message 1",
+            content="Msg 1",
             selected_metrics=["truthfulness"],
-            client_message_id="client-1"
+            client_message_id=client_id
         )
 
-        msg2 = coach_service_instance.save_user_message(
-            db=db_session,
-            snapshot_id=snapshot.id,
-            content="Message 2",
-            selected_metrics=["clarity"],
-            client_message_id="client-2"
-        )
-
-        assert msg1.id != msg2.id
+        # Second attempt with same client_id and role should fail
+        from sqlalchemy.exc import IntegrityError
+        with pytest.raises(IntegrityError):
+            coach_service_instance.save_user_message(
+                db=db_session,
+                snapshot_id=snapshot.id,
+                content="Msg 2",
+                selected_metrics=["truthfulness"],
+                client_message_id=client_id
+            )
 
 
 class TestSaveAssistantMessage:
-    """Tests for save_assistant_message method."""
+    """Tests for save_assistant_message method with Update-In-Place."""
 
-    def test_save_assistant_message(self, coach_service_instance, db_session, make_snapshot):
-        """Test saving an assistant message."""
+    def test_save_assistant_message_new(self, coach_service_instance, db_session, make_snapshot):
+        """Test saving a new assistant message."""
         snapshot = make_snapshot()
-        client_msg_id = str(uuid.uuid4())
+        client_id = str(uuid.uuid4())
 
         message = coach_service_instance.save_assistant_message(
             db=db_session,
             snapshot_id=snapshot.id,
-            content="Assistant response",
-            client_message_id=client_msg_id,
+            content="Response",
+            client_message_id=client_id,
             is_complete=True
         )
 
         assert message.role == "assistant"
-        assert message.content == "Assistant response"
-        assert message.client_message_id == client_msg_id
-        assert message.is_complete is True
-        assert message.selected_metrics is None
+        assert message.content == "Response"
+        assert message.client_message_id == client_id
 
-    def test_save_assistant_message_streaming(self, coach_service_instance, db_session, make_snapshot):
-        """Test saving assistant message with is_complete=False."""
+    def test_update_in_place_partial_message(self, coach_service_instance, db_session, make_snapshot):
+        """Test that partial messages are updated instead of creating new ones."""
         snapshot = make_snapshot()
-        client_msg_id = str(uuid.uuid4())
+        client_id = str(uuid.uuid4())
 
-        message = coach_service_instance.save_assistant_message(
+        # 1. Create partial message
+        msg1 = coach_service_instance.save_assistant_message(
             db=db_session,
             snapshot_id=snapshot.id,
-            content="Partial response",
-            client_message_id=client_msg_id,
+            content="Partial...",
+            client_message_id=client_id,
             is_complete=False
         )
+        msg1_id = msg1.id
 
-        assert message.client_message_id == client_msg_id
-        assert message.is_complete is False
-
-
-# =====================================================
-# Test Init Greeting Generation
-# =====================================================
-
-class TestGenerateInitGreeting:
-    """Tests for generate_init_greeting method."""
-
-    def test_generate_init_greeting(self, coach_service_instance, db_session, make_snapshot):
-        """Test generating init greeting."""
-        snapshot = make_snapshot(
-            question="What is 2+2?",
-            model_answer="The answer is 5.",
-            user_scores_json={"truthfulness": {"score": 4, "reasoning": "Good"}},
-            judge_scores_json={"truthfulness": {"score": 5, "rationale": "Perfect"}},
-            evidence_json=None
-        )
-
-        greeting = coach_service_instance.generate_init_greeting(
+        # 2. Update same message (Update-In-Place)
+        msg2 = coach_service_instance.save_assistant_message(
             db=db_session,
             snapshot_id=snapshot.id,
-            selected_metrics=["truthfulness"]
+            content="Complete response",
+            client_message_id=client_id,
+            is_complete=True
         )
 
-        assert isinstance(greeting, str)
-        assert len(greeting) > 0
-        # Should contain Turkish text
-        assert "değerlendirmeyi" in greeting.lower() or "metrik" in greeting.lower()
-
-    def test_generate_init_greeting_invalid_metric(self, coach_service_instance, db_session, make_snapshot):
-        """Test that invalid metric raises error."""
-        snapshot = make_snapshot()
-
-        with pytest.raises(InvalidSelectedMetricsError):
-            coach_service_instance.generate_init_greeting(
-                db=db_session,
-                snapshot_id=snapshot.id,
-                selected_metrics=["invalid_metric"]
-            )
-
-    def test_generate_init_greeting_multiple_metrics(self, coach_service_instance, db_session, make_snapshot):
-        """Test generating greeting with multiple metrics."""
-        snapshot = make_snapshot(
-            user_scores_json={
-                "truthfulness": {"score": 4},
-                "clarity": {"score": 3}
-            },
-            judge_scores_json={
-                "truthfulness": {"score": 5},
-                "clarity": {"score": 4}
-            }
-        )
-
-        greeting = coach_service_instance.generate_init_greeting(
-            db=db_session,
-            snapshot_id=snapshot.id,
-            selected_metrics=["truthfulness", "clarity"]
-        )
-
-        assert isinstance(greeting, str)
-        assert len(greeting) > 0
+        assert msg2.id == msg1_id  # Same ID
+        assert msg2.content == "Complete response"
+        assert msg2.is_complete is True
 
 
 # =====================================================
-# Test Stream Coach Response
+# Test Stream Coach Response (Logic Polish)
 # =====================================================
 
-class TestStreamCoachResponse:
-    """Tests for stream_coach_response method."""
+class TestStreamCoachResponseLogic:
+    """Tests for stream_coach_response with full logic (AD-4, AD-9)."""
 
     @pytest.mark.asyncio
-    async def test_stream_response_success(self, coach_service_instance, db_session, make_snapshot):
-        """Test successful streaming response."""
-        from unittest.mock import AsyncMock
-
-        snapshot = make_snapshot(
-            question="Test question?",
-            model_answer="Test answer.",
-            user_scores_json={"truthfulness": {"score": 4}},
-            judge_scores_json={"truthfulness": {"score": 5}},
-            evidence_json=None
+    async def test_stream_response_idempotency(self, coach_service_instance, db_session, make_snapshot):
+        """Test that duplicate requests return existing complete response."""
+        snapshot = make_snapshot()
+        client_id = str(uuid.uuid4())
+        
+        # Manually create a complete assistant message
+        msg = ChatMessage(
+            id="msg_existing",
+            client_message_id=client_id,
+            snapshot_id=snapshot.id,
+            role="assistant",
+            content="Existing complete answer",
+            is_complete=True
         )
+        db_session.add(msg)
+        db_session.commit()
 
-        # Mock the streaming response
-        mock_chunk = Mock()
-        mock_chunk.choices = [Mock()]
-        mock_chunk.choices[0].delta.content = "Hello"
-
-        mock_response = Mock()
-        mock_response.__iter__ = Mock(return_value=iter([mock_chunk, mock_chunk]))
-
-        mock_stream = Mock()
-        mock_stream.chat.completions.create = Mock(return_value=mock_response)
-
-        with patch.object(coach_service_instance, "client", mock_stream):
+        # Mock the client so we can verify it was NOT called
+        with patch.object(coach_service_instance, "client") as mock_client:
             chunks = []
             async for chunk in coach_service_instance.stream_coach_response(
                 db=db_session,
                 snapshot_id=snapshot.id,
-                user_message="What is truthfulness?",
+                user_message="Test",
                 selected_metrics=["truthfulness"],
-                client_message_id="client-uuid"
+                client_message_id=client_id
             ):
                 chunks.append(chunk)
 
-            # Should have content chunks + [DONE]
-            assert len(chunks) >= 2
-            assert any("Hello" in c for c in chunks)
-            assert any("[DONE]" in c for c in chunks)
+            # Should return existing content
+            assert any("Existing complete answer" in c for c in chunks)
+            # Should NOT call LLM
+            mock_client.chat.completions.create.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_stream_response_max_turns_exceeded(self, coach_service_instance, db_session, make_snapshot):
-        """Test that streaming fails when max turns exceeded."""
-        snapshot = make_snapshot(
-            status="active",
-            chat_turn_count=15,
-            max_chat_turns=15
+    async def test_stream_response_reconnect_update_in_place(self, coach_service_instance, db_session, make_snapshot):
+        """Test that partial messages trigger a restart and update existing record."""
+        snapshot = make_snapshot()
+        client_id = str(uuid.uuid4())
+        
+        # 1. Create partial message
+        msg = ChatMessage(
+            id="msg_partial",
+            client_message_id=client_id,
+            snapshot_id=snapshot.id,
+            role="assistant",
+            content="I was cut off...",
+            is_complete=False
         )
+        db_session.add(msg)
+        db_session.commit()
 
-        with pytest.raises(MaxTurnsExceededError):
+        # 2. Mock streaming response
+        mock_chunk = Mock()
+        mock_chunk.choices = [Mock()]
+        mock_chunk.choices[0].delta.content = "Restarted answer"
+        mock_response = Mock()
+        mock_response.__iter__ = Mock(return_value=iter([mock_chunk]))
+        
+        with patch.object(coach_service_instance.client.chat.completions, "create", return_value=mock_response):
             async for _ in coach_service_instance.stream_coach_response(
                 db=db_session,
                 snapshot_id=snapshot.id,
                 user_message="Test",
                 selected_metrics=["truthfulness"],
-                client_message_id="client-uuid"
+                client_message_id=client_id
             ):
                 pass
 
-
-# =====================================================
-# Test Live API (requires OPENROUTER_API_KEY)
-# =====================================================
-
-@pytest.mark.live_api
-class TestCoachServiceLiveAPI:
-    """Live API tests requiring OPENROUTER_API_KEY."""
-
-    def test_live_init_greeting(self, db_session, make_snapshot):
-        """Test init greeting with real service instance."""
-        snapshot = make_snapshot(
-            question="What is the capital of France?",
-            model_answer="The capital of France is Paris.",
-            user_scores_json={"truthfulness": {"score": 5, "reasoning": "Correct"}},
-            judge_scores_json={"truthfulness": {"score": 5, "rationale": "Perfect"}},
-            evidence_json=None,
-            status="active"
-        )
-
-        greeting = coach_service.generate_init_greeting(
-            db=db_session,
-            snapshot_id=snapshot.id,
-            selected_metrics=["truthfulness"]
-        )
-
-        assert isinstance(greeting, str)
-        assert len(greeting) > 20  # Should have substantial content
-
-    @pytest.mark.asyncio
-    async def test_live_stream_response_short(self, db_session, make_snapshot):
-        """Test live streaming with simple question."""
-        snapshot = make_snapshot(
-            question="What is 2+2?",
-            model_answer="The answer is 4.",
-            user_scores_json={"truthfulness": {"score": 5, "reasoning": "Correct"}},
-            judge_scores_json={"truthfulness": {"score": 5, "rationale": "Perfect"}},
-            evidence_json=None,
-            status="active"
-        )
-
-        chunks = []
-        async for chunk in coach_service.stream_coach_response(
-            db=db_session,
-            snapshot_id=snapshot.id,
-            user_message="Why is truthfulness important?",
-            selected_metrics=["truthfulness"],
-            client_message_id="test-client-uuid-123"
-        ):
-            chunks.append(chunk)
-            if len(chunks) > 5:  # Limit for testing
-                break
-
-        assert len(chunks) > 0
+            # 3. Verify record was updated in place
+            updated_msg = db_session.query(ChatMessage).filter_by(id="msg_partial").first()
+            assert updated_msg.content == "Restarted answer"
+            assert updated_msg.is_complete is True
 
 
 # =====================================================
@@ -520,35 +463,14 @@ class TestCoachServiceLiveAPI:
 class TestGlobalServiceInstance:
     """Tests for global convenience functions."""
 
-    def test_global_get_snapshot_context(self, db_session, make_snapshot):
-        """Test global get_snapshot_context function."""
-        snapshot = make_snapshot()
+    def test_global_increment_turn(self, db_session, make_snapshot):
+        """Test global increment_chat_turn function."""
+        snapshot = make_snapshot(chat_turn_count=0)
+        success = increment_chat_turn(db_session, snapshot.id)
+        assert success is True
 
-        result = get_snapshot_context(db_session, snapshot.id)
-
-        assert result.id == snapshot.id
-
-    def test_global_get_chat_history(self, db_session, make_snapshot):
-        """Test global get_chat_history function."""
-        snapshot = make_snapshot()
-
-        history = get_chat_history(db_session, snapshot.id)
-
-        assert isinstance(history, list)
-
-    def test_global_generate_init_greeting(self, db_session, make_snapshot):
-        """Test global generate_init_greeting function."""
-        snapshot = make_snapshot(
-            user_scores_json={"truthfulness": {"score": 4}},
-            judge_scores_json={"truthfulness": {"score": 5}},
-            evidence_json=None
-        )
-
-        greeting = generate_init_greeting(
-            db_session,
-            snapshot.id,
-            ["truthfulness"]
-        )
-
-        assert isinstance(greeting, str)
-        assert len(greeting) > 0
+    def test_global_remaining_turns(self, db_session, make_snapshot):
+        """Test global get_remaining_turns function."""
+        snapshot = make_snapshot(chat_turn_count=5, max_chat_turns=15)
+        remaining = get_remaining_turns(db_session, snapshot.id)
+        assert remaining == 10

@@ -166,40 +166,37 @@ def test_select_from_pool_empty_database(db_session):
 def test_select_from_pool_with_existing_question(db_session):
     """Test pool selection with existing question in database"""
     from backend.models.question import Question
-    from sqlalchemy.orm import Session
-    from backend.models.database import SessionLocal
 
-    # Create a test question
-    db = SessionLocal()
+    # Create a test question using the fixture's session
+    question = Question(
+        id="q_test_pool_selection",
+        question="Test question for pool selection",
+        category="Mathematics",
+        difficulty="medium",  # Added difficulty
+        reference_answer="Test reference",
+        expected_behavior="Test behavior",
+        rubric_breakdown={"1": "bad", "2": "ok", "3": "good", "4": "great", "5": "excellent"},
+        primary_metric="Truthfulness",
+        bonus_metrics=["Clarity", "Safety"],
+        question_prompt_id=None,
+        times_used=0
+    )
+    db_session.add(question)
+    db_session.commit()
+
     try:
-        question = Question(
-            id="q_test_pool_selection",
-            question="Test question for pool selection",
-            category="Mathematics",
-            reference_answer="Test reference",
-            expected_behavior="Test behavior",
-            rubric_breakdown={"1": "bad", "2": "ok", "3": "good", "4": "great", "5": "excellent"},
-            primary_metric="Truthfulness",
-            bonus_metrics=["Clarity", "Safety"],
-            question_prompt_id=None,
-            times_used=0
-        )
-        db.add(question)
-        db.commit()
-
         # Now test pool selection
         service = ClaudeService()
-        selected = service._select_from_pool("Truthfulness", db)
+        selected = service._select_from_pool("Truthfulness", db_session)
 
         assert selected is not None
         assert selected.primary_metric == "Truthfulness"
         assert selected.times_used == 1  # Should be incremented
-
     finally:
-        # Cleanup
-        db.query(Question).filter(Question.id == "q_test_pool_selection").delete()
-        db.commit()
-        db.close()
+        # Cleanup is handled by transaction rollback usually, 
+        # but we explicitly delete to be safe if commit was used
+        db_session.query(Question).filter(Question.id == "q_test_pool_selection").delete()
+        db_session.commit()
 
 
 # =====================================================

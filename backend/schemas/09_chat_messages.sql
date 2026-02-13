@@ -88,3 +88,18 @@ COMMENT ON COLUMN chat_messages.selected_metrics IS
 
 COMMENT ON COLUMN chat_messages.token_count IS
     'Token count for the message (used for analytics and cost tracking)';
+
+-- =====================================================
+-- Trigger: Auto-update updated_at
+-- =====================================================
+
+-- Add updated_at column first (missing in original schema)
+ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS updated_at TIMESTAMP NOT NULL DEFAULT NOW();
+
+DROP TRIGGER IF EXISTS trigger_chat_messages_updated_at
+    ON chat_messages;
+
+CREATE TRIGGER trigger_chat_messages_updated_at
+    BEFORE UPDATE ON chat_messages
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

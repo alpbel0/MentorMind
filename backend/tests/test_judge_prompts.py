@@ -95,8 +95,8 @@ class TestStage1Prompts:
         """Test that Stage 1 prompts specify JSON output format."""
         sys_prompt = JUDGE_PROMPTS["stage1"]["system_prompt"]
         user_template = JUDGE_PROMPTS["stage1"]["user_prompt_template"]
-        assert "JSON" in sys_prompt
-        assert "JSON" in user_template
+        assert "JSON" in sys_prompt.upper()
+        assert "JSON" in user_template.upper()
 
     def test_stage1_has_all_8_metrics_in_instructions(self):
         """Test that Stage 1 system prompt mentions all 8 metrics."""

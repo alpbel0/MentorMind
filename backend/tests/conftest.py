@@ -203,6 +203,7 @@ def db_session(test_engine):
     TestSessionLocal = sessionmaker(
         autocommit=False,
         autoflush=False,
+        expire_on_commit=False,
         bind=test_engine
     )
 

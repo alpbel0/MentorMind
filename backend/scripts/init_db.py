@@ -34,6 +34,9 @@ SCHEMA_FILES = [
     "04_user_evaluations.sql",
     "05_judge_evaluations.sql",
     "06_triggers.sql",
+    "07_add_question_type_to_questions.sql",
+    "08_evaluation_snapshots.sql",
+    "09_chat_messages.sql",
 ]
 """SQL schema files to execute in order"""
 
@@ -149,17 +152,22 @@ def verify_tables() -> bool:
         "model_responses",
         "user_evaluations",
         "judge_evaluations",
+        "evaluation_snapshots",
+        "chat_messages",
     }
 
     expected_enums = {
         "metric_type",
         "difficulty_level",
+        "snapshot_status",
     }
 
     expected_triggers = {
         "trigger_question_prompts_updated_at",
         "trigger_questions_updated_at",
         "trigger_user_evaluations_updated_at",
+        "trigger_evaluation_snapshots_updated_at",
+        "trigger_chat_messages_updated_at",
     }
 
     try:

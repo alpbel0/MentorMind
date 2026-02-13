@@ -178,10 +178,10 @@ class TestGetChatHistory:
 # =====================================================
 
 class TestPostInitGreeting:
-    """Tests for POST /api/snapshots/{snapshot_id}/chat/init endpoint."""
+    """Tests for POST /api/snapshots/{snapshot_id}/chat/init endpoint (SSE streaming)."""
 
     def test_post_init_greeting_valid(self, coach_test_client, make_snapshot):
-        """Get init greeting with valid metrics."""
+        """Get init greeting with valid metrics (SSE stream)."""
         snapshot = make_snapshot(
             question="What is 2+2?",
             model_answer="4",
@@ -199,15 +199,18 @@ class TestPostInitGreeting:
             json=request_data
         )
 
+        # Now returns SSE stream
         assert response.status_code == 200
-        data = response.json()
-        assert data["snapshot_id"] == snapshot.id
-        assert "greeting" in data
-        assert data["selected_metrics"] == ["truthfulness"]
-        assert len(data["greeting"]) > 0
+        assert "text/event-stream" in response.headers["content-type"]
+        
+        # Parse SSE content
+        content = response.text
+        assert len(content) > 0
+        assert "data: " in content  # SSE format
+        assert "[DONE]" in content  # Stream completion marker
 
     def test_post_init_greeting_multiple_metrics(self, coach_test_client, make_snapshot):
-        """Get init greeting with multiple metrics."""
+        """Get init greeting with multiple metrics (SSE stream)."""
         snapshot = make_snapshot(
             user_scores_json={
                 "truthfulness": {"score": 4},
@@ -229,9 +232,9 @@ class TestPostInitGreeting:
             json=request_data
         )
 
+        # Now returns SSE stream
         assert response.status_code == 200
-        data = response.json()
-        assert set(data["selected_metrics"]) == {"truthfulness", "clarity"}
+        assert "text/event-stream" in response.headers["content-type"]
 
     def test_post_init_greeting_invalid_metric_400(self, coach_test_client, make_snapshot):
         """400 for invalid metric slug."""

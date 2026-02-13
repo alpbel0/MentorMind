@@ -73,8 +73,11 @@ class TestFullWorkflowSnapshotCreation:
 
         # 2. Call full_judge_evaluation (LIVE API)
         # This includes: Stage 1 (with evidence) → Stage 2 → Snapshot creation
+        user_eval_id = user_eval.id
+        question_id = question.id
+        
         judge_eval_id = judge_service.full_judge_evaluation(
-            user_eval_id=user_eval.id,
+            user_eval_id=user_eval_id,
             db=db_session
         )
 
@@ -82,15 +85,18 @@ class TestFullWorkflowSnapshotCreation:
         assert judge_eval_id is not None
         assert judge_eval_id.startswith("judge_")
 
+        # Refresh session to ensure we see the committed changes and objects are reloaded
+        db_session.expire_all()
+
         # 4. Verify snapshot created (query via ORM)
         from backend.models.evaluation_snapshot import EvaluationSnapshot
         db_snapshot = db_session.query(EvaluationSnapshot).filter(
-            EvaluationSnapshot.user_evaluation_id == user_eval.id
+            EvaluationSnapshot.user_evaluation_id == user_eval_id
         ).first()
 
         assert db_snapshot is not None
         assert db_snapshot.id.startswith("snap_")
-        assert db_snapshot.question_id == question.id
+        assert db_snapshot.question_id == question_id
         assert db_snapshot.judge_evaluation_id == judge_eval_id
         assert db_snapshot.primary_metric == display_name_to_slug("Truthfulness")
         assert db_snapshot.status == "active"

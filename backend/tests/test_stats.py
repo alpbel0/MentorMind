@@ -89,7 +89,7 @@ def sample_judge_evaluation(db_session):
         weighted_gap=0.5
     )
     db_session.add(judge_eval)
-    db_session.commit()
+    db_session.flush()
 
     return judge_eval
 
@@ -178,7 +178,7 @@ def multiple_judge_evaluations(db_session):
         db_session.add(judge_eval)
         evals.append(judge_eval)
 
-    db_session.commit()
+    db_session.flush()
     return evals
 
 
@@ -329,7 +329,7 @@ def test_stats_overview_all_metrics_represented(test_client, db_session):
         )
         db_session.add(judge_eval)
 
-    db_session.commit()
+    db_session.flush()
 
     response = test_client.get("/api/stats/overview")
     assert response.status_code == 200

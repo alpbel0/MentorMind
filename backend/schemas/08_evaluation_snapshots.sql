@@ -148,3 +148,15 @@ COMMENT ON COLUMN evaluation_snapshots.status IS
 
 COMMENT ON COLUMN evaluation_snapshots.deleted_at IS
     'Soft delete timestamp - NULL if not deleted, set when user deletes chat';
+
+-- =====================================================
+-- Trigger: Auto-update updated_at
+-- =====================================================
+
+DROP TRIGGER IF EXISTS trigger_evaluation_snapshots_updated_at
+    ON evaluation_snapshots;
+
+CREATE TRIGGER trigger_evaluation_snapshots_updated_at
+    BEFORE UPDATE ON evaluation_snapshots
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();

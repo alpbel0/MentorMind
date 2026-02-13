@@ -165,38 +165,48 @@ def get_chat_history(
 
 @router.post(
     "/{snapshot_id}/chat/init",
-    response_model=InitGreetingResponse,
     summary="Get Init Greeting",
-    description="Get idempotent initial greeting message for starting a conversation."
+    description="Get idempotent initial greeting message via SSE streaming."
 )
-def get_init_greeting(
+async def get_init_greeting(
     snapshot_id: str,
     request: InitGreetingRequest,
     db: Session = Depends(get_db)
-) -> InitGreetingResponse:
+) -> StreamingResponse:
     """
-    Get initial greeting message for conversation start.
+    Get initial greeting message for conversation start via SSE.
 
     The greeting is idempotent - same inputs produce same greeting.
     Includes selected metrics that are locked for this conversation.
     """
+    # Validasyon (Stream öncesi gerçek 404/400 için)
     try:
-        # Generate greeting
-        greeting = coach_service.generate_init_greeting(
-            db=db,
-            snapshot_id=snapshot_id,
-            selected_metrics=request.selected_metrics
-        )
-
-        return InitGreetingResponse(
-            snapshot_id=snapshot_id,
-            greeting=greeting,
-            selected_metrics=request.selected_metrics
-        )
-
+        coach_service.get_snapshot_context(db, snapshot_id)
     except Exception as e:
         status_code, detail = map_coach_error_to_http_status(e)
         raise HTTPException(status_code=status_code, detail=detail)
+
+    async def generate() -> AsyncGenerator[str, None]:
+        try:
+            async for chunk in coach_service.handle_init_greeting(
+                db=db,
+                snapshot_id=snapshot_id,
+                selected_metrics=request.selected_metrics
+            ):
+                yield chunk
+        except Exception as e:
+            status_code, detail = map_coach_error_to_http_status(e)
+            yield f"data: {json.dumps({'error': detail, 'status': status_code})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        }
+    )
 
 
 @router.post(
