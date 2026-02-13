@@ -1770,3 +1770,30 @@ This document provides comprehensive context for AI assistants working on the Me
 - Router testleri tamamlandı (13 test passed)
 - Integration testleri tamamlandı (6 test passed)
 
+#### Week 14: Coach Chat Service (Feb 13 - Feb 20)
+**Status:** 🚧 In Progress
+**Hedef:** Coach AI prompt tasarımı, Coach Chat Service implementasyonu
+
+**Tamamlanan Görevler:**
+- [x] **Task 14.1: Coach Prompt Design** (13 Şubat 2026)
+  - [x] `backend/prompts/coach_prompts.py` oluşturuldu
+  - [x] COACH_SYSTEM_PROMPT - English system prompt (~5000 chars)
+  - [x] COACH_USER_PROMPT_TEMPLATE - User message template for chat turns
+  - [x] COACH_INIT_GREETING_TEMPLATE - First message template (idempotent)
+  - [x] Selected metrics constraint (sadece seçili metrikler hakkında konuş)
+  - [x] AD-10 Strict Evidence Usage rule (sadece Stage 1 kanıtları)
+  - [x] Turkish output language rule
+  - [x] Few-shot example (system prompt içinde)
+  - [x] Helper functions: format_evidence_display, format_gaps_summary, format_scores_display, format_chat_history
+  - [x] Render functions: render_coach_user_prompt, render_coach_init_greeting
+  - [x] Export dictionary: COACH_PROMPTS
+  - [x] Export constants: COACH_MAX_HISTORY_WINDOW=6, COACH_MAX_SELECTED_METRICS=3
+  - [x] Slug ↔ Display name conversion (backend/constants/metrics.py)
+  - [x] `backend/tests/test_coach_prompts.py` oluşturuldu
+  - [x] Tüm testler geçti (doğru Türkçe karakterler ile)
+
+**Sıradaki Görevler:**
+- [ ] Task 14.2: Coach Service Implementation
+- [ ] Task 14.3: Coach Router & Endpoints
+- [ ] Task 14.4: Coach Chat Integration Tests
+

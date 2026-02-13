@@ -1623,7 +1623,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `frontend/` klasörünü oluştur
@@ -1640,7 +1640,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] shadcn/ui initialize et (`npx shadcn-ui@latest init`)
@@ -1665,7 +1665,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `@tanstack/react-query` kur
@@ -1684,7 +1684,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] API client oluştur (`lib/api/client.ts`)
@@ -1700,7 +1700,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] App Router yapısını oluştur:
@@ -1718,7 +1718,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Tailwind config güncelle (design tokens)
@@ -1754,7 +1754,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Dashboard page component'i oluştur (`app/dashboard/page.tsx`)
@@ -1770,7 +1770,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Evaluation start page (`app/evaluation/page.tsx`)
@@ -1803,7 +1803,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 6 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] EvaluationForm organism component'i
@@ -1823,7 +1823,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Evaluation page component'i (`app/evaluation/[id]/page.tsx`)
@@ -1858,7 +1858,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `useJudgeFeedback` hook oluştur
@@ -1874,7 +1874,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Processing state component'i
@@ -1889,7 +1889,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 6 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] JudgeFeedbackPanel organism component'i
@@ -1910,7 +1910,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Feedback page component'i (`app/evaluation/[id]/feedback/page.tsx`)
@@ -1926,7 +1926,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Feedback item stagger animation
@@ -1974,7 +1974,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] MetricPerformanceCard component'i
@@ -1990,7 +1990,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Chart library seç (Recharts / Chart.js / Victory)
@@ -2005,7 +2005,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] ImprovementTrendChart component'i
@@ -2022,7 +2022,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] MetricRadarChart component'i
@@ -2038,7 +2038,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Per-metric stats page (`app/statistics/metrics/[metric]/page.tsx`)
@@ -2072,7 +2072,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Mobile breakpoint kontrolü (320px+)
@@ -2087,7 +2087,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Global loading spinner
@@ -2102,7 +2102,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Error boundary component'i
@@ -2118,7 +2118,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] ARIA labels ekle
@@ -2134,7 +2134,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Dark mode toggle component'i
@@ -2166,7 +2166,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Vitest kurulumu
@@ -2182,7 +2182,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] MSW (Mock Service Worker) kurulumu
@@ -2197,7 +2197,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 6 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Playwright kurulumu
@@ -2215,7 +2215,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Bundle analysis
@@ -2231,7 +2231,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Vercel proje oluştur
@@ -2247,7 +2247,7 @@ Phase 2 tamamlandığında:
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] FRONTEND.md güncelle
@@ -3069,30 +3069,30 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-10 (Strict Evidence Usage)
 
 **Yapılacaklar:**
-- [ ] `backend/prompts/coach_prompts.py` oluştur:
-  - [ ] **System Prompt:**
-    - [ ] Coach rolü tanımı (AI Evaluator Mentor)
-    - [ ] Sadece seçilen metrikler hakkında konuşma kuralı
-    - [ ] **Strict Evidence Usage kuralı (AD-10):**
+- [x] `backend/prompts/coach_prompts.py` oluştur:
+  - [x] **System Prompt:**
+    - [x] Coach rolü tanımı (AI Evaluator Mentor)
+    - [x] Sadece seçilen metrikler hakkında konuşma kuralı
+    - [x] **Strict Evidence Usage kuralı (AD-10):**
       > "You must ONLY reference evidence items provided in the context. Do NOT quote from the model answer directly. If no evidence exists for a topic, say so honestly."
-    - [ ] Seçilmeyen metrikler hakkında konuşmayı reddetme talimatı
-    - [ ] Gap'i açıklama, evidence'a referans verme, iyileştirme önerme akışı
-    - [ ] Türkçe konuşma, teknik terimler İngilizce kalabilir kuralı
-  - [ ] **User Message Template:**
-    - [ ] Snapshot context'i (question, model_answer, selected metrics + scores + evidence)
-    - [ ] Chat history (son 6 mesaj)
-    - [ ] Kullanıcının mesajı
-  - [ ] **Init Greeting Template:**
-    - [ ] Seçilen metriklerdeki gap ve evidence özetleme talimatı
-    - [ ] Samimi ama profesyonel açılış tonu
-    - [ ] Kullanıcıyı soru sormaya teşvik eden kapanış
-- [ ] Prompt token sayısı tahmini (maliyet kontrolü)
-- [ ] Few-shot örneği ekle (opsiyonel)
+    - [x] Seçilmeyen metrikler hakkında konuşmayı reddetme talimatı
+    - [x] Gap'i açıklama, evidence'a referans verme, iyileştirme önerme akışı
+    - [x] Türkçe konuşma, teknik terimler İngilizce kalabilir kuralı
+  - [x] **User Message Template:**
+    - [x] Snapshot context'i (question, model_answer, selected metrics + scores + evidence)
+    - [x] Chat history (son 6 mesaj)
+    - [x] Kullanıcının mesajı
+  - [x] **Init Greeting Template:**
+    - [x] Seçilen metriklerdeki gap ve evidence özetleme talimatı
+    - [x] Samimi ama profesyonel açılış tonu
+    - [x] Kullanıcıyı soru sormaya teşvik eden kapanış
+- [x] Prompt token sayısı tahmini (maliyet kontrolü)
+- [x] Few-shot örneği ekle (opsiyonel)
 
 ---
 
@@ -3100,7 +3100,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 4 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-4 (SSE), AD-5 (Coach Model)
 
@@ -3128,7 +3128,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-4 (Token Windowing)
 
@@ -3148,7 +3148,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-4 (Init Greeting)
 
@@ -3173,7 +3173,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-9 (Turn Limit)
 
@@ -3201,7 +3201,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Referans:** AD-4 (SSE Reconnect & Idempotency)
 
@@ -3290,7 +3290,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/routers/snapshots.py` içine chat endpoint'i ekle:
@@ -3326,7 +3326,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/routers/snapshots.py` içine messages endpoint'i ekle:
@@ -3346,7 +3346,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/tests/test_chat_service.py` oluştur:
@@ -3378,7 +3378,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/tests/test_chat_integration.py` oluştur:
@@ -3406,7 +3406,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 1.5 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Coach chat LLM çağrılarını `data/logs/llm_calls.jsonl`'e kaydet:
@@ -3429,7 +3429,7 @@ Aşama 5: Fallback        → verified: false
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] **LLM API hataları:**
@@ -3505,7 +3505,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/tests/test_e2e_phase3.py` oluştur:
@@ -3528,7 +3528,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/tests/test_e2e_phase3.py` içine chat testleri ekle:
@@ -3551,7 +3551,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `backend/tests/test_e2e_phase3.py` içine reconnect testleri ekle:
@@ -3575,7 +3575,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] CLI üzerinden full flow testi:
@@ -3600,7 +3600,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 2 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] `CLAUDE.md` güncelle:
@@ -3621,7 +3621,7 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 **Tahmini Süre:** 3 saat
 
-**Durum:** ⏳ **PLANLANDI**
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
 
 **Yapılacaklar:**
 - [ ] Tespit edilen bug'ları fix'le
