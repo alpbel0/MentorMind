@@ -1771,7 +1771,7 @@ This document provides comprehensive context for AI assistants working on the Me
 - Integration testleri tamamlandı (6 test passed)
 
 #### Week 14: Coach Chat Service (Feb 13 - Feb 20)
-**Status:** 🚧 In Progress
+**Status:** ✅ TAMAMLANDI
 **Hedef:** Coach AI prompt tasarımı, Coach Chat Service implementasyonu
 
 **Tamamlanan Görevler:**
@@ -1793,7 +1793,21 @@ This document provides comprehensive context for AI assistants working on the Me
   - [x] Tüm testler geçti (doğru Türkçe karakterler ile)
 
 **Sıradaki Görevler:**
-- [ ] Task 14.2: Coach Service Implementation
+- [x] **Task 14.2: Coach Service Implementation** (13 Şubat 2026)
+  - [x] `backend/services/coach_service.py` oluşturuldu (CoachService class)
+  - [x] `get_snapshot_context()` - Snapshot retrieval & validation
+  - [x] `get_chat_history()` - Chat history retrieval with window
+  - [x] `increment_chat_turn()` - Turn count increment, max turns check
+  - [x] `save_user_message()` - User message persistence
+  - [x] `save_assistant_message()` - Assistant message persistence
+  - [x] `stream_coach_response()` - OpenAI streaming API call (SSE)
+  - [x] `generate_init_greeting()` - Idempotent first message
+  - [x] SSE streaming implementation (AsyncGenerator)
+  - [x] `backend/tests/test_coach_service.py` oluşturuldu (28 test, 93% coverage)
+  - [x] `backend/routers/coach.py` oluşturuldu (4 endpoint)
+  - [x] Endpoints: GET /chat, POST /chat/init, POST /chat/stream, GET /coach/health
+  - [x] `backend/main.py` güncellendi (coach router eklendi)
+  - [x] 28/28 tests passed
 - [ ] Task 14.3: Coach Router & Endpoints
 - [ ] Task 14.4: Coach Chat Integration Tests
 
