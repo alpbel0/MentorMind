@@ -3261,4 +3261,673 @@ DELETE /api/snapshots/{snapshot_id}      → Soft delete (archived)
 
 ---
 
+# Phase 4: Frontend Implementation (6 Weeks)
+
+**Başlangıç:** 14 Şubat 2026  
+**Bitiş:** 27 Mart 2026  
+**Hedef:** Evidence highlight, metric cards, coach chat UI, SSE streaming
+
+---
+
+## Week 17: UI Foundation & Evaluation Screen (Feb 14 - Feb 20)
+
+### Task 17.1: Project Setup & Tech Stack Decision
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ✅ **TAMAMLANDI** (Daha önce tamamlanmış — Next.js 16 + React 19 + Tailwind CSS 4)
+
+**Yapılacaklar:**
+- [x] Frontend teknoloji seçimi → Next.js 16.1.6 + React 19.2.3 + TypeScript 5
+- [x] `frontend/` dizini oluştur
+- [x] `package.json` + dependencies:
+  - [x] React 19 (Next.js 16 ile)
+  - [x] TypeScript 5
+  - [x] Next.js (build tool — Vite yerine)
+  - [x] TailwindCSS 4 (styling)
+  - [x] SWR (data fetching — React Query yerine)
+  - [x] lucide-react (icons)
+  - [x] recharts (charts)
+- [x] ESLint setup (eslint-config-next)
+- [x] `tsconfig.json` (strict mode)
+- [x] `.env.local` (NEXT_PUBLIC_API_URL)
+
+---
+
+### Task 17.2: API Client & Type Definitions
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `lib/api.ts` - Fetch-based API client (base URL, error handling)
+- [x] `types/index.ts` TypeScript type definitions:
+  - [x] MetricSlug type (Phase 3 slug system)
+  - [x] EvidenceItem, MetricEvidence, EvidenceByMetric
+  - [x] SnapshotResponse, SnapshotListItem, SnapshotListResponse
+  - [x] ChatMessage, ChatHistoryResponse, ChatRequest
+- [x] Evaluation API functions (daha önce mevcut):
+  - [x] `generateQuestion()`, `submitEvaluation()`, `getFeedback()`
+- [x] Snapshot API functions (yeni eklendi):
+  - [x] `listSnapshots(limit, offset, status)`
+  - [x] `getSnapshot(snapshotId)`
+  - [x] `deleteSnapshot(snapshotId)`
+- [x] Chat API functions (yeni eklendi):
+  - [x] `getChatHistory(snapshotId)`
+  - [x] `initChatGreeting(snapshotId, selectedMetrics)` - SSE Response
+  - [x] `sendChatMessage(snapshotId, message, clientMessageId, selectedMetrics)` - SSE Response
+
+---
+
+### Task 17.3: Metric Constants & Helpers
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `lib/constants.ts` - Slug-based metric constants:
+  - [x] `METRIC_SLUGS` array
+  - [x] `SLUG_TO_DISPLAY` mapping (slug → display name)
+  - [x] `DISPLAY_TO_SLUG` mapping (display name → slug)
+  - [x] `SLUG_COLORS` ve `SLUG_COLORS_LIGHT` (slug-based renk paleti)
+  - [x] `GAP_COLORS` (0=green, 1=amber, 2+=red)
+- [x] `types/index.ts` - `MetricSlug` type tanımı
+- [x] Helper functions:
+  - [x] `slugToDisplay(slug): string`
+  - [x] `displayToSlug(name): MetricSlug`
+  - [x] `isValidSlug(slug): boolean`
+  - [x] `getGapColor(gap): string`
+
+---
+
+### Task 17.4: Evaluation Result Screen — Layout
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `app/snapshots/[id]/page.tsx` oluşturuldu (Snapshot Result Screen)
+- [x] Layout: Meta Score + Overall Feedback + 8 Metric Card Grid (2x4) + Actions
+- [x] Components:
+  - [x] MetaScoreGauge (mevcut bileşen kullanıldı)
+  - [x] OverallFeedback (inline section)
+  - [x] SnapshotMetricCard grid (8 kart)
+  - [x] ActionButtons (Sohbet Başlat + Yeni Değerlendirme)
+  - [x] Improvement Areas + Good Metrics summary cards
+  - [x] Collapsible Question & Model Answer section
+- [x] `getSnapshot()` ile data fetch + loading/error states
+
+---
+
+### Task 17.5: Metric Card Component
+
+**Tahmini Süre:** 5 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/snapshot/SnapshotMetricCard.tsx` oluşturuldu
+- [x] Gap color coding (0=green, 1=amber, 2+=red) + gap icon
+- [x] User/Judge score gösterimi (N/A desteği)
+- [x] "Kanıt Gör" button (evidence count badge)
+- [x] Slug-based color system (SLUG_COLORS_LIGHT)
+- [x] `components/snapshot/index.ts` export
+
+---
+
+### Task 17.6: Evidence Modal — Basic Structure
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/evidence/EvidenceModal.tsx` oluşturuldu
+- [x] 3 view modu: Birlikte (split), Sadece Metin, Sadece Liste
+- [x] Metric header: Gap badge + User/Judge scores
+- [x] Modal backdrop (click dışarı → close)
+- [x] Escape key handling
+- [x] Overflow scroll (uzun model cevapları)
+- [x] Active index sync: evidence tıkla → highlight'a scroll
+
+---
+
+## Week 18: Evidence Highlight Implementation (Feb 21 - Feb 27)
+
+### Task 18.1: Evidence Highlighter Component
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/evidence/EvidenceHighlighter.tsx` oluşturuldu
+- [x] useMemo ile segment hesaplama (performans)
+- [x] Algorithm: start'a göre sırala → overlap skip → `<mark>` tag
+- [x] 5-stage verification desteği:
+  - [x] `verified && highlight_available` → amber highlight + click handler
+  - [x] `verified && !highlight_available` → sadece quote göster
+  - [x] `!verified` → skip (EvidenceList'te uyarı gösterilir)
+- [x] Active index desteği (tıklanan evidence ring ile vurgulanır)
+- [x] Tooltip: title attribute ile `why` gösterimi
+
+---
+
+### Task 18.2: Evidence List Component
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/evidence/EvidenceList.tsx` oluşturuldu
+- [x] Quote + Why + Better layout
+- [x] VerificationBadge component:
+  - [x] ✅ Doğrulandı (verified + highlight_available)
+  - [x] ⚠️ Pozisyon tespit edilemedi (verified + !highlight_available)
+  - [x] ❌ Kanıt doğrulanamadı (!verified)
+- [x] Active index → border highlight
+- [x] Empty state: "Bu metrik için kanıt bulunamadı"
+- [x] Click → highlight sync
+
+---
+
+### Task 18.3: Evidence Modal Integration
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `EvidenceModal.tsx` içinde `<EvidenceHighlighter />` + `<EvidenceList />` entegrasyonu
+- [x] `activeIndex` state: highlight ↔ list sync
+- [x] 3 view modu (Birlikte, Metin, Liste)
+- [x] Graceful degradation: empty evidence → fallback mesaj
+
+---
+
+### Task 18.4: Metric Card Evidence Button Integration
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `SnapshotMetricCard.tsx` "Kanıt Gör" button → parent callback
+- [x] Snapshot Result Page'de local state ile modal yönetimi (Zustand gerekmedi)
+- [x] `<EvidenceModal />` snapshot sayfasında render
+- [x] Modal açılınca: snapshot'tan metric evidence + model answer çekilir
+
+---
+
+### Task 18.5: Evidence UI Testing
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ Bekliyor (Manuel test aşamasında)
+
+**Yapılacaklar:**
+- [ ] Evidence highlighter unit test
+- [ ] Evidence modal integration test
+- [ ] Manual browser testing
+
+---
+
+## Week 19: Coach Chat UI (Feb 28 - Mar 6)
+
+### Task 19.1: Chat UI Layout & Components
+
+**Tahmini Süre:** 5 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `app/snapshots/[id]/chat/page.tsx` oluşturuldu (CoachChatPage)
+- [x] Full-height layout: Header + Message List + Input
+- [x] Components:
+  - [x] Chat header (geri butonu + seçili metrik badge'leri + rapor linki)
+  - [x] Scrollable message list (auto-scroll bottom)
+  - [x] `<MessageBubble />` - User (mavi, sağ) / Assistant (beyaz, sol)
+  - [x] `<ChatInput />` - Textarea + send button + turn counter
+  - [x] Turn counter: "Kalan mesaj: X/15"
+
+---
+
+### Task 19.2: Metric Selection Modal
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/chat/MetricSelectionModal.tsx` oluşturuldu
+- [x] 8 metrik checkbox listesi (max 3 seçim)
+- [x] Gap gösterimi (color coded badge)
+- [x] "Kanıt" label (evidence olan metriklerde)
+- [x] N/A metrikleri disabled
+- [x] Seçim sayacı + "Sohbeti Başlat" butonu
+- [x] Backdrop click close + validation
+
+---
+
+### Task 19.3: SSE Message Streaming
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `hooks/useChatStream.ts` custom hook oluşturuldu
+- [x] ReadableStream ile SSE parse (fetch + reader)
+- [x] `data: {content}` parse + accumulate
+- [x] `data: [DONE]` → onComplete callback
+- [x] Error handling (HTTP errors, stream errors, abort)
+- [x] `sendInit()` — init greeting SSE
+- [x] `sendMessage()` — normal chat SSE
+- [x] State: `isStreaming`, `streamedContent`, `error`
+
+---
+
+### Task 19.4: Chat Message Components
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/chat/MessageBubble.tsx` oluşturuldu
+- [x] User: Sağda, indigo-600 bubble (rounded-br-md)
+- [x] Assistant: Solda, white bubble + border (rounded-bl-md)
+- [x] Avatar icons (User / Bot)
+- [x] Typing indicator: animated bounce dots
+- [x] Streaming cursor: animated pulse bar
+- [x] Timestamp gösterimi (tr-TR format)
+- [x] Auto-scroll (messagesEndRef + scrollIntoView)
+
+---
+
+### Task 19.5: Chat Input & Turn Limit Handling
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `components/chat/ChatInput.tsx` oluşturuldu
+- [x] Auto-resize textarea (Enter→send, Shift+Enter→newline)
+- [x] Char limit: 500 (counter göster)
+- [x] Turn counter: "Kalan mesaj: X/15"
+- [x] Read-only mode (AD-9):
+  - [x] Limit dolunca Lock icon + "Yeterince konuştuk" mesajı
+  - [x] Input disable
+  - [x] "Yeni bir soru çözmeye ne dersin?" yönlendirme
+
+---
+
+### Task 19.6: Init Greeting & Idempotency
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] Chat page mount → metric selection modal → init greeting SSE
+- [x] Init greeting: `POST /chat/init` (selected_metrics)
+- [x] Existing chat restore: `getChatHistory()` ile mevcut mesajları yükle
+- [x] Client message ID: `crypto.randomUUID()`, init için `init_{snapshotId}`
+- [x] Optimistic UI: user mesajı hemen göster, sonra SSE stream
+
+---
+
+## Week 20: Integration & Testing (Mar 7 - Mar 13)
+
+### Task 20.1: Navigation & Routing
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] Next.js App Router ile routing (React Router gerekmedi):
+  ```
+  /                        → Dashboard
+  /evaluate                → Evaluation workflow
+  /feedback/[id]           → Judge feedback
+  /snapshots               → Snapshot list (YENİ)
+  /snapshots/[id]          → Snapshot detail + evidence (YENİ)
+  /snapshots/[id]/chat     → Coach chat (YENİ)
+  /history                 → Stats history
+  ```
+- [x] Sidebar güncellendi: "Snapshots" linki eklendi (BookOpen icon)
+- [x] FeedbackPanel → "Snapshot Detaylarını Gör" butonu
+- [x] WaitingForJudge → "Snapshots" butonu
+- [x] Snapshot 404 handling + error states
+
+---
+
+### Task 20.2: Snapshot History List
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] `app/snapshots/page.tsx` oluşturuldu (SnapshotsPage)
+- [x] `listSnapshots()` ile pagination (20 per page)
+- [x] Önceki/Sonraki butonlu sayfalama
+- [x] Snapshot card: primary_metric badge + yıldız + kategori + tarih
+- [x] Card actions: [Detay] + [Sohbet]
+- [x] Empty state: BookOpen icon + "Henüz Snapshot Yok" + CTA
+- [x] 3-column responsive grid (1/2/3 cols)
+
+---
+
+### Task 20.3: Frontend E2E Tests
+
+**Tahmini Süre:** 6 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] Playwright veya Cypress setup
+- [ ] Test senaryoları:
+  - [ ] **E2E 1: Full Evaluation Flow**
+    1. Home → Start evaluation
+    2. Submit evaluations (8 metrics)
+    3. Wait for judge feedback (polling)
+    4. Navigate to result screen
+    5. Assert: 8 metric cards visible
+    6. Click "Kanıt Gör" → modal açılıyor
+  - [ ] **E2E 2: Evidence Highlight**
+    1. Result screen → Click evidence button
+    2. Modal açılıyor
+    3. Highlight'lar görünüyor (yellow background)
+    4. Hover → tooltip göster
+    5. Evidence list item click → scroll to highlight
+  - [ ] **E2E 3: Coach Chat Flow**
+    1. Result screen → Click "Sohbet Başlat"
+    2. Metric selection modal → select 2 metrics
+    3. Init greeting görünüyor
+    4. User mesajı gönder → SSE streaming
+    5. Assistant cevabı render oluyor
+    6. 2 mesaj daha gönder
+    7. Turn counter: 3/15
+  - [ ] **E2E 4: Turn Limit**
+    1. 15 mesaj gönder
+    2. Input disable oluyor
+    3. "Yeterince konuştuk" mesajı
+    4. [Yeni Değerlendirme] butonu
+
+---
+
+### Task 20.4: Error Handling & Loading States
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] API error handling:
+  - [x] 404 → "Snapshot bulunamadı" / "Değerlendirme bulunamadı"
+  - [x] 429 → "Mesaj limitine ulaşıldı" (useChatStream)
+  - [x] Generic error → error state + retry button
+- [x] Loading states:
+  - [x] LoadingState component (mevcut) tüm sayfalarda
+  - [x] Streaming indicator (typing dots + cursor bar)
+- [x] ApiError class (lib/api.ts — mevcut)
+
+---
+
+### Task 20.5: Responsive Design & Mobile
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] Metric cards grid: `grid-cols-2 md:grid-cols-4`
+- [x] Snapshot list: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+- [x] Evidence modal: `max-w-5xl` centered, `lg:grid-cols-2` split view
+- [x] Chat: full-height layout `h-[calc(100vh-6rem)]`
+- [x] Overall feedback grid: `grid-cols-1 lg:grid-cols-3`
+
+---
+
+### Task 20.6: Performance Optimization
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ✅ **TAMAMLANDI** (13 Şubat 2026)
+
+**Yapılacaklar:**
+- [x] Next.js automatic code splitting (page-based)
+- [x] `useMemo()` — EvidenceHighlighter segment calculation
+- [x] `useCallback()` — Chat scroll, SSE stream handlers
+- [x] `useRef()` — textarea auto-resize, messagesEndRef
+- [x] Build test: `next build` — 0 error, tüm sayfalar derlendi
+
+---
+
+### Task 20.7: Documentation & Cleanup
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] `FRONTEND.md` oluştur:
+  - Tech stack
+  - Folder structure
+  - Component hierarchy
+  - API integration
+  - Deployment guide
+- [ ] Inline code comments (complex logic)
+- [ ] Component prop documentation (TSDoc)
+- [ ] `.env.example` update:
+  ```
+  VITE_API_BASE_URL=http://localhost:8000/api
+  ```
+- [ ] Dead code removal
+- [ ] ESLint clean (0 errors)
+- [ ] Prettier format
+
+---
+
+## Week 21: Docker & Deployment (Mar 14 - Mar 20)
+
+### Task 21.1: Frontend Docker Setup
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] `frontend/Dockerfile` oluştur:
+  ```dockerfile
+  FROM node:20-alpine as build
+  WORKDIR /app
+  COPY package*.json ./
+  RUN npm ci
+  COPY . .
+  RUN npm run build
+  
+  FROM nginx:alpine
+  COPY --from=build /app/dist /usr/share/nginx/html
+  COPY nginx.conf /etc/nginx/nginx.conf
+  EXPOSE 80
+  CMD ["nginx", "-g", "daemon off;"]
+  ```
+- [ ] `frontend/nginx.conf` oluştur:
+  - SPA routing (try_files)
+  - CORS headers (API proxy optional)
+  - Gzip compression
+- [ ] `docker-compose.yml` update:
+  ```yaml
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000/api
+    depends_on:
+      - backend
+  ```
+
+---
+
+### Task 21.2: Production Build & Testing
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] Production build test:
+  ```bash
+  npm run build
+  npm run preview
+  ```
+- [ ] Bundle size analiz:
+  - `vite-plugin-bundle-analyzer`
+  - Target: < 500KB gzipped
+- [ ] Docker build test:
+  ```bash
+  docker-compose build frontend
+  docker-compose up frontend
+  ```
+- [ ] Health check: http://localhost:3000
+- [ ] API connectivity test (backend integration)
+
+---
+
+### Task 21.3: CI/CD Pipeline (Optional)
+
+**Tahmini Süre:** 3 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] GitHub Actions workflow: `.github/workflows/frontend-ci.yml`
+- [ ] Steps:
+  1. Checkout code
+  2. Setup Node.js 20
+  3. Install dependencies
+  4. Run ESLint
+  5. Run TypeScript check
+  6. Run unit tests (Vitest)
+  7. Build production bundle
+  8. Upload artifacts
+- [ ] Badge'ler ekle (README.md):
+  - Build status
+  - Test coverage
+  - Bundle size
+
+---
+
+### Task 21.4: Manual Integration Testing
+
+**Tahmini Süre:** 4 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] Full stack test (backend + frontend):
+  1. Docker compose up
+  2. Seed data (POST /evaluations/start)
+  3. Frontend'den evaluation submit
+  4. Judge feedback bekle
+  5. Evidence modal kontrol
+  6. Chat başlat
+  7. 5 mesaj sohbet et
+  8. History sayfası kontrol
+- [ ] Bug triage:
+  - Log'ları incele (browser console + backend logs)
+  - Network tab (API calls)
+  - Performance profiling
+- [ ] Fix critical bugs
+- [ ] Regression testing
+
+---
+
+### Task 21.5: Final Documentation Update
+
+**Tahmini Süre:** 2 saat
+
+**Durum:** ⏳ Bekliyor
+
+**Yapılacaklar:**
+- [ ] `README.md` update:
+  - Frontend setup instructions
+  - Docker compose startup
+  - Environment variables
+  - Deployment guide
+- [ ] `CLAUDE.md` update:
+  - Phase 4 completion status
+  - Frontend architecture
+  - Component hierarchy diagram
+  - API integration notes
+- [ ] `ROADMAP.md` update:
+  - Phase 4 tasks [x] işaretle
+  - Phase 5 placeholder (future features)
+- [ ] Screenshots:
+  - Evaluation result screen
+  - Evidence modal
+  - Coach chat screen
+  - Snapshot history
+
+---
+
+## ✅ Phase 4 Success Metrics
+
+### Technical Metrics
+
+- [ ] **Lighthouse Score:** Performance > 90, Accessibility > 90
+- [ ] **Bundle Size:** < 500KB gzipped
+- [ ] **API Response Time:** Snapshot fetch < 200ms
+- [ ] **SSE First Token:** < 2 saniye (chat streaming)
+- [ ] **Test Coverage:** 70%+ (frontend components)
+
+### Functional Metrics
+
+- [x] **Evidence Highlight:** 5-stage verification sonuçları doğru render
+- [x] **Metric Cards:** 8 metrik, gap color coding, evidence button
+- [x] **Evidence Modal:** Highlight + tooltip + evidence list (3 view modu)
+- [x] **Coach Chat:** SSE streaming, init greeting, turn limit
+- [x] **Idempotency:** client_message_id ile backend tarafında sağlanıyor
+- [x] **Reconnect:** Mevcut chat history restore (getChatHistory)
+- [x] **Responsive:** Mobile, tablet, desktop Tailwind breakpoints
+
+### Quality Metrics
+
+- [x] **TypeScript:** 0 type errors (`next build` başarılı)
+- [ ] **ESLint:** 0 errors, < 10 warnings
+- [ ] **Prettier:** Tüm dosyalar formatlanmış
+- [ ] **Accessibility:** WCAG 2.1 AA (keyboard nav, screen reader)
+- [ ] **Browser Support:** Chrome, Firefox, Safari, Edge
+
+---
+
+## 🎯 Phase 4 Completion
+
+**Phase 4 tamamlandığında elimizde şunlar olacak:**
+
+✅ **8 Metric Card UI** (gap gösterimi, evidence preview)  
+✅ **Evidence Modal** (highlight + tooltip + evidence list)  
+✅ **Evidence Highlighter** (5-stage verification support)  
+✅ **Metric Selection Modal** (1-3 metrik seçimi)  
+✅ **Coach Chat UI** (SSE streaming, message history)  
+✅ **Init Greeting** (otomatik açılış, idempotent)  
+✅ **Turn Limit UI** (read-only mode, yönlendirme)  
+✅ **Snapshot History** (list + pagination)  
+✅ **Responsive Design** (mobile, tablet, desktop)  
+✅ **E2E Tests** (Playwright/Cypress)  
+✅ **Docker Setup** (frontend container + nginx)  
+
+**Sonraki adım:** Phase 5 - Advanced Features (Analytics, Admin Panel, etc.) 🚀
+
+---
+
 **Başarılar!** 💪

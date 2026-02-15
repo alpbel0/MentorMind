@@ -26,8 +26,17 @@ export default function DashboardPage() {
       try {
         const data = await getStatsOverview();
         setStats(data);
+        setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load stats');
+        // Stats endpoint failure should not block dashboard
+        console.warn('Stats endpoint failed:', err);
+        setError(null); // Don't show error, show empty state instead
+        setStats({
+          total_evaluations: 0,
+          average_meta_score: 0,
+          metrics_performance: {},
+          improvement_trend: 'N/A',
+        });
       } finally {
         setIsLoading(false);
       }

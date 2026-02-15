@@ -9,11 +9,13 @@ import {
   BarChart3,
   Settings,
   Brain,
+  BookOpen,
 } from 'lucide-react';
 
 const navigation = [
   { name: 'Dashboard', href: '/', icon: LayoutDashboard },
   { name: 'New Evaluation', href: '/evaluate', icon: PenSquare },
+  { name: 'Snapshots', href: '/snapshots', icon: BookOpen },
   { name: 'History', href: '/history', icon: History },
 ];
 

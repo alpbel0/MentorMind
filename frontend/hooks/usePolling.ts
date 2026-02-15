@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 interface UsePollingOptions<T> {
   fetcher: () => Promise<T>;
   interval?: number;
+  timeout?: number; // Timeout in milliseconds (default: no timeout)
   shouldStop?: (data: T) => boolean;
   onSuccess?: (data: T) => void;
   onError?: (error: Error) => void;
@@ -23,6 +24,7 @@ interface UsePollingResult<T> {
 export function usePolling<T>({
   fetcher,
   interval = 3000,
+  timeout,
   shouldStop,
   onSuccess,
   onError,
@@ -38,6 +40,7 @@ export function usePolling<T>({
   const shouldStopRef = useRef(shouldStop);
   const onSuccessRef = useRef(onSuccess);
   const onErrorRef = useRef(onError);
+  const startTimeRef = useRef<number | null>(null);
   
   // Update refs when callbacks change
   useEffect(() => {
@@ -68,11 +71,19 @@ export function usePolling<T>({
       return result;
     } catch (err) {
       const error = err instanceof Error ? err : new Error('Unknown error');
-      setError(error);
+      // Network errors (Failed to fetch) — don't stop polling, just log
+      const isNetworkError = error.message === 'Failed to fetch' ||
+        error.message.includes('NetworkError') ||
+        error.message.includes('network');
+      
+      if (!isNetworkError) {
+        setError(error);
+      }
+      
       if (onErrorRef.current) {
         onErrorRef.current(error);
       }
-      throw error;
+      // Don't re-throw — prevents unhandled promise rejection
     } finally {
       setIsLoading(false);
     }
@@ -89,20 +100,38 @@ export function usePolling<T>({
       return;
     }
 
+    // Record start time for timeout tracking
+    startTimeRef.current = Date.now();
+
     // Initial fetch
-    fetchData();
+    fetchData().catch(() => {});
 
     // Set up polling with fixed interval
     const pollInterval = setInterval(() => {
       if (isPolling) {
-        fetchData();
+        // Check timeout
+        if (timeout && startTimeRef.current) {
+          const elapsed = Date.now() - startTimeRef.current;
+          if (elapsed >= timeout) {
+            setIsPolling(false);
+            const timeoutError = new Error(
+              `Polling timed out after ${Math.floor(timeout / 1000)} seconds. Please check the evaluation status manually or contact support if the issue persists.`
+            );
+            setError(timeoutError);
+            if (onErrorRef.current) {
+              onErrorRef.current(timeoutError);
+            }
+            return;
+          }
+        }
+        fetchData().catch(() => {});
       }
     }, interval);
 
     return () => {
       clearInterval(pollInterval);
     };
-  }, [enabled, interval]); // Remove fetchData and isPolling from deps
+  }, [enabled, interval, timeout]); // Remove fetchData and isPolling from deps
 
   return {
     data,

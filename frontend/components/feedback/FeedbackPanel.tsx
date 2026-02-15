@@ -1,6 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { Card, CardHeader } from '@/components/ui/Card';
+import { Button } from '@/components/ui/Button';
 import { FeedbackResponse, MetricName } from '@/types';
 import { MetaScoreGauge } from '@/components/stats/MetaScoreGauge';
 import { AlignmentCard } from './AlignmentCard';
@@ -12,6 +14,7 @@ import {
   CheckCircle,
   AlertCircle,
   History,
+  BookOpen,
 } from 'lucide-react';
 
 interface FeedbackPanelProps {
@@ -21,6 +24,15 @@ interface FeedbackPanelProps {
 export function FeedbackPanel({ feedback }: FeedbackPanelProps) {
   return (
     <div className="space-y-6">
+      {/* Snapshot Link */}
+      <div className="flex items-center justify-end">
+        <Link href="/snapshots">
+          <Button variant="outline" size="sm" icon={<BookOpen className="w-4 h-4" />}>
+            Snapshot Detaylarını Gör
+          </Button>
+        </Link>
+      </div>
+
       {/* Top Section: Meta Score + Overall Feedback */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Meta Score */}

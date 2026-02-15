@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { usePolling } from '@/hooks/usePolling';
 import { getFeedback } from '@/lib/api';
 import { FeedbackResponse } from '@/types';
-import { Brain, CheckCircle, Clock, RefreshCw } from 'lucide-react';
+import { Brain, CheckCircle, Clock, RefreshCw, BookOpen } from 'lucide-react';
 
 interface WaitingForJudgeProps {
   evaluationId: string;
@@ -21,6 +21,7 @@ export function WaitingForJudge({ evaluationId }: WaitingForJudgeProps) {
   const { data, error, isPolling, refetch } = usePolling<FeedbackResponse>({
     fetcher: () => getFeedback(evaluationId),
     interval: 3000,
+    timeout: 120000, // 2 minutes timeout (judge evaluation should complete within 10-30 seconds normally)
     shouldStop: (data) => data.status !== 'processing',
     onSuccess: (data) => {
       if (data.status !== 'processing') {
@@ -110,19 +111,42 @@ export function WaitingForJudge({ evaluationId }: WaitingForJudgeProps) {
 
           {/* Error State */}
           {error && (
-            <div className="mb-6 p-4 bg-rose-50 text-rose-700 rounded-lg text-sm">
-              {error.message}
+            <div className="mb-6 p-4 bg-amber-50 text-amber-800 rounded-lg text-sm">
+              <p className="font-semibold mb-2">⏱️ {error.message.includes('timed out') ? 'Evaluation Taking Longer Than Expected' : 'Error'}</p>
+              <p className="text-amber-700">{error.message}</p>
+              {error.message.includes('timed out') && (
+                <p className="text-amber-700 mt-2">
+                  Your evaluation snapshot may still be available. Check your snapshots or try again later.
+                </p>
+              )}
             </div>
           )}
 
           {/* Actions */}
           <div className="flex justify-center gap-4">
+            {!error?.message.includes('timed out') && (
+              <Button
+                variant="outline"
+                onClick={() => refetch()}
+                icon={<RefreshCw className="w-4 h-4" />}
+              >
+                Check Status
+              </Button>
+            )}
+            {error?.message.includes('timed out') && (
+              <Button
+                onClick={() => router.push('/snapshots')}
+                icon={<BookOpen className="w-4 h-4" />}
+              >
+                View Snapshots
+              </Button>
+            )}
             <Button
               variant="outline"
-              onClick={() => refetch()}
-              icon={<RefreshCw className="w-4 h-4" />}
+              onClick={() => router.push('/snapshots')}
+              icon={<BookOpen className="w-4 h-4" />}
             >
-              Check Status
+              Snapshots
             </Button>
             <Button
               variant="ghost"

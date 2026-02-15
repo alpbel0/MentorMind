@@ -92,6 +92,118 @@ export interface HealthResponse {
   chromadb: string;
 }
 
+// ── Metric Slug System (Phase 3) ──
+
+export type MetricSlug =
+  | 'truthfulness'
+  | 'helpfulness'
+  | 'safety'
+  | 'bias'
+  | 'clarity'
+  | 'consistency'
+  | 'efficiency'
+  | 'robustness';
+
+// ── Evidence Types (Phase 3) ──
+
+export interface EvidenceItem {
+  start: number;
+  end: number;
+  quote: string;
+  why: string;
+  better: string | null;
+  verified: boolean;
+  highlight_available: boolean;
+}
+
+export interface MetricEvidence {
+  user_score: number | null;
+  judge_score: number | null;
+  metric_gap: number;
+  user_reason?: string;
+  judge_reason?: string;
+  evidence: EvidenceItem[];
+}
+
+export type EvidenceByMetric = Record<string, MetricEvidence>;
+
+// ── Snapshot Types (Phase 3) ──
+
+export interface SnapshotListItem {
+  id: string;
+  created_at: string;
+  primary_metric: string;
+  category: string;
+  judge_meta_score: number;
+  status: 'active' | 'completed' | 'archived';
+  chat_turn_count: number;
+  model_name?: string;
+  weighted_gap?: number;
+}
+
+export interface SnapshotListResponse {
+  items: SnapshotListItem[];
+  total: number;
+  page: number;
+  per_page: number;
+}
+
+export interface SnapshotResponse {
+  id: string;
+  created_at: string;
+  updated_at?: string;
+  question_id: string;
+  question: string;
+  model_answer: string;
+  model_name: string;
+  judge_model: string;
+  primary_metric: string;
+  bonus_metrics: string[];
+  category: string;
+  user_scores_json: Record<string, { score: number | null; reasoning: string }>;
+  judge_scores_json: Record<string, { score: number | null; rationale?: string; reasoning?: string }>;
+  evidence_json: Record<string, EvidenceItem[]> | null;
+  judge_meta_score: number;
+  weighted_gap: number;
+  overall_feedback: string;
+  user_evaluation_id: string;
+  judge_evaluation_id: string;
+  chat_turn_count: number;
+  max_chat_turns: number;
+  status: 'active' | 'completed' | 'archived';
+  deleted_at: string | null;
+  is_chat_available: boolean;
+}
+
+// ── Chat Types (Phase 3) ──
+
+export interface ChatMessage {
+  id: string;
+  snapshot_id: string;
+  client_message_id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  is_complete: boolean;
+  selected_metrics: string[] | null;
+  token_count: number;
+  created_at: string;
+}
+
+export interface ChatHistoryResponse {
+  snapshot_id: string;
+  messages: ChatMessage[];
+  total: number;
+  is_chat_available: boolean;
+  turns_remaining: number;
+}
+
+export interface ChatRequest {
+  message: string;
+  client_message_id: string;
+  selected_metrics: string[];
+  is_init: boolean;
+}
+
 // UI State Types
 export interface EvaluationStep {
   step: 'select_metric' | 'view_question' | 'evaluate' | 'waiting' | 'complete';

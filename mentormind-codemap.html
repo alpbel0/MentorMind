@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MentorMind - Code Map</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #181a20;
+    --surface2: #23262f;
+    --border: #2e3140;
+    --text: #e0e0e6;
+    --text-dim: #8b8fa3;
+    --accent: #6c8cff;
+    --accent-dim: #3a4a7a;
+    --blue: #3b82f6;
+    --green: #10b981;
+    --red: #ef4444;
+    --orange: #f97316;
+    --gray: #6b7280;
+    --purple: #a78bfa;
+    --pink: #f472b6;
+    --yellow: #fbbf24;
+    --cyan: #22d3ee;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    grid-template-rows: 1fr auto;
+    height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    grid-row: 1 / 3;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 16px;
+  }
+
+  .sidebar h2 {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+
+  .sidebar h3 {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 16px 0 8px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-icon {
+    width: 28px;
+    height: 28px;
+    background: linear-gradient(135deg, var(--accent), var(--purple));
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+
+  .logo-text {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .logo-sub {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: -2px;
+  }
+
+  /* PRESETS */
+  .preset-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 4px;
+  }
+
+  .preset-btn {
+    padding: 7px 8px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .preset-btn.active { background: var(--accent-dim); border-color: var(--accent); color: #fff; }
+
+  /* LAYER TOGGLES */
+  .layer-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .layer-toggle input { display: none; }
+
+  .layer-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .layer-toggle label {
+    font-size: 12px;
+    cursor: pointer;
+    flex: 1;
+  }
+
+  .layer-toggle .count {
+    font-size: 10px;
+    color: var(--text-dim);
+    background: var(--surface2);
+    padding: 1px 6px;
+    border-radius: 8px;
+  }
+
+  /* CONNECTION TOGGLES */
+  .conn-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .conn-toggle input { display: none; }
+
+  .conn-line {
+    width: 20px;
+    height: 2px;
+    flex-shrink: 0;
+  }
+
+  .conn-toggle label {
+    font-size: 12px;
+    cursor: pointer;
+  }
+
+  /* COMMENTS */
+  .comments-section {
+    border-top: 1px solid var(--border);
+    padding-top: 12px;
+    margin-top: 12px;
+  }
+
+  .comment-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    position: relative;
+  }
+
+  .comment-target {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    margin-bottom: 2px;
+  }
+
+  .comment-file {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 4px;
+  }
+
+  .comment-text {
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.4;
+  }
+
+  .comment-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px;
+    line-height: 1;
+  }
+
+  .comment-delete:hover { color: var(--red); }
+
+  .no-comments {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-style: italic;
+    padding: 8px 0;
+  }
+
+  /* CANVAS */
+  .canvas-area {
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .zoom-controls {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 4px;
+    z-index: 10;
+  }
+
+  .zoom-btn {
+    width: 32px;
+    height: 32px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+
+  .zoom-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .zoom-level {
+    font-size: 11px;
+    color: var(--text-dim);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+  }
+
+  svg {
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  svg:active { cursor: grabbing; }
+
+  /* SVG NODES */
+  .node-group { cursor: pointer; }
+  .node-group:hover .node-rect { filter: brightness(1.15); }
+  .node-group .node-rect { transition: filter 0.15s; }
+
+  .node-title {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    fill: #1a1a2e;
+  }
+
+  .node-subtitle {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 8.5px;
+    fill: #555;
+  }
+
+  .node-commented {
+    stroke: var(--orange);
+    stroke-width: 2.5;
+    stroke-dasharray: 4 2;
+    animation: comment-pulse 2s infinite;
+  }
+
+  @keyframes comment-pulse {
+    0%, 100% { stroke-opacity: 1; }
+    50% { stroke-opacity: 0.5; }
+  }
+
+  /* LEGEND */
+  .legend {
+    position: absolute;
+    bottom: 12px;
+    left: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    z-index: 10;
+  }
+
+  .legend-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 10px;
+    color: var(--text-dim);
+    padding: 2px 0;
+  }
+
+  .legend-line {
+    width: 20px;
+    height: 2px;
+  }
+
+  /* PROMPT OUTPUT */
+  .prompt-area {
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    padding: 12px 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .prompt-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .prompt-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .copy-btn {
+    padding: 4px 12px;
+    background: var(--accent);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .copy-btn:hover { background: #5a7af0; }
+  .copy-btn.copied { background: var(--green); }
+
+  .prompt-text {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 100;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.visible { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    width: 400px;
+    max-width: 90vw;
+  }
+
+  .modal h3 {
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .modal .modal-file {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 12px;
+  }
+
+  .modal textarea {
+    width: 100%;
+    height: 80px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-size: 12px;
+    padding: 8px;
+    resize: vertical;
+    font-family: inherit;
+  }
+
+  .modal textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .modal-btn {
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    transition: all 0.15s;
+  }
+
+  .modal-btn.cancel {
+    background: var(--surface2);
+    color: var(--text);
+  }
+
+  .modal-btn.save {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .modal-btn:hover { filter: brightness(1.1); }
+
+  /* NODE INFO TOOLTIP */
+  .node-tooltip {
+    position: fixed;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 11px;
+    z-index: 50;
+    pointer-events: none;
+    display: none;
+    max-width: 280px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  }
+
+  .node-tooltip.visible { display: block; }
+
+  .tooltip-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+
+  .tooltip-file {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+
+  .tooltip-desc {
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* STAT BADGES */
+  .stat-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 10px 0;
+    padding: 8px 0;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stat-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface2);
+    color: var(--text-dim);
+  }
+
+  .stat-badge strong { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">M</div>
+      <div>
+        <div class="logo-text">MentorMind</div>
+        <div class="logo-sub">Architecture Map</div>
+      </div>
+    </div>
+
+    <h2>Views</h2>
+    <div class="preset-grid" id="presets"></div>
+
+    <div class="stat-row" id="stats"></div>
+
+    <h3>Layers</h3>
+    <div id="layer-toggles"></div>
+
+    <h3>Connections</h3>
+    <div id="conn-toggles"></div>
+
+    <div class="comments-section">
+      <h3>Comments (<span id="comment-count">0</span>)</h3>
+      <div id="comments-list">
+        <div class="no-comments">Click a component to add feedback</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CANVAS -->
+  <div class="canvas-area" id="canvas-area">
+    <div class="zoom-controls">
+      <button class="zoom-btn" onclick="zoomIn()">+</button>
+      <span class="zoom-level" id="zoom-level">100%</span>
+      <button class="zoom-btn" onclick="zoomOut()">&minus;</button>
+      <button class="zoom-btn" onclick="zoomReset()" style="font-size:11px">Fit</button>
+    </div>
+
+    <svg id="canvas" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+        </marker>
+        <marker id="arrow-green" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#10b981"/>
+        </marker>
+        <marker id="arrow-red" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#ef4444"/>
+        </marker>
+        <marker id="arrow-orange" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#f97316"/>
+        </marker>
+        <marker id="arrow-gray" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#6b7280"/>
+        </marker>
+        <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+          <polygon points="0 0, 8 3, 0 6" fill="#a78bfa"/>
+        </marker>
+      </defs>
+      <g id="svg-content"></g>
+    </svg>
+
+    <div class="legend">
+      <div class="legend-title">Connections</div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:#3b82f6"></div>
+        <span>Data Flow (HTTP/DB)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:#10b981; background:repeating-linear-gradient(90deg,#10b981 0,#10b981 6px,transparent 6px,transparent 9px)"></div>
+        <span>API Call (LLM)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:repeating-linear-gradient(90deg,#ef4444 0,#ef4444 4px,transparent 4px,transparent 8px)"></div>
+        <span>Async / Background</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:repeating-linear-gradient(90deg,#a78bfa 0,#a78bfa 8px,transparent 8px,transparent 12px)"></div>
+        <span>SSE Stream</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:#6b7280; opacity:0.5"></div>
+        <span>Import / Dependency</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROMPT -->
+  <div class="prompt-area">
+    <div class="prompt-header">
+      <span class="prompt-label">Generated Prompt</span>
+      <button class="copy-btn" id="copy-btn" onclick="copyPrompt()">Copy</button>
+    </div>
+    <div class="prompt-text" id="prompt-output">Select a view and add comments to components to generate a prompt.</div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h3 id="modal-title">Component</h3>
+    <div class="modal-file" id="modal-file">path/to/file</div>
+    <textarea id="modal-textarea" placeholder="What would you like to change or improve here?"></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-btn save" onclick="saveComment()">Save Comment</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLTIP -->
+<div class="node-tooltip" id="tooltip">
+  <div class="tooltip-title" id="tooltip-title"></div>
+  <div class="tooltip-file" id="tooltip-file"></div>
+  <div class="tooltip-desc" id="tooltip-desc"></div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+
+const LAYERS = {
+  frontend:  { label: 'Frontend (Next.js)',  color: '#93c5fd' },
+  router:    { label: 'API Routers',         color: '#fcd34d' },
+  service:   { label: 'Services',            color: '#86efac' },
+  model:     { label: 'Database Models',     color: '#f9a8d4' },
+  prompt:    { label: 'Prompts',             color: '#c4b5fd' },
+  task:      { label: 'Background Tasks',    color: '#fca5a5' },
+  infra:     { label: 'Infrastructure',      color: '#a5b4fc' },
+  external:  { label: 'External APIs',       color: '#fdba74' },
+};
+
+const CONN_TYPES = {
+  'data-flow':  { label: 'Data Flow',    color: '#3b82f6', dash: '' },
+  'api-call':   { label: 'API Call',      color: '#10b981', dash: '6,3' },
+  'async':      { label: 'Async',         color: '#ef4444', dash: '4,4' },
+  'stream':     { label: 'SSE Stream',    color: '#a78bfa', dash: '8,4' },
+  'dependency': { label: 'Dependency',    color: '#6b7280', dash: '2,2' },
+};
+
+const nodes = [
+  // --- Frontend (y: 20-60) ---
+  { id: 'fe-home',      label: 'Home Page',         subtitle: 'frontend/app/page.tsx',                  x: 80,   y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Main landing page with metric selector and start evaluation' },
+  { id: 'fe-evaluate',  label: 'Evaluate Page',     subtitle: 'frontend/app/evaluate/',                 x: 230,  y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Evaluation form - score 8 metrics for K model response' },
+  { id: 'fe-feedback',  label: 'Feedback Page',      subtitle: 'frontend/app/feedback/[id]/',            x: 380,  y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Judge feedback display with alignment analysis' },
+  { id: 'fe-snapshots', label: 'Snapshots',          subtitle: 'frontend/app/snapshots/',                x: 530,  y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Snapshot list and detail pages for evaluation history' },
+  { id: 'fe-chat',      label: 'Coach Chat',         subtitle: 'frontend/app/snapshots/[id]/chat/',      x: 680,  y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Real-time SSE chat with AI coach mentor' },
+  { id: 'fe-stats',     label: 'Stats Dashboard',    subtitle: 'frontend/components/stats/',             x: 830,  y: 30,  w: 120, h: 40, layer: 'frontend', desc: 'Performance metrics, trends, and gauge visualizations' },
+
+  // --- Routers (y: 120-160) ---
+  { id: 'rt-questions',   label: 'Questions Router',   subtitle: 'backend/routers/questions.py',    x: 100,  y: 130, w: 140, h: 40, layer: 'router', desc: 'POST /generate, GET /pool/stats' },
+  { id: 'rt-evaluations', label: 'Evaluations Router', subtitle: 'backend/routers/evaluations.py',  x: 310,  y: 130, w: 140, h: 40, layer: 'router', desc: 'POST /submit, GET /feedback, POST /retry' },
+  { id: 'rt-snapshots',   label: 'Snapshots Router',   subtitle: 'backend/routers/snapshots.py',    x: 520,  y: 130, w: 140, h: 40, layer: 'router', desc: 'GET /, GET /{id}, DELETE /{id}' },
+  { id: 'rt-coach',       label: 'Coach Router',        subtitle: 'backend/routers/coach.py',        x: 700,  y: 130, w: 140, h: 40, layer: 'router', desc: 'GET /chat, POST /chat/init, POST /chat/stream' },
+  { id: 'rt-stats',       label: 'Stats Router',        subtitle: 'backend/routers/stats.py',        x: 880,  y: 130, w: 140, h: 40, layer: 'router', desc: 'GET /overview' },
+
+  // --- Services (y: 240-280) ---
+  { id: 'sv-claude',   label: 'Claude Service',    subtitle: 'backend/services/claude_service.py',    x: 60,   y: 250, w: 140, h: 40, layer: 'service', desc: 'Question generation via Anthropic Claude Haiku 4.5' },
+  { id: 'sv-model',    label: 'Model Service',     subtitle: 'backend/services/model_service.py',     x: 230,  y: 250, w: 140, h: 40, layer: 'service', desc: '6 K models via OpenRouter unified API' },
+  { id: 'sv-judge',    label: 'Judge Service',     subtitle: 'backend/services/judge_service.py',     x: 400,  y: 250, w: 140, h: 40, layer: 'service', desc: 'Two-stage GPT-4o evaluation (blind + mentoring)' },
+  { id: 'sv-evidence', label: 'Evidence Service',  subtitle: 'backend/services/evidence_service.py',  x: 400,  y: 310, w: 140, h: 40, layer: 'service', desc: 'Evidence parsing, validation, self-healing verification' },
+  { id: 'sv-chromadb', label: 'ChromaDB Service',  subtitle: 'backend/services/chromadb_service.py',  x: 580,  y: 250, w: 140, h: 40, layer: 'service', desc: 'Vector memory - past mistake pattern recognition' },
+  { id: 'sv-snapshot', label: 'Snapshot Service',  subtitle: 'backend/services/snapshot_service.py',  x: 580,  y: 310, w: 140, h: 40, layer: 'service', desc: 'Immutable evaluation snapshots for Coach Chat' },
+  { id: 'sv-coach',    label: 'Coach Service',     subtitle: 'backend/services/coach_service.py',     x: 760,  y: 250, w: 140, h: 40, layer: 'service', desc: 'SSE streaming mentoring chat via GPT-4o-mini' },
+  { id: 'sv-logger',   label: 'LLM Logger',        subtitle: 'backend/services/llm_logger.py',        x: 930,  y: 250, w: 120, h: 40, layer: 'service', desc: 'JSONL logging for all LLM API calls & cost tracking' },
+
+  // --- Prompts (y: 380-420) ---
+  { id: 'pr-master',  label: 'Master Prompts',  subtitle: 'backend/prompts/master_prompts.py', x: 100,  y: 390, w: 140, h: 40, layer: 'prompt', desc: 'Question generation templates, rubric descriptions, 21 categories' },
+  { id: 'pr-judge',   label: 'Judge Prompts',   subtitle: 'backend/prompts/judge_prompts.py',  x: 350,  y: 390, w: 140, h: 40, layer: 'prompt', desc: 'Stage 1 blind eval + Stage 2 mentoring prompts (~10K chars)' },
+  { id: 'pr-coach',   label: 'Coach Prompts',   subtitle: 'backend/prompts/coach_prompts.py',  x: 600,  y: 390, w: 140, h: 40, layer: 'prompt', desc: 'System prompt, greeting template, user prompt renderer' },
+
+  // --- Models (y: 470-510) ---
+  { id: 'md-qprompt',  label: 'QuestionPrompt',       subtitle: 'backend/models/question_prompt.py',      x: 50,   y: 480, w: 130, h: 40, layer: 'model', desc: '24 seed prompts - metric, type, difficulty, category hints' },
+  { id: 'md-question', label: 'Question',              subtitle: 'backend/models/question.py',             x: 200,  y: 480, w: 130, h: 40, layer: 'model', desc: 'Generated questions with rubric, reference answer, pool tracking' },
+  { id: 'md-response', label: 'ModelResponse',         subtitle: 'backend/models/model_response.py',      x: 350,  y: 480, w: 130, h: 40, layer: 'model', desc: 'K model answers - unique per (question, model)' },
+  { id: 'md-usereval', label: 'UserEvaluation',        subtitle: 'backend/models/user_evaluation.py',     x: 500,  y: 480, w: 130, h: 40, layer: 'model', desc: '8 metric scores + reasoning from user' },
+  { id: 'md-judge',    label: 'JudgeEvaluation',       subtitle: 'backend/models/judge_evaluation.py',    x: 650,  y: 480, w: 130, h: 40, layer: 'model', desc: 'Two-stage results, meta score, weighted gap' },
+  { id: 'md-snapshot', label: 'EvaluationSnapshot',    subtitle: 'backend/models/evaluation_snapshot.py', x: 800,  y: 480, w: 130, h: 40, layer: 'model', desc: 'Immutable copy with evidence, chat state, soft delete' },
+  { id: 'md-chat',     label: 'ChatMessage',           subtitle: 'backend/models/chat_message.py',        x: 800,  y: 540, w: 130, h: 40, layer: 'model', desc: 'user/assistant messages with idempotency constraint' },
+
+  // --- Background Tasks (y: 250) ---
+  { id: 'tk-judge', label: 'Judge Task',  subtitle: 'backend/tasks/judge_task.py', x: 400, y: 175, w: 120, h: 35, layer: 'task', desc: 'Async background task with retry (3x, exponential backoff)' },
+
+  // --- Infrastructure (y: 600-640) ---
+  { id: 'if-fastapi',  label: 'FastAPI App',   subtitle: 'backend/main.py',                 x: 100,  y: 610, w: 120, h: 40, layer: 'infra', desc: 'App entry, CORS, lifespan, middleware, router mounts' },
+  { id: 'if-database', label: 'Database Config', subtitle: 'backend/config/database.py',    x: 300,  y: 610, w: 130, h: 40, layer: 'infra', desc: 'SQLAlchemy engine, SessionLocal, get_db dependency' },
+  { id: 'if-settings', label: 'Settings',      subtitle: 'backend/config/settings.py',      x: 480,  y: 610, w: 120, h: 40, layer: 'infra', desc: 'Pydantic BaseSettings - all env vars, model configs' },
+  { id: 'if-metrics',  label: 'Metric Constants', subtitle: 'backend/constants/metrics.py', x: 640,  y: 610, w: 130, h: 40, layer: 'infra', desc: '8 metric slug/display mappings + validation helpers' },
+  { id: 'if-schemas',  label: 'Pydantic Schemas', subtitle: 'backend/models/schemas.py',   x: 820,  y: 610, w: 130, h: 40, layer: 'infra', desc: 'Request/response validation - 500+ lines, 30+ schemas' },
+
+  // --- External APIs (y: 700-740) ---
+  { id: 'ex-anthropic',  label: 'Anthropic API',   subtitle: 'Claude Haiku 4.5',              x: 60,   y: 710, w: 130, h: 40, layer: 'external', desc: 'Question generation - ~1K tokens per call' },
+  { id: 'ex-openai',     label: 'OpenAI API',      subtitle: 'GPT-4o + Embeddings',           x: 280,  y: 710, w: 130, h: 40, layer: 'external', desc: 'Judge evaluation (GPT-4o) + text-embedding-3-small' },
+  { id: 'ex-openrouter', label: 'OpenRouter API',  subtitle: '6 K models + Coach',            x: 500,  y: 710, w: 130, h: 40, layer: 'external', desc: '6 K models (Mistral, Qwen, DeepSeek, Gemini, GPT-4o-mini, GPT-3.5) + Coach chat' },
+  { id: 'ex-postgres',   label: 'PostgreSQL',      subtitle: 'postgres:5432',                 x: 700,  y: 710, w: 120, h: 40, layer: 'external', desc: '7 tables, 16 indexes, JSONB columns' },
+  { id: 'ex-chromadb',   label: 'ChromaDB',        subtitle: 'chromadb:8000',                 x: 860,  y: 710, w: 120, h: 40, layer: 'external', desc: 'evaluation_memory collection, cosine similarity' },
+];
+
+const connections = [
+  // Frontend → Routers
+  { from: 'fe-home',      to: 'rt-questions',   type: 'data-flow', label: 'POST /generate' },
+  { from: 'fe-evaluate',  to: 'rt-evaluations', type: 'data-flow', label: 'POST /submit' },
+  { from: 'fe-feedback',  to: 'rt-evaluations', type: 'data-flow', label: 'GET /feedback' },
+  { from: 'fe-snapshots', to: 'rt-snapshots',   type: 'data-flow', label: 'GET, DELETE' },
+  { from: 'fe-chat',      to: 'rt-coach',       type: 'stream',    label: 'SSE /chat/stream' },
+  { from: 'fe-stats',     to: 'rt-stats',       type: 'data-flow', label: 'GET /overview' },
+
+  // Routers → Services
+  { from: 'rt-questions',   to: 'sv-claude',    type: 'data-flow', label: '' },
+  { from: 'rt-questions',   to: 'sv-model',     type: 'data-flow', label: '' },
+  { from: 'rt-evaluations', to: 'tk-judge',     type: 'async',     label: 'BackgroundTask' },
+  { from: 'rt-snapshots',   to: 'sv-snapshot',  type: 'data-flow', label: '' },
+  { from: 'rt-coach',       to: 'sv-coach',     type: 'data-flow', label: '' },
+
+  // Judge Task → Services
+  { from: 'tk-judge', to: 'sv-judge',    type: 'async',     label: 'Stage 1 + 2' },
+  { from: 'tk-judge', to: 'sv-chromadb', type: 'async',     label: 'query + add' },
+  { from: 'tk-judge', to: 'sv-snapshot', type: 'async',     label: 'create snap' },
+
+  // Service → Service
+  { from: 'sv-judge',    to: 'sv-evidence', type: 'dependency', label: '' },
+  { from: 'sv-snapshot', to: 'sv-evidence', type: 'dependency', label: '' },
+  { from: 'sv-coach',    to: 'sv-snapshot',  type: 'dependency', label: 'get context' },
+
+  // Services → Prompts
+  { from: 'sv-claude', to: 'pr-master', type: 'dependency', label: '' },
+  { from: 'sv-judge',  to: 'pr-judge',  type: 'dependency', label: '' },
+  { from: 'sv-coach',  to: 'pr-coach',  type: 'dependency', label: '' },
+
+  // Services → External APIs
+  { from: 'sv-claude',   to: 'ex-anthropic',  type: 'api-call', label: 'Claude API' },
+  { from: 'sv-model',    to: 'ex-openrouter', type: 'api-call', label: 'K models' },
+  { from: 'sv-judge',    to: 'ex-openai',     type: 'api-call', label: 'GPT-4o' },
+  { from: 'sv-chromadb', to: 'ex-openai',     type: 'api-call', label: 'Embeddings' },
+  { from: 'sv-chromadb', to: 'ex-chromadb',   type: 'data-flow', label: '' },
+  { from: 'sv-coach',    to: 'ex-openrouter', type: 'api-call', label: 'GPT-4o-mini' },
+
+  // Services → Logger
+  { from: 'sv-claude', to: 'sv-logger', type: 'dependency', label: '' },
+  { from: 'sv-model',  to: 'sv-logger', type: 'dependency', label: '' },
+  { from: 'sv-judge',  to: 'sv-logger', type: 'dependency', label: '' },
+
+  // Models chain
+  { from: 'md-qprompt',  to: 'md-question', type: 'data-flow', label: '1:N' },
+  { from: 'md-question', to: 'md-response', type: 'data-flow', label: '1:N' },
+  { from: 'md-response', to: 'md-usereval', type: 'data-flow', label: '1:1' },
+  { from: 'md-usereval', to: 'md-judge',    type: 'data-flow', label: '1:1' },
+  { from: 'md-judge',    to: 'md-snapshot',  type: 'data-flow', label: '1:1' },
+  { from: 'md-snapshot', to: 'md-chat',      type: 'data-flow', label: '1:N' },
+
+  // Infra → All
+  { from: 'if-fastapi',  to: 'rt-questions',   type: 'dependency', label: '' },
+  { from: 'if-fastapi',  to: 'rt-evaluations', type: 'dependency', label: '' },
+  { from: 'if-fastapi',  to: 'rt-snapshots',   type: 'dependency', label: '' },
+  { from: 'if-fastapi',  to: 'rt-coach',       type: 'dependency', label: '' },
+  { from: 'if-fastapi',  to: 'rt-stats',       type: 'dependency', label: '' },
+  { from: 'if-database', to: 'ex-postgres',    type: 'data-flow', label: 'SQLAlchemy' },
+];
+
+// ============================================================
+// PRESETS
+// ============================================================
+
+const PRESETS = {
+  'Full System': {
+    layers: { frontend: true, router: true, service: true, model: true, prompt: true, task: true, infra: true, external: true },
+    conns: { 'data-flow': true, 'api-call': true, 'async': true, 'stream': true, 'dependency': true }
+  },
+  'Question Flow': {
+    layers: { frontend: true, router: true, service: true, model: false, prompt: true, task: false, infra: false, external: true },
+    conns: { 'data-flow': true, 'api-call': true, 'async': false, 'stream': false, 'dependency': true },
+    highlight: ['fe-home', 'rt-questions', 'sv-claude', 'sv-model', 'pr-master', 'ex-anthropic', 'ex-openrouter']
+  },
+  'Judge Pipeline': {
+    layers: { frontend: true, router: true, service: true, model: false, prompt: true, task: true, infra: false, external: true },
+    conns: { 'data-flow': true, 'api-call': true, 'async': true, 'stream': false, 'dependency': true },
+    highlight: ['fe-evaluate', 'fe-feedback', 'rt-evaluations', 'tk-judge', 'sv-judge', 'sv-evidence', 'sv-chromadb', 'sv-snapshot', 'pr-judge', 'ex-openai', 'ex-chromadb']
+  },
+  'Coach Chat': {
+    layers: { frontend: true, router: true, service: true, model: false, prompt: true, task: false, infra: false, external: true },
+    conns: { 'data-flow': true, 'api-call': true, 'async': false, 'stream': true, 'dependency': true },
+    highlight: ['fe-chat', 'fe-snapshots', 'rt-snapshots', 'rt-coach', 'sv-coach', 'sv-snapshot', 'pr-coach', 'ex-openrouter']
+  },
+  'Data Models': {
+    layers: { frontend: false, router: false, service: false, model: true, prompt: false, task: false, infra: true, external: true },
+    conns: { 'data-flow': true, 'api-call': false, 'async': false, 'stream': false, 'dependency': true }
+  },
+  'Backend Only': {
+    layers: { frontend: false, router: true, service: true, model: false, prompt: true, task: true, infra: false, external: true },
+    conns: { 'data-flow': true, 'api-call': true, 'async': true, 'stream': true, 'dependency': false }
+  },
+};
+
+// ============================================================
+// STATE
+// ============================================================
+
+const state = {
+  activePreset: 'Full System',
+  layers: { ...PRESETS['Full System'].layers },
+  conns: { ...PRESETS['Full System'].conns },
+  comments: [],
+  zoom: 1,
+  panX: 20,
+  panY: 10,
+  highlight: null,
+  modalNode: null,
+};
+
+// ============================================================
+// RENDER
+// ============================================================
+
+function init() {
+  buildPresets();
+  buildLayerToggles();
+  buildConnToggles();
+  buildStats();
+  setupPanZoom();
+  updateAll();
+}
+
+function buildPresets() {
+  const el = document.getElementById('presets');
+  el.innerHTML = '';
+  for (const name of Object.keys(PRESETS)) {
+    const btn = document.createElement('button');
+    btn.className = 'preset-btn' + (name === state.activePreset ? ' active' : '');
+    btn.textContent = name;
+    btn.onclick = () => applyPreset(name);
+    el.appendChild(btn);
+  }
+}
+
+function buildLayerToggles() {
+  const el = document.getElementById('layer-toggles');
+  el.innerHTML = '';
+  for (const [key, info] of Object.entries(LAYERS)) {
+    const count = nodes.filter(n => n.layer === key).length;
+    const div = document.createElement('div');
+    div.className = 'layer-toggle';
+    div.innerHTML = `
+      <input type="checkbox" id="layer-${key}" ${state.layers[key] ? 'checked' : ''}>
+      <div class="layer-dot" style="background:${info.color}"></div>
+      <label for="layer-${key}">${info.label}</label>
+      <span class="count">${count}</span>
+    `;
+    div.querySelector('input').onchange = (e) => {
+      state.layers[key] = e.target.checked;
+      state.activePreset = null;
+      buildPresets();
+      updateAll();
+    };
+    div.onclick = (e) => {
+      if (e.target.tagName !== 'INPUT') {
+        const cb = div.querySelector('input');
+        cb.checked = !cb.checked;
+        state.layers[key] = cb.checked;
+        state.activePreset = null;
+        buildPresets();
+        updateAll();
+      }
+    };
+    el.appendChild(div);
+  }
+}
+
+function buildConnToggles() {
+  const el = document.getElementById('conn-toggles');
+  el.innerHTML = '';
+  for (const [key, info] of Object.entries(CONN_TYPES)) {
+    const div = document.createElement('div');
+    div.className = 'conn-toggle';
+    const dashStyle = info.dash
+      ? `background:repeating-linear-gradient(90deg,${info.color} 0,${info.color} ${info.dash.split(',')[0]}px,transparent ${info.dash.split(',')[0]}px,transparent ${parseInt(info.dash.split(',')[0])+parseInt(info.dash.split(',')[1]||3)}px)`
+      : `background:${info.color}`;
+    div.innerHTML = `
+      <input type="checkbox" id="conn-${key}" ${state.conns[key] ? 'checked' : ''}>
+      <div class="conn-line" style="${dashStyle}"></div>
+      <label for="conn-${key}">${info.label}</label>
+    `;
+    div.querySelector('input').onchange = (e) => {
+      state.conns[key] = e.target.checked;
+      state.activePreset = null;
+      buildPresets();
+      updateAll();
+    };
+    div.onclick = (e) => {
+      if (e.target.tagName !== 'INPUT') {
+        const cb = div.querySelector('input');
+        cb.checked = !cb.checked;
+        state.conns[key] = cb.checked;
+        state.activePreset = null;
+        buildPresets();
+        updateAll();
+      }
+    };
+    el.appendChild(div);
+  }
+}
+
+function buildStats() {
+  const el = document.getElementById('stats');
+  const stats = [
+    { label: 'Nodes', value: nodes.length },
+    { label: 'Links', value: connections.length },
+    { label: 'Models', value: 7 },
+    { label: 'APIs', value: 4 },
+  ];
+  el.innerHTML = stats.map(s => `<div class="stat-badge"><strong>${s.value}</strong> ${s.label}</div>`).join('');
+}
+
+function applyPreset(name) {
+  const p = PRESETS[name];
+  state.activePreset = name;
+  state.layers = { ...p.layers };
+  state.conns = { ...p.conns };
+  state.highlight = p.highlight || null;
+  buildPresets();
+  buildLayerToggles();
+  buildConnToggles();
+  updateAll();
+}
+
+function updateAll() {
+  renderDiagram();
+  updatePrompt();
+}
+
+// ============================================================
+// SVG RENDERING
+// ============================================================
+
+function renderDiagram() {
+  const g = document.getElementById('svg-content');
+  g.innerHTML = '';
+
+  const visibleNodeIds = new Set(nodes.filter(n => state.layers[n.layer]).map(n => n.id));
+
+  // Draw connections
+  const visibleConns = connections.filter(c =>
+    state.conns[c.type] && visibleNodeIds.has(c.from) && visibleNodeIds.has(c.to)
+  );
+
+  for (const conn of visibleConns) {
+    const fromNode = nodes.find(n => n.id === conn.from);
+    const toNode = nodes.find(n => n.id === conn.to);
+    if (!fromNode || !toNode) continue;
+
+    const ct = CONN_TYPES[conn.type];
+    const x1 = fromNode.x + fromNode.w / 2;
+    const y1 = fromNode.y + fromNode.h / 2;
+    const x2 = toNode.x + toNode.w / 2;
+    const y2 = toNode.y + toNode.h / 2;
+
+    // Edge points
+    const [sx, sy] = getEdgePoint(fromNode, x2, y2);
+    const [ex, ey] = getEdgePoint(toNode, x1, y1);
+
+    const midY = (sy + ey) / 2;
+    const path = `M ${sx} ${sy} C ${sx} ${midY}, ${ex} ${midY}, ${ex} ${ey}`;
+
+    const isHighlighted = !state.highlight ||
+      (state.highlight.includes(conn.from) && state.highlight.includes(conn.to));
+    const opacity = state.highlight ? (isHighlighted ? 1 : 0.12) : 0.6;
+
+    const markerMap = {
+      '#3b82f6': 'arrow-blue',
+      '#10b981': 'arrow-green',
+      '#ef4444': 'arrow-red',
+      '#a78bfa': 'arrow-purple',
+      '#6b7280': 'arrow-gray',
+      '#f97316': 'arrow-orange',
+    };
+
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', path);
+    pathEl.setAttribute('fill', 'none');
+    pathEl.setAttribute('stroke', ct.color);
+    pathEl.setAttribute('stroke-width', conn.type === 'dependency' ? '1' : '1.5');
+    pathEl.setAttribute('opacity', opacity);
+    if (ct.dash) pathEl.setAttribute('stroke-dasharray', ct.dash);
+    pathEl.setAttribute('marker-end', `url(#${markerMap[ct.color] || 'arrow-gray'})`);
+    g.appendChild(pathEl);
+
+    // Connection label
+    if (conn.label) {
+      const lx = (sx + ex) / 2;
+      const ly = midY - 4;
+      const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      text.setAttribute('x', lx);
+      text.setAttribute('y', ly);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', ct.color);
+      text.setAttribute('font-size', '7');
+      text.setAttribute('font-family', "'SF Mono', 'Fira Code', monospace");
+      text.setAttribute('opacity', opacity);
+      text.textContent = conn.label;
+      g.appendChild(text);
+    }
+  }
+
+  // Draw nodes
+  const visibleNodes = nodes.filter(n => visibleNodeIds.has(n.id));
+
+  for (const node of visibleNodes) {
+    const layerInfo = LAYERS[node.layer];
+    const isHighlighted = !state.highlight || state.highlight.includes(node.id);
+    const nodeOpacity = state.highlight ? (isHighlighted ? 1 : 0.2) : 1;
+    const hasComment = state.comments.some(c => c.target === node.id);
+
+    const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    group.setAttribute('class', 'node-group');
+    group.setAttribute('opacity', nodeOpacity);
+    group.style.cursor = 'pointer';
+
+    // Node rect
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('x', node.x);
+    rect.setAttribute('y', node.y);
+    rect.setAttribute('width', node.w);
+    rect.setAttribute('height', node.h);
+    rect.setAttribute('rx', '6');
+    rect.setAttribute('fill', layerInfo.color);
+    rect.setAttribute('class', 'node-rect' + (hasComment ? ' node-commented' : ''));
+    if (!hasComment) {
+      rect.setAttribute('stroke', '#00000020');
+      rect.setAttribute('stroke-width', '1');
+    }
+    group.appendChild(rect);
+
+    // Title
+    const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    title.setAttribute('x', node.x + node.w / 2);
+    title.setAttribute('y', node.y + 16);
+    title.setAttribute('text-anchor', 'middle');
+    title.setAttribute('class', 'node-title');
+    title.textContent = node.label;
+    group.appendChild(title);
+
+    // Subtitle
+    const sub = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    sub.setAttribute('x', node.x + node.w / 2);
+    sub.setAttribute('y', node.y + 28);
+    sub.setAttribute('text-anchor', 'middle');
+    sub.setAttribute('class', 'node-subtitle');
+    // Shorten path for display
+    const shortPath = node.subtitle.replace('backend/', '').replace('frontend/', 'fe/');
+    sub.textContent = shortPath;
+    group.appendChild(sub);
+
+    // Comment indicator
+    if (hasComment) {
+      const indicator = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      indicator.setAttribute('cx', node.x + node.w - 4);
+      indicator.setAttribute('cy', node.y + 4);
+      indicator.setAttribute('r', '5');
+      indicator.setAttribute('fill', '#f97316');
+      indicator.setAttribute('stroke', '#fff');
+      indicator.setAttribute('stroke-width', '1.5');
+      group.appendChild(indicator);
+
+      const count = state.comments.filter(c => c.target === node.id).length;
+      const cText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      cText.setAttribute('x', node.x + node.w - 4);
+      cText.setAttribute('y', node.y + 7);
+      cText.setAttribute('text-anchor', 'middle');
+      cText.setAttribute('fill', '#fff');
+      cText.setAttribute('font-size', '7');
+      cText.setAttribute('font-weight', '700');
+      cText.textContent = count;
+      group.appendChild(cText);
+    }
+
+    // Events
+    group.onclick = () => openModal(node);
+    group.onmouseenter = (e) => showTooltip(e, node);
+    group.onmouseleave = () => hideTooltip();
+
+    g.appendChild(group);
+  }
+
+  // Update viewBox
+  updateViewBox();
+}
+
+function getEdgePoint(node, targetX, targetY) {
+  const cx = node.x + node.w / 2;
+  const cy = node.y + node.h / 2;
+  const dx = targetX - cx;
+  const dy = targetY - cy;
+  const angle = Math.atan2(dy, dx);
+
+  const hw = node.w / 2;
+  const hh = node.h / 2;
+
+  // Check which edge the line exits from
+  const tanAngle = Math.abs(Math.tan(angle));
+  if (tanAngle <= hh / hw) {
+    // Exits left or right
+    const x = dx > 0 ? node.x + node.w : node.x;
+    const y = cy + (dx > 0 ? hw : -hw) * Math.tan(angle);
+    return [x, y];
+  } else {
+    // Exits top or bottom
+    const y = dy > 0 ? node.y + node.h : node.y;
+    const x = cx + (dy > 0 ? hh : -hh) / Math.tan(angle);
+    return [x, y];
+  }
+}
+
+function updateViewBox() {
+  const svg = document.getElementById('canvas');
+  const area = document.getElementById('canvas-area');
+  const w = area.clientWidth;
+  const h = area.clientHeight;
+
+  const vw = w / state.zoom;
+  const vh = h / state.zoom;
+  svg.setAttribute('viewBox', `${-state.panX} ${-state.panY} ${vw} ${vh}`);
+}
+
+// ============================================================
+// PAN & ZOOM
+// ============================================================
+
+function setupPanZoom() {
+  const svg = document.getElementById('canvas');
+  let isPanning = false;
+  let startX, startY;
+
+  svg.addEventListener('mousedown', (e) => {
+    if (e.target.closest('.node-group')) return;
+    isPanning = true;
+    startX = e.clientX;
+    startY = e.clientY;
+    svg.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!isPanning) return;
+    const dx = (e.clientX - startX) / state.zoom;
+    const dy = (e.clientY - startY) / state.zoom;
+    state.panX += dx;
+    state.panY += dy;
+    startX = e.clientX;
+    startY = e.clientY;
+    updateViewBox();
+  });
+
+  window.addEventListener('mouseup', () => {
+    isPanning = false;
+    svg.style.cursor = 'grab';
+  });
+
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    state.zoom = Math.max(0.3, Math.min(3, state.zoom * delta));
+    document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
+    updateViewBox();
+  }, { passive: false });
+
+  window.addEventListener('resize', () => updateViewBox());
+}
+
+function zoomIn() {
+  state.zoom = Math.min(3, state.zoom * 1.2);
+  document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
+  updateViewBox();
+}
+
+function zoomOut() {
+  state.zoom = Math.max(0.3, state.zoom / 1.2);
+  document.getElementById('zoom-level').textContent = Math.round(state.zoom * 100) + '%';
+  updateViewBox();
+}
+
+function zoomReset() {
+  state.zoom = 1;
+  state.panX = 20;
+  state.panY = 10;
+  document.getElementById('zoom-level').textContent = '100%';
+  updateViewBox();
+}
+
+// ============================================================
+// TOOLTIP
+// ============================================================
+
+function showTooltip(e, node) {
+  const tt = document.getElementById('tooltip');
+  document.getElementById('tooltip-title').textContent = node.label;
+  document.getElementById('tooltip-file').textContent = node.subtitle;
+  document.getElementById('tooltip-desc').textContent = node.desc;
+  tt.style.left = (e.clientX + 12) + 'px';
+  tt.style.top = (e.clientY + 12) + 'px';
+  tt.classList.add('visible');
+}
+
+function hideTooltip() {
+  document.getElementById('tooltip').classList.remove('visible');
+}
+
+// ============================================================
+// COMMENT MODAL
+// ============================================================
+
+function openModal(node) {
+  hideTooltip();
+  state.modalNode = node;
+  document.getElementById('modal-title').textContent = node.label;
+  document.getElementById('modal-file').textContent = node.subtitle;
+  document.getElementById('modal-textarea').value = '';
+  document.getElementById('modal-overlay').classList.add('visible');
+  setTimeout(() => document.getElementById('modal-textarea').focus(), 100);
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('visible');
+  state.modalNode = null;
+}
+
+function saveComment() {
+  const text = document.getElementById('modal-textarea').value.trim();
+  if (!text || !state.modalNode) return;
+
+  state.comments.push({
+    id: Date.now(),
+    target: state.modalNode.id,
+    targetLabel: state.modalNode.label,
+    targetFile: state.modalNode.subtitle,
+    text: text,
+  });
+
+  closeModal();
+  renderComments();
+  updateAll();
+}
+
+function deleteComment(id) {
+  state.comments = state.comments.filter(c => c.id !== id);
+  renderComments();
+  updateAll();
+}
+
+function renderComments() {
+  const el = document.getElementById('comments-list');
+  document.getElementById('comment-count').textContent = state.comments.length;
+
+  if (state.comments.length === 0) {
+    el.innerHTML = '<div class="no-comments">Click a component to add feedback</div>';
+    return;
+  }
+
+  el.innerHTML = state.comments.map(c => `
+    <div class="comment-item">
+      <button class="comment-delete" onclick="deleteComment(${c.id})">x</button>
+      <div class="comment-target">${c.targetLabel}</div>
+      <div class="comment-file">${c.targetFile}</div>
+      <div class="comment-text">${escapeHtml(c.text)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ============================================================
+// PROMPT GENERATION
+// ============================================================
+
+function updatePrompt() {
+  const el = document.getElementById('prompt-output');
+
+  const visibleLayers = Object.entries(state.layers)
+    .filter(([, v]) => v)
+    .map(([k]) => LAYERS[k].label);
+
+  const parts = [];
+
+  // Context
+  if (state.activePreset && state.activePreset !== 'Full System') {
+    parts.push(`I'm looking at the MentorMind architecture, specifically the "${state.activePreset}" view showing: ${visibleLayers.join(', ')}.`);
+  } else if (visibleLayers.length < Object.keys(LAYERS).length) {
+    parts.push(`I'm looking at the MentorMind architecture, focusing on these layers: ${visibleLayers.join(', ')}.`);
+  } else {
+    parts.push('This is the full MentorMind architecture (FastAPI + PostgreSQL + ChromaDB + Next.js).');
+  }
+
+  // Comments
+  if (state.comments.length > 0) {
+    parts.push('');
+    parts.push('Feedback on specific components:');
+    for (const c of state.comments) {
+      parts.push('');
+      parts.push(`**${c.targetLabel}** (${c.targetFile}):`);
+      parts.push(c.text);
+    }
+  } else {
+    parts.push('');
+    parts.push('Click on any component in the diagram to add specific feedback or change requests.');
+  }
+
+  el.textContent = parts.join('\n');
+}
+
+function copyPrompt() {
+  const text = document.getElementById('prompt-output').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('copy-btn');
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 1500);
+  });
+}
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeModal();
+});
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeModal();
+});
+
+// ============================================================
+// INIT
+// ============================================================
+
+init();
+</script>
+</body>
+</html>
