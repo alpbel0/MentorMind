@@ -119,24 +119,26 @@ For each metric where you find issues OR excellent work, provide evidence:
 
 ### Evidence Guidelines
 
-1. **Verbatim Quotes:** The `quote` field MUST be copied EXACTLY from the model response, character for character. Do NOT paraphrase or summarize.
+1. **Consider Full Context:** When selecting evidence, consider the entire model response text. Look at all examples and explanations provided in the model's response to understand the full context before extracting quotes.
 
-2. **Character Positions:** `start` is the 0-based index where the quote begins. `end` is the index AFTER the last character (Python slice style: `model_response[start:end]`).
+2. **Verbatim Quotes:** The `quote` field MUST be copied EXACTLY from the model response, character for character. Do NOT paraphrase or summarize.
+
+3. **Character Positions:** `start` is the 0-based index where the quote begins. `end` is the index AFTER the last character (Python slice style: `model_response[start:end]`).
 
    Example: If `model_response = "The answer is 5."` and you want to quote "answer is", then:
    - `start = 4` (position of 'a' in "answer")
    - `end = 14` (position after 's' in "is")
    - `quote = "answer is"`
 
-3. **When to Provide Evidence:**
+4. **When to Provide Evidence:**
    - **Critical errors:** Hallucinations, safety violations, factual mistakes (MUST provide evidence)
    - **Excellent work:** Outstanding clarity, perfect accuracy (MUST provide evidence)
    - **Minor issues:** Small imperfections (OPTIONAL, use judgment)
    - **Not applicable:** If score is null, use empty array `[]`
 
-4. **Evidence Count:** 1-3 evidence items per metric maximum. Focus on the MOST important evidence. Quality over quantity.
+5. **Evidence Count:** 1-3 evidence items per metric maximum. Focus on the MOST important evidence. Quality over quantity.
 
-5. **Turkish Language:** The `why` and `better` fields must be in Turkish. The `quote` field is in the original language of the model response.
+6. **Turkish Language:** The `why` and `better` fields must be in Turkish. The `quote` field is in the original language of the model response.
 
 ### Evidence Validation
 

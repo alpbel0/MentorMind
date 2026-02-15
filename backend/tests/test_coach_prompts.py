@@ -51,6 +51,27 @@ class TestCoachPromptConstants:
         """System prompt should not be empty."""
         assert len(COACH_SYSTEM_PROMPT) > 1000
 
+    def test_system_prompt_has_reasoning_fallback(self):
+        """System prompt should include reasoning-based fallback for no evidence."""
+        # Check for the new reasoning-based gap explanation section
+        assert "reasoning" in COACH_SYSTEM_PROMPT.lower()
+        assert "WITHOUT Evidence" in COACH_SYSTEM_PROMPT or "No Evidence Available" in COACH_SYSTEM_PROMPT
+        assert "user_reasoning" in COACH_SYSTEM_PROMPT.lower() or "sizin puanınız" in COACH_SYSTEM_PROMPT.lower()
+        assert "judge_rationale" in COACH_SYSTEM_PROMPT.lower() or "judge puanı" in COACH_SYSTEM_PROMPT.lower()
+
+    def test_system_prompt_has_few_shot_examples(self):
+        """System prompt should include few-shot examples."""
+        assert "Few-Shot Example" in COACH_SYSTEM_PROMPT or "Few-Shot Examples" in COACH_SYSTEM_PROMPT
+        # Should have at least 2 examples (with evidence and without evidence)
+        assert "Example 1" in COACH_SYSTEM_PROMPT or "WITH Evidence" in COACH_SYSTEM_PROMPT
+        assert "Example 2" in COACH_SYSTEM_PROMPT or "WITHOUT Evidence" in COACH_SYSTEM_PROMPT
+
+    def test_init_greeting_neutral_title(self):
+        """Init greeting should use neutral section title."""
+        assert "Değerlendirme Detayları" in COACH_INIT_GREETING_TEMPLATE
+        # Should NOT have the old "Kanıtlanan Sorunlar" title
+        assert "Kanıtlanan Sorunlar" not in COACH_INIT_GREETING_TEMPLATE
+
 
 # =====================================================
 # Test Helper Functions
