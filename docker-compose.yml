@@ -26,11 +26,10 @@ services:
     ports:
       - "8001:8000"
     volumes:
-      - mentormind_chromadb_data:/chroma/chroma
+      - mentormind_chromadb_data:/data
     environment:
       - CHROMA_SERVER_HOST=0.0.0.0
       - CHROMA_SERVER_HTTP_PORT=8000
-      - PERSIST_DIRECTORY=/chroma/chroma
       - ANONYMIZED_TELEMETRY=False
     restart: unless-stopped
     networks:
@@ -59,7 +58,6 @@ services:
       - POSTGRES_PORT=5432
       - CHROMA_HOST=chromadb
       - CHROMA_PORT=8000
-      - PERSIST_DIRECTORY=/chroma/chroma
       - ANONYMIZED_TELEMETRY=False
     depends_on:
       postgres:
